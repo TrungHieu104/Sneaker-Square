@@ -46,7 +46,7 @@ class DashboardController extends Controller
         $dailyDataAccount = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$sub7days, $now])
         ->orderBy('created_at','ASC')->select(
             DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
-        )->orderBy('date')->get();
+        )->groupBy('date')->orderBy('date')->get();
 
         $datatAccountCount['date'] = $dailyDataAccount->pluck('date')->map(function ($date) {
             return date('d/m/Y', strtotime($date));
