@@ -145,13 +145,13 @@ class ProductController extends Controller
         $getColor = Quantity::select('pro_id', 'products_quantity.color_id', 'color')
             ->where('pro_id', $proId)
             ->join('color', 'products_quantity.color_id', '=', 'color.color_id')
-            ->groupBy('pro_id', 'color')
+            ->groupBy('pro_id', 'products_quantity.color_id', 'color')
             ->get();
 
         $getSize = Quantity::select('pro_id', 'products_quantity.size_id', 'size')
             ->where('pro_id', $proId)
             ->join('size', 'products_quantity.size_id', '=', 'size.size_id')
-            ->groupBy('pro_id', 'size')
+            ->groupBy('pro_id', 'products_quantity.size_id', 'size')
             ->get();
 
         $relatedProduct = Product::where('cate_id', $detailProduct->cate_id)
