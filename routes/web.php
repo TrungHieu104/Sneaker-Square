@@ -191,7 +191,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     Route::post('/export-csv-month-prev', [DashboardController::class,'export_scv_monthprev'])->name('export.scvmonthprev');
     Route::post('/export-csv-year', [DashboardController::class,'export_scv_year'])->name('export.scvyear');
     Route::get('/support', [DashboardController::class,'support'])->name('support');
-    Route::get('/check-new-orders', [DashboardController::class, 'checkNewOrders'])->name('check.noti');
+    Route::get('/sse-notifications', [DashboardController::class, 'sseNotifications'])->name('sse.noti');
     Route::get('/revenue', [DashboardController::class,'revenue'])->name('admin.revenue')->middleware('permission:Thống kê doanh thu');
 
     // Visitor

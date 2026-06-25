@@ -222,91 +222,94 @@
     }
 
     $(document).ready(function() {
-        setInterval(()=>{
-            $.ajax({
-                url: '/admin/check-new-orders', 
-                method: 'GET',
-                success: function(response) {
-                    $('#newOrderCount').text(response.newOrderCount);
-                    $('#returnOrderCount').text(response.returnOrderCount);
-                    $('#sucessOrderCount').text(response.sucessOrderCount);
-                    $('#couponCount').text(response.couponCount);
-                    $('#contactCount').text(response.contactCount);
-                    $('#slideCount').text(response.slideCount);
-                    
-                    const elementsToUpdate = {
-                        timestampOrder: 'timeAgo',
-                        timestampReturnOrder: 'timeReturnAgo',
-                        timestampSuccessOrder: 'timeSuccessAgo',
-                        timestampContact: 'timeContactAgo',
-                        timestampSlide: 'timeSlideAgo',
-                        timestampCoupon: 'timeCouponAgo',
-                    };
+        if (!!window.EventSource) {
+            const source = new EventSource("{{ route('sse.noti') }}");
+            
+            source.onmessage = function(event) {
+                const response = JSON.parse(event.data);
+                
+                $('#newOrderCount').text(response.newOrderCount);
+                $('#returnOrderCount').text(response.returnOrderCount);
+                $('#sucessOrderCount').text(response.sucessOrderCount);
+                $('#couponCount').text(response.couponCount);
+                $('#contactCount').text(response.contactCount);
+                $('#slideCount').text(response.slideCount);
+                
+                const elementsToUpdate = {
+                    timestampOrder: 'timeAgo',
+                    timestampReturnOrder: 'timeReturnAgo',
+                    timestampSuccessOrder: 'timeSuccessAgo',
+                    timestampContact: 'timeContactAgo',
+                    timestampSlide: 'timeSlideAgo',
+                    timestampCoupon: 'timeCouponAgo',
+                };
 
-                    for (const key in elementsToUpdate) {
-                        if (Object.hasOwnProperty.call(elementsToUpdate, key)) {
-                            const timestamp = response[key];
-                            const id = elementsToUpdate[key];
-                            updateTimeAgo(timestamp, id);
-                        }
+                for (const key in elementsToUpdate) {
+                    if (Object.hasOwnProperty.call(elementsToUpdate, key)) {
+                        const timestamp = response[key];
+                        const id = elementsToUpdate[key];
+                        updateTimeAgo(timestamp, id);
                     }
-
-                    let zeroCount = 0;
-                    
-                    if (response.returnOrderCount === 0) {
-                        $('.return').hide();
-                    } else {
-                        $('.return').show(); 
-                        zeroCount++;
-                    }
-
-                    if (response.sucessOrderCount === 0) {
-                        $('.success').hide();
-                    } else {
-                        $('.success').show(); 
-                        zeroCount++;
-                    }
-
-                    if (response.newOrderCount === 0) {
-                        $('.neworder').hide();
-                    } else {
-                        $('.neworder').show(); 
-                        zeroCount++;
-                    }
-                   
-                    if (response.couponCount.length === 0) {
-                        $('.coupon').hide();
-                    } else {
-                        $('.coupon').show(); 
-                        zeroCount++;
-                    }
-
-                    if (response.slideCount.length === 0) {
-                        $('.promotion').hide();
-                    } else {
-                        $('.promotion').show(); 
-                        zeroCount++;
-                    }
-                    
-                    if (response.contactCount === 0) {
-                        $('.contact').hide();
-                    } else {
-                        $('.contact').show(); 
-                        zeroCount++;
-                    }
-
-                    if (zeroCount === 0) {
-                        $('#noti-alert').text('Không có thông báo mới');
-                    } else {
-                        $('#notification-count').text(zeroCount);
-                    }
-                },
-                error: function(err) {
-                    console.error('Error while checking new orders:', err);
                 }
-            });
-        }, 1000); 
-    })
+
+                let zeroCount = 0;
+                
+                if (response.returnOrderCount === 0) {
+                    $('.return').hide();
+                } else {
+                    $('.return').show(); 
+                    zeroCount++;
+                }
+
+                if (response.sucessOrderCount === 0) {
+                    $('.success').hide();
+                } else {
+                    $('.success').show(); 
+                    zeroCount++;
+                }
+
+                if (response.newOrderCount === 0) {
+                    $('.neworder').hide();
+                } else {
+                    $('.neworder').show(); 
+                    zeroCount++;
+                }
+               
+                if (response.couponCount.length === 0) {
+                    $('.coupon').hide();
+                } else {
+                    $('.coupon').show(); 
+                    zeroCount++;
+                }
+
+                if (response.slideCount.length === 0) {
+                    $('.promotion').hide();
+                } else {
+                    $('.promotion').show(); 
+                    zeroCount++;
+                }
+                
+                if (response.contactCount === 0) {
+                    $('.contact').hide();
+                } else {
+                    $('.contact').show(); 
+                    zeroCount++;
+                }
+
+                if (zeroCount === 0) {
+                    $('#noti-alert').text('Không có thông báo mới');
+                } else {
+                    $('#notification-count').text(zeroCount);
+                }
+            };
+
+            source.onerror = function(err) {
+                console.error('SSE connection failed or was closed:', err);
+            };
+        } else {
+            console.warn('Your browser does not support Server-Sent Events.');
+        }
+    });
 
     function updateTimeAgo(timestamp, id) {
         const element = document.getElementById(id);

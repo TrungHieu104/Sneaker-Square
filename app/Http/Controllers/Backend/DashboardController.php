@@ -44,9 +44,9 @@ class DashboardController extends Controller
         
         $datatAccountCount = [];
         $dailyDataAccount = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$sub7days, $now])
-        ->orderBy('created_at','ASC')->select(
+        ->select(
             DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
-        )->groupBy('date')->orderBy('date')->get();
+        )->groupBy('date')->orderBy('date', 'ASC')->get();
 
         $datatAccountCount['date'] = $dailyDataAccount->pluck('date')->map(function ($date) {
             return date('d/m/Y', strtotime($date));
@@ -250,19 +250,19 @@ class DashboardController extends Controller
 
         if($data == '7days') {
             $dataRes = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$data7days, $now])
-            ->orderBy('created_at','ASC')->select(
+            ->select(
                 DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
-            )->groupBy('date')->orderBy('date')->get();
+            )->groupBy('date')->orderBy('date', 'ASC')->get();
         } elseif($data == 'lmonth') {
             $dataRes = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$startMonth,$endMonth])
-            ->orderBy('created_at','ASC')->select(
+            ->select(
                 DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
-            )->groupBy('date')->orderBy('date')->get();
+            )->groupBy('date')->orderBy('date', 'ASC')->get();
         } elseif($data == 'tmonth') {
             $dataRes = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$thisMonth,$now])
-            ->orderBy('created_at','ASC')->select(
+            ->select(
                 DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
-            )->groupBy('date')->orderBy('date')->get();
+            )->groupBy('date')->orderBy('date', 'ASC')->get();
         }
 
         $dataResNew = [];
@@ -330,68 +330,99 @@ class DashboardController extends Controller
         return Excel::download(new ExportStatisticYear() , 'Doanh thu năm.xlsx');
     }
 
-    public function checkNewOrders(Request $request)
+    public function sseNotifications(Request $request)
     {
-        $today = Carbon::today();
-        $prevday = Carbon::today()->subDay();
-        $newOrderCount = OrderModel::where('order_status', 0)
-            ->where(function ($query) {
-                $query->where('order_payment', 'cod')
-                    ->where('order_payment_status', 0)
-                    ->orWhere(function ($query) {
-                        $query->whereIn('order_payment', ['payUrl', 'redirect'])
-                            ->where('order_payment_status', 1);
-                    });
-                })->count();
-        $returnOrderCount = OrderModel::where('order_status', 3)
-            ->where(function ($query) {
-                $query->where('order_payment', 'cod')
-                    ->where('order_payment_status', 0)
-                    ->orWhere(function ($query) {
-                        $query->whereIn('order_payment', ['payUrl', 'redirect'])
-                            ->where('order_payment_status', 1);
-                });
-            })->count();
-        $sucessOrderCount = OrderModel::where('order_status', 10)->whereDate('updated_at', $today)
-            ->where(function ($query) {
-                $query->where('order_payment', 'cod')
-                    ->where('order_payment_status', 0)
-                    ->orWhere(function ($query) {
-                        $query->whereIn('order_payment', ['payUrl', 'redirect'])
-                            ->where('order_payment_status', 1);
-                });
-            })->count();
-        $couponCount = CouponModel::where('coupon_end','=',$prevday)->pluck('coupon_name')->toArray();
-        $slideCount = PromotionModel::where('promotion_end','=',$prevday)->pluck('promotion_name')->toArray();
-        $contactCount = ContactFormModel::where('status',0)->count();
+        $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () {
+            // Detect if running on single-threaded php built-in server (cli-server)
+            $isBuiltInServer = (php_sapi_name() === 'cli-server');
+            $maxIterations = $isBuiltInServer ? 1 : 10;
 
-        $latestOrder = OrderModel::where('order_status', 0)->latest('created_at')->first();
-        $latestReturnOrder = OrderModel::where('order_status', 3)->latest('updated_at')->first();
-        $latestSuccessOrder = OrderModel::where('order_status', 10)->latest('updated_at')->first();
-        $latestContact = ContactFormModel::where('status', 0)->latest('created_at')->first();
-        $latestSlide = PromotionModel::where('promotion_end','=',$prevday)->latest('updated_at')->first();
-        $latestCoupon = CouponModel::where('coupon_end','=',$prevday)->latest('updated_at')->first();
+            // Set retry interval for browser reconnection to 3 seconds
+            echo "retry: 3000\n\n";
 
-        $timestampOrder = $latestOrder ? $latestOrder->created_at->timestamp : now()->timestamp;
-        $timestampReturnOrder = $latestReturnOrder ? $latestReturnOrder->updated_at->timestamp : now()->timestamp;
-        $timestampSuccessOrder = $latestSuccessOrder ? $latestSuccessOrder->updated_at->timestamp : now()->timestamp;
-        $timestampContact = $latestContact ? $latestContact->created_at->timestamp : now()->timestamp;
-        $timestampSlide = $latestSlide ? $latestSlide->updated_at->timestamp : now()->timestamp;
-        $timestampCoupon = $latestCoupon ? $latestCoupon->updated_at->timestamp : now()->timestamp;
+            for ($i = 0; $i < $maxIterations; $i++) {
+                if (connection_aborted()) {
+                    break;
+                }
 
-        return response()->json(['newOrderCount' => $newOrderCount,
-            'contactCount' => $contactCount,
-            'returnOrderCount' => $returnOrderCount, 
-            'sucessOrderCount' => $sucessOrderCount,
-            'couponCount' => $couponCount, 
-            'slideCount' => $slideCount,
-            'timestampOrder' => $timestampOrder,
-            'timestampReturnOrder' => $timestampReturnOrder,
-            'timestampSuccessOrder' => $timestampSuccessOrder,
-            'timestampContact' => $timestampContact,
-            'timestampSlide' => $timestampSlide,
-            'timestampCoupon' => $timestampCoupon,
-        ]);
+                $today = Carbon::today();
+                $prevday = Carbon::today()->subDay();
+                $newOrderCount = OrderModel::where('order_status', 0)
+                    ->where(function ($query) {
+                        $query->where('order_payment', 'cod')
+                            ->where('order_payment_status', 0)
+                            ->orWhere(function ($query) {
+                                $query->whereIn('order_payment', ['payUrl', 'redirect'])
+                                    ->where('order_payment_status', 1);
+                            });
+                        })->count();
+                $returnOrderCount = OrderModel::where('order_status', 3)
+                    ->where(function ($query) {
+                        $query->where('order_payment', 'cod')
+                            ->where('order_payment_status', 0)
+                            ->orWhere(function ($query) {
+                                $query->whereIn('order_payment', ['payUrl', 'redirect'])
+                                    ->where('order_payment_status', 1);
+                        });
+                    })->count();
+                $sucessOrderCount = OrderModel::where('order_status', 10)->whereDate('updated_at', $today)
+                    ->where(function ($query) {
+                        $query->where('order_payment', 'cod')
+                            ->where('order_payment_status', 0)
+                            ->orWhere(function ($query) {
+                                $query->whereIn('order_payment', ['payUrl', 'redirect'])
+                                    ->where('order_payment_status', 1);
+                        });
+                    })->count();
+                $couponCount = CouponModel::where('coupon_end','=',$prevday)->pluck('coupon_name')->toArray();
+                $slideCount = PromotionModel::where('promotion_end','=',$prevday)->pluck('promotion_name')->toArray();
+                $contactCount = ContactFormModel::where('status',0)->count();
+
+                $latestOrder = OrderModel::where('order_status', 0)->latest('created_at')->first();
+                $latestReturnOrder = OrderModel::where('order_status', 3)->latest('updated_at')->first();
+                $latestSuccessOrder = OrderModel::where('order_status', 10)->latest('updated_at')->first();
+                $latestContact = ContactFormModel::where('status', 0)->latest('created_at')->first();
+                $latestSlide = PromotionModel::where('promotion_end','=',$prevday)->latest('updated_at')->first();
+                $latestCoupon = CouponModel::where('coupon_end','=',$prevday)->latest('updated_at')->first();
+
+                $timestampOrder = $latestOrder ? $latestOrder->created_at->timestamp : now()->timestamp;
+                $timestampReturnOrder = $latestReturnOrder ? $latestReturnOrder->updated_at->timestamp : now()->timestamp;
+                $timestampSuccessOrder = $latestSuccessOrder ? $latestSuccessOrder->updated_at->timestamp : now()->timestamp;
+                $timestampContact = $latestContact ? $latestContact->created_at->timestamp : now()->timestamp;
+                $timestampSlide = $latestSlide ? $latestSlide->updated_at->timestamp : now()->timestamp;
+                $timestampCoupon = $latestCoupon ? $latestCoupon->updated_at->timestamp : now()->timestamp;
+
+                $data = [
+                    'newOrderCount' => $newOrderCount,
+                    'contactCount' => $contactCount,
+                    'returnOrderCount' => $returnOrderCount, 
+                    'sucessOrderCount' => $sucessOrderCount,
+                    'couponCount' => $couponCount, 
+                    'slideCount' => $slideCount,
+                    'timestampOrder' => $timestampOrder,
+                    'timestampReturnOrder' => $timestampReturnOrder,
+                    'timestampSuccessOrder' => $timestampSuccessOrder,
+                    'timestampContact' => $timestampContact,
+                    'timestampSlide' => $timestampSlide,
+                    'timestampCoupon' => $timestampCoupon,
+                ];
+
+                echo "data: " . json_encode($data) . "\n\n";
+                ob_flush();
+                flush();
+
+                if ($maxIterations > 1) {
+                    sleep(2);
+                }
+            }
+        });
+
+        $response->headers->set('Content-Type', 'text/event-stream');
+        $response->headers->set('Cache-Control', 'no-cache');
+        $response->headers->set('Connection', 'keep-alive');
+        $response->headers->set('X-Accel-Buffering', 'no');
+
+        return $response;
     }
 
     public function revenue(Request $request)
