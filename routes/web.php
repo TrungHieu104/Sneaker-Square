@@ -150,6 +150,10 @@ Route::group(['middleware' => 'web'], function () {
     Route::get('auth/google', [LoginGoogle::class, 'redirectToGoogle'])->name('login_google');
     Route::get('auth/google/callback', [LoginGoogle::class, 'handleGoogleCallback']);
 
+    // Login Facebook
+    Route::get('auth/facebook', [LoginFB::class, 'redirectToFacebook'])->name('login_facebook');
+    Route::get('auth/facebook/callback', [LoginFB::class, 'handleFacebookCallback']);
+
     // Sign up
     Route::get('/dang-ky', [AuthUserController::class, 'register'])->name('user.register');
     Route::post('/dang-ky', [AuthUserController::class, 'registerPost'])->name('user.register_post');
