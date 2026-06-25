@@ -98,3 +98,12 @@ local browsing but required for the related features:
 ## License
 
 Released for educational purposes (HCMUTE specialized essay course).
+
+
+test VN pay 
+
+Ngân hàng: NCB
+Số thẻ: 9704198526191432198
+Tên chủ thẻ: NGUYEN VAN A
+Ngày phát hành: 07/15
+Mã OTP: 123456
