@@ -105,7 +105,7 @@ class ProductAdminController extends Controller
                 'products_quantity.color_id',
                 'color.color_vn',
             )
-            ->orderBy('products_quantity.quantity', 'asc'), $keyword, $searchStock)
+            ->orderBy('total_quantity', 'asc'), $keyword, $searchStock)
             ->get();
         return view('backend.pages.statistical.products', compact('statistical', 'orderBy', 'orderType', 'stock'));
     }
