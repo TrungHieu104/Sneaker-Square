@@ -76,7 +76,7 @@
                 @can('Quản trị Sản phẩm (Bình luận)')
                 <li class="menu-item {{ ((url()->current() == route('comment.index')) || (url()->current() == route('comment.trashed'))) ? 'active' : ''}}">
                     <a href="{{route('comment.index')}}" class="menu-link">
-                        <div data-i18n="Account">Bình luận</div>
+                        <div data-i18n="Account">Đánh giá</div>
                     </a>
                 </li>
                 @endcan

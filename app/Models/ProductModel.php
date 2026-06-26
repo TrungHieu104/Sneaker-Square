@@ -68,4 +68,16 @@ class ProductModel extends Model
     public function soldProduct() {
         return $this->belongsTo(OrderDetail::class, 'pro_id', 'pro_id');
     }
+
+    public function getAverageRating() {
+        $comments = $this->getComments()->where('comment_hidden', 1)->get();
+        if ($comments->isEmpty()) {
+            return 0;
+        }
+        return round($comments->avg('rating'), 1);
+    }
+
+    public function getReviewCount() {
+        return $this->getComments()->where('comment_hidden', 1)->count();
+    }
 }

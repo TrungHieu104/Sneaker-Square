@@ -107,3 +107,12 @@ Số thẻ: 9704198526191432198
 Tên chủ thẻ: NGUYEN VAN A
 Ngày phát hành: 07/15
 Mã OTP: 123456
+
+
+
+Ngân hàng: NCB 
+Số thẻ: 9704198526191432198
+Tên chủ thẻ: NGUYEN VAN A
+Ngày phát hành: 07/15 
+Mã OTP: 000000
+sdt: 0912345678

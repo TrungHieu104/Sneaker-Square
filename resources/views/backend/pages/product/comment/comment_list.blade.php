@@ -1,15 +1,15 @@
 @extends('backend.index')
 
 @section('title')
-    Danh sách bình luận
+    Danh sách đánh giá
 @endsection
 
 @section('content')
-    <h4 class="fw-bold py-3 mb-3"><span class="text-muted fw-light">Sản phẩm /</span> Bình luận</h4>
+    <h4 class="fw-bold py-3 mb-3"><span class="text-muted fw-light">Sản phẩm /</span> Đánh giá</h4>
     <!-- Bordered Table -->
     <div class="card mb-4 card-border-top">
         <div class="d-flex justify-content-between align-items-center">
-            <h5 class="card-header">Quản lý bình luận</h5>
+            <h5 class="card-header">Quản lý đánh giá</h5>
             <div class="px-4">
                 <a href="{{ route('comment.trashed') }}" class="btn btn-danger" title="Thùng rác">Thùng rác &nbsp;<i class='bx bxs-trash'></i></a> 
             </div>
@@ -25,6 +25,7 @@
                                     Nội dung
                                 </a>
                             </th>
+                            <th class="text-center align-middle" style="min-width: 100px;">Số sao</th>
                             <th class="text-center align-middle" style="min-width: 120px;">Thời gian</th>
                             <th class="text-center align-middle" style="min-width: 130px;">
                                 <a class="tab-sort" href="?sort-by=pro_id&sort-type={{ $orderBy === 'pro_id' ? $orderType : 'desc' }}">
@@ -40,8 +41,8 @@
                     <tbody>
                         @if($allComments->isEmpty())
                             <tr>
-                                <td colspan="7" class="text-center">
-                                    Không có bình luận.
+                                <td colspan="9" class="text-center">
+                                    Không có đánh giá.
                                 </td>
                             </tr>
                         @else
@@ -56,6 +57,16 @@
 
                                     <td class="text-center text-wrap">
                                         {{ $comments->comment_content }}
+                                    </td>
+
+                                    <td class="text-center text-warning text-nowrap">
+                                        @for ($i = 1; $i <= 5; $i++)
+                                            @if ($i <= ($comments->rating ?? 5))
+                                                <i class="fas fa-star"></i>
+                                            @else
+                                                <i class="far fa-star"></i>
+                                            @endif
+                                        @endfor
                                     </td>
 
                                     <td class="text-center">
@@ -100,7 +111,7 @@
                                             <form class="d-inline" action="{{ route('comment.destroy', $comments->comment_id) }}" method="POST">
                                                 @csrf 
                                                 @method('DELETE')
-                                                <button type='submit' onclick="return confirm('Bạn muốn đưa bình luận này vào thùng rác?')"
+                                                <button type='submit' onclick="return confirm('Bạn muốn đưa đánh giá này vào thùng rác?')"
                                                         class="btn btn-danger btn-sm ms-1">
                                                 <i class="fas fa-trash"></i>
                                                 </button>

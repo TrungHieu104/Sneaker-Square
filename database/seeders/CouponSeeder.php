@@ -20,7 +20,7 @@ class CouponSeeder extends Seeder
             $couponValue = $coupon_condition === 1 ? round(rand(10000, 200000), -3) : rand(10, 50);; 
             $coupon_quantity = rand(1, 10);
             $coupon_used = 0;
-            $coupon_start = now()->addDays(rand(1, 30));
+            $coupon_start = now()->subDays(rand(1, 10));
             $coupon_end = $coupon_start->copy()->addDays(rand(1, 30));
 
             DB::table('coupon')->insert([
