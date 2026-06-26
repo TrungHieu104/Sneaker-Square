@@ -12,7 +12,7 @@ return [
      * to learn how to get this file. You can also pass the credentials as an array
      * instead of a file path.
      */
-    'service_account_credentials_json' => public_path('sneaker-square-aaad73a613ec.json'),
+    'service_account_credentials_json' => public_path('sneaker-square-500512-d95764d94f02.json'),
 
     /*
      * The amount of minutes the Google API responses will be cached.
