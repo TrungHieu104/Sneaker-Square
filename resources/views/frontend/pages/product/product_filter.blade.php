@@ -16,6 +16,33 @@
                         </h6>
                     </div>
                 </a>
+                @php
+                    $avgRating = $pro->getAverageRating();
+                    $reviewCount = $pro->getReviewCount();
+                @endphp
+                <div class="rating-box d-flex align-items-center justify-content-center gap-1 mb-2">
+                    @if ($reviewCount > 0)
+                        <div class="stars text-warning" style="font-size: 13px;">
+                            @for ($i = 1; $i <= 5; $i++)
+                                @if ($i <= round($avgRating))
+                                    <i class="fas fa-star"></i>
+                                @else
+                                    <i class="far fa-star"></i>
+                                @endif
+                            @endfor
+                        </div>
+                        <small class="text-muted" style="font-size: 11px;">({{ $avgRating }})</small>
+                    @else
+                        <div class="stars text-muted" style="font-size: 13px;">
+                            <i class="far fa-star"></i>
+                            <i class="far fa-star"></i>
+                            <i class="far fa-star"></i>
+                            <i class="far fa-star"></i>
+                            <i class="far fa-star"></i>
+                        </div>
+                        <small class="text-muted" style="font-size: 11px;">(0)</small>
+                    @endif
+                </div>
                 <div class="price d-flex gap-3 justify-content-center">
                     @if ($pro->pro_price_sale != 0)
                         <h6 class="price__product">

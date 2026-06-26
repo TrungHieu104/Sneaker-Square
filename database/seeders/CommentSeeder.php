@@ -19,7 +19,8 @@ class CommentSeeder extends Seeder
 
         DB::table('comments')->insert([
             [   
-                'comment_content' => 'Demo comment 1',
+                'comment_content' => 'Sản phẩm đi rất êm và ôm chân, rất đáng tiền!',
+                'rating' => 5,
                 'comment_hidden' => 1,
                 'comment_date' => Now(),
                 'pro_id' => 1,
@@ -31,19 +32,21 @@ class CommentSeeder extends Seeder
             ],
 
             [   
-                'comment_content' => 'Demo comment 2',
+                'comment_content' => 'Giày đẹp, giao hàng nhanh, chất lượng ổn áp.',
+                'rating' => 4,
                 'comment_hidden' => 1,
                 'comment_date' => Now(),
                 'pro_id' => 1,
                 'user_id' => NULL,
-                'comment_name' => NULL,
-                'comment_email' => NULL,
+                'comment_name' => 'Ẩn danh',
+                'comment_email' => 'anon@example.com',
                 'created_at' => Now(), 
                 'updated_at' => Now()
             ],
 
             [   
-                'comment_content' => 'Demo comment 3',
+                'comment_content' => 'Đôi giày tuyệt vời nhất mình từng mua. Đóng gói rất cẩn thận.',
+                'rating' => 5,
                 'comment_hidden' => 1,
                 'comment_date' => Now(),
                 'pro_id' => 1,

@@ -167,9 +167,19 @@ class ProductController extends Controller
             ->limit(5)
             ->get();
 
+        $hasPurchased = false;
+        if (Auth::check()) {
+            $hasPurchased = DB::table('order')
+                ->join('order_details', 'order.order_id', '=', 'order_details.order_id')
+                ->where('order.user_id', Auth::id())
+                ->where('order_details.pro_id', $proId)
+                ->where('order.order_status', 10)
+                ->exists();
+        }
+
         $likeStatus = LikeModel::where('pro_id', $proId)->where('user_id', Auth::id())->first();
 
-        return view('frontend.pages.product.product_detail', compact('detailProduct', 'getColor', 'getSize', 'relatedProduct', 'hotProduct', 'likeStatus'));
+        return view('frontend.pages.product.product_detail', compact('detailProduct', 'getColor', 'getSize', 'relatedProduct', 'hotProduct', 'likeStatus', 'hasPurchased'));
     }
 
     public function cart(Request $request)
