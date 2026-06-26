@@ -8985,6 +8985,7 @@ section#brand-area {
 .zoom {
     transform: scale(1);
     transition: .5s;
+    object-fit: cover;
 }
 
 .zoom:hover {
