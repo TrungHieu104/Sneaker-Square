@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use App\Models\UserModel;
 
 class UserSeeder extends Seeder
 {
@@ -15,17 +16,16 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('users')->insert([
+        UserModel::updateOrCreate(
+            ['email' => 'sneakersquare.demo@gmail.com'],
             [   
-                'name' => 'Tấn Duy',
+                'name' => 'Admin',
                 'username' => 'admin',
-                'email' => 'sneakersquare.demo@gmail.com',
                 'password' => Hash::make('SneakerSquare@#'), 
                 'user_role' => 1,
-                'created_at' => Now(), 
-                'updated_at' => Now()
-            ],
-        ]);
+            ]
+        );
+
 
         // $ho = ['Nguyễn', 'Trần', 'Hoàng', 'Lê', 'Tô', 'Bùi'];
         // $dem = ['Bảo', 'Trung', 'Ngọc', 'Minh', 'Thu', 'Hương'];

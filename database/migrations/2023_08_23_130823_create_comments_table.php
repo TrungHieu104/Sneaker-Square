@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('comments', function (Blueprint $table) {
             $table->id('comment_id');
             $table->text('comment_content');
-            $table->boolean('comment_hidden')->default(0);
+            $table->unsignedTinyInteger('rating')->default(5);
+            $table->boolean('comment_hidden')->default(1);
             $table->dateTime('comment_date', $precision = 0);
             $table->unsignedBigInteger('pro_id');
             $table->foreign('pro_id')->references('pro_id')->on('products')->onDelete('cascade')->onUpdate('cascade');

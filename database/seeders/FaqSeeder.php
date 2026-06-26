@@ -16,6 +16,7 @@ class FaqSeeder extends Seeder
         DB::table('faq')->insert([
             [
                 'faq_name' => 'Chính sách bảo hành và đổi trả',
+                'faq_description' => '',
                 'faq_content' => '<p style="text-align:left"><span style="font-family:roboto; font-size:16px"><span style="background-color:#ffffff"><span style="background-color:#ffffff"><span style="color:#081c36">Ch&iacute;nh s&aacute;ch bảo h&agrave;nh v&agrave; đổi trả của Sneaker Square được x&acirc;y dựng nhằm đảm bảo sự h&agrave;i l&ograve;ng của bạn v&agrave; tăng cường niềm tin v&agrave;o c&aacute;c sản phẩm. Dưới đ&acirc;y l&agrave; một số nguy&ecirc;n tắc chung trong ch&iacute;nh s&aacute;ch bảo h&agrave;nh v&agrave; đổi trả:</span></span></span></span></p>
 
                 <p style="text-align:left"><span style="font-family:roboto; font-size:16px"><strong><span style="background-color:#ffffff"><span style="background-color:#ffffff"><span style="color:#081c36">Bảo h&agrave;nh:</span></span></span></strong></span></p>
@@ -46,12 +47,13 @@ class FaqSeeder extends Seeder
                 'faq_slug' => 'chinh-sach-bao-hanh-va-doi-tra',
                 'faq_hidden' => 1,
                 'faq_about' => 0,
-                'faq_created_by' => 'Thuận',
+                'faq_created_by' => 'Admin',
                 'created_at' => Now(), 
                 'updated_at' => Now(),
             ],
             [
                 'faq_name' => 'Chính sách giao hàng',
+                'faq_description' => '',
                 'faq_content' => '<h4><span style="font-family:roboto; font-size:16px">1. QUY ĐỊNH THỜI GIAN GIAO NHẬN H&Agrave;NG</span></h4>
 
                 <p><span style="font-family:roboto; font-size:16px">Thời gian phục vụ giao h&agrave;ng: thứ 2 đến thứ 7 (trừ chủ nhật, ng&agrave;y lễ, tết).<br />
@@ -101,12 +103,13 @@ class FaqSeeder extends Seeder
                 'faq_slug' => 'chinh-sach-giao-hang',
                 'faq_hidden' => 1,
                 'faq_about' => 0,
-                'faq_created_by' => 'Thuận',
+                'faq_created_by' => 'Admin',
                 'created_at' => Now(), 
                 'updated_at' => Now(),
             ],
             [
                 'faq_name' => 'Chính sách bảo mật',
+                'faq_description' => '',
                 'faq_content' => '<p><span style="font-size:16px"><span style="font-family:roboto">Ch&iacute;nh s&aacute;ch bảo mật của Sneaker Square được x&acirc;y dựng nhằm đảm bảo sự h&agrave;i l&ograve;ng của bạn v&agrave; tăng cường niềm tin v&agrave;o Sneaker Square. Dưới đ&acirc;y l&agrave; một số nguy&ecirc;n tắc chung trong ch&iacute;nh s&aacute;ch bảo mật: </span></span></p>
 
                 <p><span style="font-size:16px"><span style="font-family:roboto"><strong>1. Website Sneaker Square thu thập th&ocirc;ng tin c&aacute; nh&acirc;n từ kh&aacute;ch h&agrave;ng th&ocirc;ng qua c&aacute;c phương thức sau: </strong></span></span></p>
@@ -188,12 +191,13 @@ class FaqSeeder extends Seeder
                 'faq_slug' => 'chinh-sach-bao-mat',
                 'faq_hidden' => 1,
                 'faq_about' => 0,
-                'faq_created_by' => 'Thuận',
+                'faq_created_by' => 'admin',
                 'created_at' => Now(), 
                 'updated_at' => Now(),
             ],
             [
                 'faq_name' => 'Chính sách thanh toán',
+                'faq_description' => '',
                 'faq_content' => '<p style="text-align:left"><span style="font-family:roboto; font-size:16px"><span style="background-color:#ffffff"><span style="background-color:#ffffff"><span style="color:#081c36">Để tăng t&iacute;nh linh hoạt v&agrave; thuận tiện cho kh&aacute;ch h&agrave;ng, Sneaker Square &aacute;p dụng c&aacute;c phương thức thanh to&aacute;n sau :</span></span></span></span></p>
 
                 <p style="text-align:left"><span style="font-family:roboto; font-size:16px"><span style="background-color:#ffffff"><span style="background-color:#ffffff"><span style="color:#081c36">Thanh to&aacute;n bằng tiền mặt khi nhận h&agrave;ng (COD - Cash on Delivery): Đ&acirc;y l&agrave; phương thức phổ biến trong việc mua sắm trực tuyến. Kh&aacute;ch h&agrave;ng c&oacute; thể thanh to&aacute;n tiền mặt ngay tại thời điểm giao h&agrave;ng.</span></span></span></span></p>
@@ -206,12 +210,13 @@ class FaqSeeder extends Seeder
                 'faq_slug' => 'chinh-sach-thanh-toan',
                 'faq_hidden' => 1,
                 'faq_about' => 0,
-                'faq_created_by' => 'Thuận',
+                'faq_created_by' => 'Admin',
                 'created_at' => Now(), 
                 'updated_at' => Now(),
             ],
             [
                 'faq_name' => 'Giới thiệu về Sneaker Square',
+                'faq_description' => '',
                 'faq_content' => '<p>Ch&agrave;o mừng bạn đến với <strong>Sneaker Square</strong> - một địa chỉ uy t&iacute;n v&agrave; tin cậy cho những người y&ecirc;u th&iacute;ch gi&agrave;y thể thao. Ch&uacute;ng t&ocirc;i tự h&agrave;o l&agrave; cửa h&agrave;ng chuy&ecirc;n cung cấp gi&agrave;y thể thao ch&iacute;nh h&atilde;ng từ c&aacute;c thương hiệu nổi tiếng tr&ecirc;n to&agrave;n thế giới. Tại <strong>Sneaker Square</strong>, ch&uacute;ng t&ocirc;i cam kết đem đến cho bạn những sản phẩm chất lượng, đa dạng về mẫu m&atilde;, v&agrave; lu&ocirc;n tu&acirc;n thủ nguy&ecirc;n tắc cung cấp h&agrave;ng h&oacute;a ch&iacute;nh h&atilde;ng.</p>
 
                 <p>Những điểm nổi bật tại Sneaker Square:</p>
@@ -238,7 +243,7 @@ class FaqSeeder extends Seeder
                 'faq_slug' => 've-chung-toi',
                 'faq_hidden' => 1,
                 'faq_about' => 1,
-                'faq_created_by' => 'Thuận',
+                'faq_created_by' => 'Admin',
                 'created_at' => Now(), 
                 'updated_at' => Now(),
             ],
