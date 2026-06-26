@@ -24,6 +24,7 @@ class CommentModel extends Model
         'user_id',
         'comment_name',
         'comment_email',
+        'rating',
     ];
     protected $attributes = [
         'comment_hidden' => 0,

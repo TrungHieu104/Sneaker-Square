@@ -975,8 +975,8 @@ class NewsSeeder extends Seeder
             ],
 
             [
-                'news_title' => 'BST hợp tác mới nhất của Supreme x Nike Courtposite Fall 2023',
-                'news_slug' => 'bst-hop-tac-moi-nhat-cua-supreme-x-nike-courtposite-fall-2023.html',
+                'news_title' => 'BST hợp tác mới nhất của Supreme x Nike Courtposite tháng 5, 2026',
+                'news_slug' => 'bst-hop-tac-moi-nhat-cua-supreme-x-nike-courtposite-thang-5-2026.html',
                 'news_summarize' => 'Được thực hiện dành riêng cho Supreme, đề nghị hợp tác mới nhất của Nike xuất hiện dưới dạng phiên bản mới của Courtposite. Supreme x Nike Courtposite được xây dựng dựa trên mô hình ra mắt vào đầu những năm 2000 và nổi tiếng với những người chơi quần vợt như Andre Agassi. ',
                 'news_content' => 'Có ba màu sắc, Supreme x Nike Courtposite có phần trên đúc Posite tổng hợp với cấu trúc bền kép chắc chắn. Chi tiết bao gồm lớp phủ ngón chân cao su, lưỡi lưới với các công nghệ logo hàn Supreme, logo đúc ở vùng eyestay và công nghệ hàn ở gót chân. Hoàn thiện thiết kế của giày là đế chân đồng thương hiệu, đế giữa bằng xốp và đế ngoài bằng cao su với chân TPU.',
                 'news_img' => 'backend/uploads/blog/bst-hop-tac-moi-nhat-cua-supreme-x-nike-courtposite-fall-2023.jpeg',
@@ -988,11 +988,11 @@ class NewsSeeder extends Seeder
             ],
 
             [
-                'news_title' => 'Nike ‘Ready Pack’ chính thức Ra Mắt vào tháng 8, 2023',
-                'news_slug' => 'nike-ready-pack-chinh-thuc-ra-mat-vao-thang-8-2023.html',
-                'news_summarize' => 'Mùa giải mới tại các giải đấu bóng đá hàng đầu thế giới sẽ chính thức khởi tranh vào đầu tháng 8, 2023. Để chuẩn bị cho mùa giải mới thì Nike đã giới thiệu bộ sưu tập giày đá bóng mới của mình với tên gọi Nike Ready Pack. Cùng tìm hiểu những thông tin chi tiết, thiết kế, màu sắc, công nghệ của những mẫu giày đá banh Nike trong bộ sưu tập này bên dưới nhé. ',
+                'news_title' => 'Nike ‘Ready Pack’ chính thức Ra Mắt vào tháng 5, 2026',
+                'news_slug' => 'nike-ready-pack-chinh-thuc-ra-mat-vao-thang-5-2026.html',
+                'news_summarize' => 'Mùa giải mới tại các giải đấu bóng đá hàng đầu thế giới sẽ chính thức khởi tranh vào đầu tháng 5, 2026. Để chuẩn bị cho mùa giải mới thì Nike đã giới thiệu bộ sưu tập giày đá bóng mới của mình với tên gọi Nike Ready Pack. Cùng tìm hiểu những thông tin chi tiết, thiết kế, màu sắc, công nghệ của những mẫu giày đá banh Nike trong bộ sưu tập này bên dưới nhé. ',
                 'news_content' => 'Giới thiệu Nike Ready Pack
-                    Bộ sưu tập giày đá bóng Nike Ready Pack chính thức được ra mắt vào 3/8/2023 để chuẩn bị cho mùa giải 2023/24. Gam màu chủ đạo được các nhà thiết kế Nike sử dụng để thiết kế pack màu này là Đỏ, Trắng và Đen (tiếng Anh: ‘Bright Crimson/Black/White‘). Theo giải thích của Nike thì gam màu quan trọng nhất trong bộ sưu tập này là màu đỏ. Màu đỏ sẽ cung cấp thêm năng lượng để các cầu thủ có thể sẵn sàng bắt đầu một mùa giải mới bùng nổ, nhiệt huyết hơn.
+                    Bộ sưu tập giày đá bóng Nike Ready Pack chính thức được ra mắt vào 3/5/2026 để chuẩn bị cho mùa giải 2025/26. Gam màu chủ đạo được các nhà thiết kế Nike sử dụng để thiết kế pack màu này là Đỏ, Trắng và Đen (tiếng Anh: ‘Bright Crimson/Black/White‘). Theo giải thích của Nike thì gam màu quan trọng nhất trong bộ sưu tập này là màu đỏ. Màu đỏ sẽ cung cấp thêm năng lượng để các cầu thủ có thể sẵn sàng bắt đầu một mùa giải mới bùng nổ, nhiệt huyết hơn.
                     Nike Phantom Luna có thiết kế và diện mạo khá giống với các dòng giày trước đây của Nike như Nike Magista Obra. Thiết kế cổ thun ôm chân khá cao với các vân nổi trên bề mặt là đặc trưng của mẫu giày bóng đá này. Như vậy ngoài các mẫu giày đá banh Nike Mercurial Superfly cổ cao thì giờ đây chúng ta sẽ có thêm Nike Phantom Luna cổ cao nữa.',
                 'news_img' => 'backend/uploads/blog/nike-ready-pack-chinh-thuc-ra-mat-vao-thang-8-2023.jpg',
                 'news_hot' => 0,

@@ -151,6 +151,13 @@
                                                 </div>
                                             @endif
                                             <p>x {{ $all_order_detail_data->quantity }}</p>
+                                            @if ($all_order_data->order_status == 10 && $pro)
+                                                <div class="mt-2">
+                                                    <a href="{{ route('product.detail', $pro->pro_slug) }}#review-section" class="btn btn-sm btn-outline-warning text-warning fw-bold px-3 py-1" style="font-size: 13px; border-color: #ffc107;">
+                                                        <i class="fas fa-star"></i> Đánh giá sản phẩm
+                                                    </a>
+                                                </div>
+                                            @endif
                                         </div>
                                         <div class="col-md-2 col-12 d-flex justify-content-end m-auto">
                                             <span class="total-text fs17px">
@@ -688,6 +695,13 @@
                                                 </div>
                                             @endif
                                             <p>x {{ $all_order_detail_data->quantity }}</p>
+                                            @if ($success_order_data->order_status == 10 && $pro)
+                                                <div class="mt-2">
+                                                    <a href="{{ route('product.detail', $pro->pro_slug) }}#review-section" class="btn btn-sm btn-outline-warning text-warning fw-bold px-3 py-1" style="font-size: 13px; border-color: #ffc107;">
+                                                        <i class="fas fa-star"></i> Đánh giá sản phẩm
+                                                    </a>
+                                                </div>
+                                            @endif
                                         </div>
                                         <div class="col-md-2 col-12 d-flex justify-content-end m-auto">
                                             <span class="total-text fs17px">
