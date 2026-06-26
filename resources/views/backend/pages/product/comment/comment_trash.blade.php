@@ -1,24 +1,24 @@
 @extends('backend.index')
 
 @section('title')
-    Bình luận | Thùng rác
+    Đánh giá | Thùng rác
 @endsection
 
 @section('content')
-    <h4 class="fw-bold py-3 mb-3"><span class="text-muted fw-light">Sản phẩm / Bình luận /</span> Thùng rác</h4>
+    <h4 class="fw-bold py-3 mb-3"><span class="text-muted fw-light">Sản phẩm / Đánh giá /</span> Thùng rác</h4>
     <!-- Bordered Table -->
     <div class="card mb-4 card-border-top">
         <div class="d-flex justify-content-between align-items-center">
-            <h5 class="card-header">Quản lý bình luận</h5>
+            <h5 class="card-header">Quản lý đánh giá</h5>
             <div class="px-4">
-                <a href="{{ route('comment.index') }}" class="btn mt-1 btn-warning" title="Bình luận"><i class='bx bx-arrow-back' ></i></a>
+                <a href="{{ route('comment.index') }}" class="btn mt-1 btn-warning" title="Đánh giá"><i class='bx bx-arrow-back' ></i></a>
             </div>
         </div> 
         <div class="card-body">
             @if($commentTrash->isNotEmpty())
                 <div class="d-flex mb-3 gap-3">
                     <a href="{{ route('comment.restore.all') }}" class="btn btn-success mt-1 mb-2" title="Khôi phục">Khôi phục tất cả &nbsp;<i class="fas fa-trash-restore"></i></a>
-                    <a href="{{ route('comment.delete.all') }}" class="btn btn-danger mt-1 mb-2" title="Xóa" onclick="return confirm('Bạn có chắc muốn xóa tất cả bình luận vĩnh viễn?')">Xóa tất cả &nbsp;<i class="fas fa-trash"></i></a>
+                    <a href="{{ route('comment.delete.all') }}" class="btn btn-danger mt-1 mb-2" title="Xóa" onclick="return confirm('Bạn có chắc muốn xóa tất cả đánh giá vĩnh viễn?')">Xóa tất cả &nbsp;<i class="fas fa-trash"></i></a>
                 </div>
             @endif
             <div class="table-responsive text-nowrap">
@@ -38,7 +38,7 @@
                         @if($commentTrash->isEmpty())
                             <tr>
                                 <td colspan="7" class="text-center">
-                                    Không có bình luận trong thùng rác.
+                                    Không có đánh giá trong thùng rác.
                                 </td>
                             </tr>
                         @else
@@ -93,7 +93,7 @@
                                             @endif
 
                                             <a href="{{route('comment.delete', $comments->comment_id)}}"
-                                                onclick="return confirm('Bạn có chắc muốn xóa bình luận này vĩnh viễn?')"
+                                                onclick="return confirm('Bạn có chắc muốn xóa đánh giá này vĩnh viễn?')"
                                                 class="btn btn-danger btn-sm ms-1"
                                                 title="Xóa">
                                                 <i class="fas fa-trash"></i>

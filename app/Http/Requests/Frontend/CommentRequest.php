@@ -25,19 +25,23 @@ class CommentRequest extends FormRequest
             'comment_content' => ['required', 'min:5'],
             'comment_name' => ['nullable', 'min:5', 'max:255'],
             'comment_email' => ['nullable', 'min:5', 'max:255', 'email', 'ends_with:@gmail.com'],
+            'rating' => ['required', 'integer', 'between:1,5'],
         ];
     }
 
     public function messages(){
         return [
-            'comment_content.required' => 'Vui lòng nhập nội dung bình luận!',
-            'comment_content.min' => 'Nội dung bình luận quá ngắn!',
+            'comment_content.required' => 'Vui lòng nhập nội dung đánh giá!',
+            'comment_content.min' => 'Nội dung đánh giá quá ngắn!',
             'comment_name.min' => 'Họ tên quá ngắn!',
             'comment_name.max' => 'Họ tên quá dài!',
             'comment_email.min' => 'Email quá ngắn!',
             'comment_email.max' => 'Email tên quá dài!',
             'comment_email.email' => 'Nhập email chưa đúng định dạng!',
             'comment_email.ends_with' => 'Email phải có đuôi là @gmail.com!',
+            'rating.required' => 'Vui lòng chọn số sao đánh giá!',
+            'rating.integer' => 'Số sao đánh giá phải là số nguyên!',
+            'rating.between' => 'Số sao đánh giá phải từ 1 đến 5!',
         ];
     }
 }

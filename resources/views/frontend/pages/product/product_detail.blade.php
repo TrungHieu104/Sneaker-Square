@@ -72,6 +72,24 @@
                         
                         <div class="product-detail_info mt-3">
                             <h2 class="fw-bold">{{ $detailProduct->pro_name }}</h2>
+                            @php
+                                $avgRating = $detailProduct->getAverageRating();
+                                $reviewCount = $detailProduct->getReviewCount();
+                            @endphp
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <div class="text-warning fs-5">
+                                    @for ($i = 1; $i <= 5; $i++)
+                                        @if ($i <= round($avgRating))
+                                            <i class="fas fa-star"></i>
+                                        @else
+                                            <i class="far fa-star"></i>
+                                        @endif
+                                    @endfor
+                                </div>
+                                <span class="fw-bold fs-6" style="color: #ffc107;">({{ $avgRating }}/5)</span>
+                                <span class="text-muted">|</span>
+                                <a href="#review-section" class="text-decoration-underline text-warning" onclick="showCommentTab()" style="font-weight: 500;">{{ $reviewCount }} đánh giá</a>
+                            </div>
                             <h6 class="fw-bold">SKU: <span class="fw-normal">{{ $detailProduct->pro_code }}</span></h6>
                         </div>
                         <div class="product-detail_price mt-4">
@@ -217,7 +235,7 @@
         <div class="container-fluid px-5">
             <div class="row">
                 <div class="col-lg-8 mb-3">
-                    <div class="box__shadow py-3">
+                    <div class="box__shadow py-3" id="review-section">
                         <div class="container">
                             <div class="row nav nav-pills justify-content-center gap-2">
                                 <li class="nav-item col-lg-3 col-md-6 col-sm-6">
@@ -226,8 +244,8 @@
                                         tả</a>
                                 </li>
                                 <li class="nav-item col-lg-3 col-md-6 col-sm-6">
-                                    <a class="w-100 btn btn-outline-primary tab-comment__detail" data-bs-toggle="pill" href="#tab-2">Bình
-                                        luận ({{ count($detailProduct->getComments->where('comment_hidden', 1)) }})</a>
+                                    <a class="w-100 btn btn-outline-primary tab-comment__detail" data-bs-toggle="pill" href="#tab-2">Đánh
+                                        giá ({{ $detailProduct->getReviewCount() }})</a>
                                 </li>
                             </div>
                         </div>
@@ -241,58 +259,59 @@
                             
                             <div id="tab-2" class="tab-pane fade show px-4">
                                 <div class="comment-form">
-                                    <h4>Bình luận</h4>
+                                    <h4>Đánh giá sản phẩm</h4>
                                     <div class="container-fluid px-0">
                                         @if (Auth::check())
-                                            <form action="{{ route('comments.store', $detailProduct->pro_id) }}" method="POST" id="form-comment">
-                                                @csrf {{ method_field('POST') }}
-                                                <div class="row">
-                                                    <div class="col-lg-6 mb-4 position-relative">
-                                                        <input type="text" class="form-control" placeholder="Họ tên" name="comment_name" id="comment_name"
-                                                            onfocus="this.placeholder=''" onblur="this.placeholder='Họ tên'" value="{{ Auth::guard('web')->user()->name }}" readonly>
-                                                        <small class="error-text position-absolute text-danger fst-italic"></small>
+                                            @if ($hasPurchased)
+                                                <form action="{{ route('comments.store', $detailProduct->pro_id) }}" method="POST" id="form-comment">
+                                                    @csrf {{ method_field('POST') }}
+                                                    <div class="star-rating fs-4 mb-3 d-flex align-items-center gap-1">
+                                                        <span class="me-2 fw-bold text-dark" style="font-size: 15px;">Đánh giá của bạn:</span>
+                                                        <input type="hidden" name="rating" id="selected-rating" value="5">
+                                                        <i class="fas fa-star interactive-star" data-value="1" style="cursor: pointer; color: #ffc107;"></i>
+                                                        <i class="fas fa-star interactive-star" data-value="2" style="cursor: pointer; color: #ffc107;"></i>
+                                                        <i class="fas fa-star interactive-star" data-value="3" style="cursor: pointer; color: #ffc107;"></i>
+                                                        <i class="fas fa-star interactive-star" data-value="4" style="cursor: pointer; color: #ffc107;"></i>
+                                                        <i class="fas fa-star interactive-star" data-value="5" style="cursor: pointer; color: #ffc107;"></i>
                                                     </div>
-                                                    <div class="col-lg-6 mb-4 position-relative">
-                                                        <input type="text" class="form-control" placeholder="Email" name="comment_email" id="comment_email"
-                                                            onfocus="this.placeholder=''" onblur="this.placeholder='Email'" value="{{ Auth::guard('web')->user()->email }}" readonly>
-                                                        <small class="error-text position-absolute text-danger fst-italic"></small>
-                                                    </div>
-                                                    <div class="col-lg-12 mb-4 position-relative">
-                                                        <textarea  id="comment_content" cols="" rows="2" class="form-control" name="comment_content" placeholder="Nội dung"
-                                                            onfocus="this.placeholder=''" onblur="this.placeholder='Nội dung'"></textarea>
-                                                        <small class="error-text position-absolute text-danger fst-italic"></small>
-                                                    </div>
-                                                </div>
-                                                <button type="submit" class="btn primary-btn submit_btn mt-2 px-5">Bình luận</button>
-                                            </form>
-                                        @else
-                                            <form action="{{ route('comments.store', $detailProduct->pro_id) }}" method="POST" id="form-comment">
-                                                @csrf {{ method_field('POST') }}
-                                                <div class="row">
-                                                    <div class="col-lg-6 mb-4 position-relative">
-                                                        <input type="text" class="form-control" placeholder="Họ tên" name="comment_name"
-                                                            onfocus="this.placeholder=''" onblur="this.placeholder='Họ tên'" id="comment_name">
-                                                        <small class="error-text position-absolute text-danger fst-italic"></small>
-                                                    </div>
-                                                    <div class="col-lg-6 mb-4 position-relative">
-                                                        <input type="text" class="form-control" placeholder="Email" name="comment_email" id="comment_email"
-                                                            onfocus="this.placeholder=''" onblur="this.placeholder='Email'">
-                                                        <small class="error-text position-absolute text-danger fst-italic"></small>
-                                                    </div>
-                                                    <div class="col-lg-12 mb-4 position-relative">
-                                                        <textarea cols="" rows="2" class="form-control" placeholder="Nội dung" name="comment_content"
-                                                            onfocus="this.placeholder=''" id="comment_content" onblur="this.placeholder='Nội dung'">{{ old('comment_content') }}</textarea>
+                                                    <div class="row">
+                                                        <div class="col-lg-6 mb-4 position-relative">
+                                                            <input type="text" class="form-control" placeholder="Họ tên" name="comment_name" id="comment_name"
+                                                                value="{{ Auth::user()->name }}" readonly>
                                                             <small class="error-text position-absolute text-danger fst-italic"></small>
+                                                        </div>
+                                                        <div class="col-lg-6 mb-4 position-relative">
+                                                            <input type="text" class="form-control" placeholder="Email" name="comment_email" id="comment_email"
+                                                                value="{{ Auth::user()->email }}" readonly>
+                                                            <small class="error-text position-absolute text-danger fst-italic"></small>
+                                                        </div>
+                                                        <div class="col-lg-12 mb-4 position-relative">
+                                                            <textarea id="comment_content" cols="" rows="3" class="form-control" name="comment_content" placeholder="Nội dung đánh giá (tối thiểu 5 ký tự)..."></textarea>
+                                                            <small class="error-text position-absolute text-danger fst-italic"></small>
+                                                        </div>
                                                     </div>
+                                                    <button type="submit" class="btn primary-btn submit_btn mt-2 px-5">Gửi Đánh Giá</button>
+                                                </form>
+                                            @else
+                                                <div class="alert alert-warning border-0 shadow-sm p-4 text-center rounded">
+                                                    <i class="fas fa-exclamation-triangle fs-2 text-warning mb-2"></i>
+                                                    <h5 class="fw-bold">Bạn chưa thể đánh giá sản phẩm này</h5>
+                                                    <p class="mb-0 text-muted">Chỉ khách hàng đã mua và nhận sản phẩm này thành công mới có thể gửi đánh giá.</p>
                                                 </div>
-                                                <button type="submit" class="btn primary-btn submit_btn mt-2 px-5">Bình luận</button>
-                                            </form>
+                                            @endif
+                                        @else
+                                            <div class="alert alert-info border-0 shadow-sm p-4 text-center rounded">
+                                                <i class="fas fa-info-circle fs-2 text-info mb-2"></i>
+                                                <h5 class="fw-bold">Đăng nhập để đánh giá</h5>
+                                                <p class="text-muted mb-3">Vui lòng đăng nhập tài khoản của bạn để gửi đánh giá sản phẩm.</p>
+                                                <a href="{{ route('user.login') }}" class="btn btn-primary px-4 py-2 fw-bold text-white">Đăng Nhập Ngay</a>
+                                            </div>
                                         @endif
                                     </div>
                                 </div>
 
                                 <div class="comments-area">
-                                    <h4> {{ count($detailProduct->getComments->where('comment_hidden', 1)) }} bình luận</h4>
+                                    <h4> {{ $detailProduct->getReviewCount() }} đánh giá</h4>
                                     @foreach ($detailProduct->getComments->where('comment_hidden', 1)->sortByDesc('comment_date') as $comment)
                                         <div class="comment-list">
                                             <div class="single-comment justify-content-between d-flex">
@@ -309,6 +328,15 @@
                                                                 @endif
                                                             </a>
                                                         </h5>
+                                                        <div class="rating-stars mb-2" style="color: #ffc107;">
+                                                            @for ($i = 1; $i <= 5; $i++)
+                                                                @if ($i <= ($comment->rating ?? 5))
+                                                                    <i class="fas fa-star"></i>
+                                                                @else
+                                                                    <i class="far fa-star"></i>
+                                                                @endif
+                                                            @endfor
+                                                        </div>
                                                         <p class="date">
                                                             {{ date('d-m-Y', strtotime($comment->comment_date)) }} lúc
                                                             {{ date('H:i', strtotime($comment->comment_date)) }}
@@ -485,7 +513,52 @@
             if (currentTab) {
                 $('.nav-pills a[href="#' + currentTab + '"]').tab('show');
             }
+
+            // Interactive star rating selection
+            $('.interactive-star').on('click', function() {
+                var val = $(this).data('value');
+                $('#selected-rating').val(val);
+                $('.interactive-star').each(function() {
+                    if ($(this).data('value') <= val) {
+                        $(this).removeClass('far').addClass('fas');
+                    } else {
+                        $(this).removeClass('fas').addClass('far');
+                    }
+                });
+            });
+
+            $('.interactive-star').on('mouseenter', function() {
+                var val = $(this).data('value');
+                $('.interactive-star').each(function() {
+                    if ($(this).data('value') <= val) {
+                        $(this).removeClass('far').addClass('fas');
+                    } else {
+                        $(this).removeClass('fas').addClass('far');
+                    }
+                });
+            }).on('mouseleave', function() {
+                var val = $('#selected-rating').val();
+                $('.interactive-star').each(function() {
+                    if ($(this).data('value') <= val) {
+                        $(this).removeClass('far').addClass('fas');
+                    } else {
+                        $(this).removeClass('fas').addClass('far');
+                    }
+                });
+            });
+
+            // Automatically scroll to review tab if URL has hash
+            if (window.location.hash === '#review-section' || window.location.hash === '#tab-2') {
+                showCommentTab();
+                $('html, body').animate({
+                    scrollTop: $("#review-section").offset().top - 100
+                }, 500);
+            }
         });
+
+        function showCommentTab() {
+            $('.nav-pills a[href="#tab-2"]').tab('show');
+        }
     </script>
     <script src="{{ asset('frontend/js/validate_comment.js') }}"></script>
 @endpush

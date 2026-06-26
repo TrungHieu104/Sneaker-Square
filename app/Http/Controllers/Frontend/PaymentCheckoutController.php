@@ -68,10 +68,28 @@ class PaymentCheckoutController extends Controller
             );
             $result = $this->execPostRequest($endpoint, json_encode($data));
             $jsonResult = json_decode($result, true); // decode json
+
+            if (!isset($jsonResult['payUrl'])) {
+                $errorMsg = isset($jsonResult['message']) ? $jsonResult['message'] : 'Không thể khởi tạo thanh toán MoMo.';
+                if (isset($jsonResult['subErrors']) && is_array($jsonResult['subErrors'])) {
+                    $errorDetails = [];
+                    foreach ($jsonResult['subErrors'] as $subError) {
+                        $errorDetails[] = $subError['field'] . ': ' . $subError['message'];
+                    }
+                    $errorMsg .= ' (' . implode(', ', $errorDetails) . ')';
+                }
+                return redirect()->back()
+                    ->with('message', 'Lỗi thanh toán MoMo')
+                    ->with('text', $errorMsg)
+                    ->with('iconMessage', 'error');
+            }
+
             //save URL payment before return url
             $order = Order::where('order_code', $orderId)->first();
-            $order->order_payment_url = $jsonResult['payUrl'];
-            $order->save();
+            if ($order) {
+                $order->order_payment_url = $jsonResult['payUrl'];
+                $order->save();
+            }
             return redirect()->to($jsonResult['payUrl']);
         } else if (isset($_POST['redirect'])) {
             $vnp_Url = config('services.vnpay.url');
