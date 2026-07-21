@@ -86,7 +86,7 @@
                         </aside>
                         <aside class="single_sidebar_widget author_widget">
                             <div class="avatar_author mx-auto">
-                                <img src="{{asset($detailNews->getUser->user_img)}}" 
+                                <img src="{{asset(optional($detailNews->getUser)->user_img ?? '')}}" 
                                 onerror="this.src='/frontend/img/author_2.jpg'"
                                 alt="" class="w-100 h-100 rounded-circle object-fit-fill">
                             </div>

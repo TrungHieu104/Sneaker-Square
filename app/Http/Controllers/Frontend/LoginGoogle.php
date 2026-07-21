@@ -92,14 +92,19 @@ class LoginGoogle extends Controller
                 ->with('message','Tài khoản Google đã tồn tại');
             }
             elseif($findUser){
+                // Chỉ cập nhật tên, không ghi đè ảnh user đã tự đổi
+                $findUser->name = $user->name;
+                $findUser->save();
+
                 Auth::login($findUser);
                 return redirect()->intended(route('home.page'));
             }else{
                 $newUser = UserModel::create([
-                    'name' => $user->name,
-                    'email' => $user->email,
+                    'name'      => $user->name,
+                    'email'     => $user->email,
                     'google_id' => $user->id,
-                    'password' => Hash::make('SneakerSquare@#')
+                    'user_img'  => $user->avatar,   // ← lưu avatar
+                    'password'  => Hash::make('SneakerSquare@#')
                 ]);
                 Auth::login($newUser);
                 return redirect()->intended(route('home.page'));

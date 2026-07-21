@@ -71,7 +71,7 @@ class LoginFB extends Controller
     
     public function redirectToFacebook()
     {
-        return Socialite::driver('facebook')->redirect();
+        return Socialite::driver('facebook')->stateless()->redirect();
     }
 
     /**
@@ -82,7 +82,7 @@ class LoginFB extends Controller
     public function handleFacebookCallback()
     {
         try {
-            $user = Socialite::driver('facebook')->user();
+            $user = Socialite::driver('facebook')->stateless()->user();
             
             // Check if there is an existing account with the same email but no facebook_id
             $duplicateEmails = UserModel::where('email', $user->email)->whereNull('facebook_id')->first();
@@ -94,8 +94,7 @@ class LoginFB extends Controller
 
             $finduser = UserModel::where('facebook_id', $user->id)->first();
             if ($finduser) {
-                // Update avatar and name if changed on Facebook
-                $finduser->user_img = $user->avatar;
+                // Chỉ cập nhật tên, không ghi đè ảnh user đã tự đổi
                 $finduser->name = $user->name;
                 $finduser->save();
 
@@ -113,7 +112,12 @@ class LoginFB extends Controller
                 return redirect()->intended(route('home.page'));
             }
         } catch (Exception $e) {
-            dd($e->getMessage());
+            dd([
+                'class'   => get_class($e),
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
         }
     }
 }
