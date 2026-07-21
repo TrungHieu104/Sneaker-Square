@@ -361,6 +361,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     Route::post('/status/{id}', [CateSlideAdminController::class, 'status'])->name('cate_slide.status');
 
     // Menu
+    Route::post('/menus/update-positions', [MenusAdminController::class, 'updatePositions'])->name('menu.updatePositions')->middleware('permission:Quản trị Menu');
     Route::resource('menus', (MenusAdminController::class))->middleware('permission:Quản trị Menu');
     Route::get('/menu/trashed', [MenusAdminController::class, 'trashed'])->name('menu.trashed')->middleware('permission:Quản trị Menu');
     Route::delete('/menus/soft-delete/{id}', [MenusAdminController::class, 'softDelete'])->name('menu.softDelete')->middleware('permission:Quản trị Menu');
