@@ -21,25 +21,25 @@ class MenusAdminController extends Controller
     }
     public function index(Request $request)
     {
-        $perpage = 15;
-        $orderBy = $request->input('sort-by', 'menu_id'); 
-        $orderType = $request->input('sort-type', 'asc');
+        $allMenus = MenuModel::orderBy('menu_parent_id', 'asc')
+            ->orderBy('menu_position', 'asc')
+            ->get();
 
+        $rootMenus = $allMenus->where('menu_parent_id', 0)->values();
+        $childrenByParent = $allMenus->where('menu_parent_id', '!=', 0)->groupBy('menu_parent_id');
 
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
+        return view('backend.pages.menus.menus_list', compact('rootMenus', 'childrenByParent'));
+    }
+
+    public function updatePositions(Request $request)
+    {
+        $positions = $request->input('positions', []);
+        foreach ($positions as $item) {
+            MenuModel::where('menu_id', $item['id'])->update([
+                'menu_position' => $item['position'],
+            ]);
         }
-        $keyword = $request->input('keyword');
-        $searchableFields = ['menu_name'];
-        
-        $menu = $this->performSearch(MenuModel::orderBy($orderBy, $orderType), $keyword, $searchableFields)
-        ->paginate($perpage)
-        ->withQueryString();
-
-        
-        return view('backend.pages.menus.menus_list', compact('menu','orderBy', 'orderType'));
+        return response()->json(['success' => true, 'message' => 'Cập nhật vị trí thành công']);
     }
 
     public function status(Request $request, $id)

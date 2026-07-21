@@ -22,9 +22,9 @@ class MenuUpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required',Rule::unique('menu', 'menu_name')->ignore( request()->id,'menu_id')],
-            'position' => ['required','min:0', 'max:100000000', 'numeric','integer',Rule::unique('menu', 'menu_position')->ignore( request()->id,'menu_id')],
-            'slug' => ['required']
+            'name'     => ['required', Rule::unique('menu', 'menu_name')->ignore($this->route('menu'), 'menu_id')],
+            'position' => ['required', 'min:0', 'max:100000000', 'numeric', 'integer'],
+            'slug'     => ['required'],
         ];
     }
     public function messages(){
