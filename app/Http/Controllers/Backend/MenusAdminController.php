@@ -78,17 +78,18 @@ class MenusAdminController extends Controller
     {
         $data = MenuModel::where('menu_hidden',1)->orderBy('menu_position','asc')->get();
         $menu = $this->menu_tree($data);
-        return view('backend.pages.menus.menus_create', compact('menu'));
+        $nextPosition = (MenuModel::max('menu_position') ?? 0) + 1;
+        return view('backend.pages.menus.menus_create', compact('menu', 'nextPosition'));
     }
 
     public function store(MenuRequest $request)
     {
-        $arr = $request->post();
-        $name = ($request->has('name'))? $arr['name']:"";
-        $slug = ($request->has('slug'))? $arr['slug']:"";
-        $parent_id = ($request->has('parent_id'))? $arr['parent_id']:"";
-        $position = ($request->has('position'))? $arr['position']:"";
-        $status = ($request->has('status'))? (int)$arr['status']:"0";
+        $name = $request->input('name', '');
+        $slug = $request->input('slug', '');
+        $parent_id = $request->input('parent_id') ?: 0;
+        $position = $request->filled('position') ? (int)$request->input('position') : ((MenuModel::max('menu_position') ?? 0) + 1);
+        $status = $request->has('status') ? (int)$request->input('status') : 1;
+
         $menu = new MenuModel;
         $menu->menu_name = $name;
         $menu->menu_link = $slug;
@@ -96,6 +97,7 @@ class MenusAdminController extends Controller
         $menu->menu_position = $position;
         $menu->menu_hidden = $status;
         $menu->save();
+
         Session::flash('iconMessage', 'success');
         return redirect('admin/menus')->with('message', 'Thêm thành công');
     }
@@ -129,24 +131,25 @@ class MenusAdminController extends Controller
      */
     public function update(MenuUpRequest $request, string $menu_id)
     {
-        $arr = $request->post();
-        $name = ($request->has('name'))? $arr['name']:"";
-        $slug = ($request->has('slug'))? $arr['slug']:"";
-        $parent_id = ($request->has('parent_id'))? $arr['parent_id']:"";
-        $position = ($request->has('position'))? $arr['position']:"";
-        $status = ($request->has('status'))? (int)$arr['status']:"0";
         $menu = MenuModel::find($menu_id);
-        if ($menu ==null) {
+        if ($menu == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            return redirect('admin/faq')->with('message', 'Không tồn tại menu');;
+            return redirect('admin/menus')->with('message', 'Không tồn tại menu');
         }
+        $name = $request->input('name', '');
+        $slug = $request->input('slug', '');
+        $parent_id = $request->input('parent_id') ?: 0;
+        $position = $request->filled('position') ? (int)$request->input('position') : ($menu->menu_position ?? 1);
+        $status = $request->has('status') ? (int)$request->input('status') : 0;
+
         $menu->menu_name = $name;
         $menu->menu_link = $slug;
         $menu->menu_parent_id = $parent_id;
         $menu->menu_position = $position;
         $menu->menu_hidden = $status;
         $menu->save();
+
         Session::flash('iconMessage', 'success');
         return redirect('admin/menus')->with('message', 'Chỉnh sửa thành công!');
     }

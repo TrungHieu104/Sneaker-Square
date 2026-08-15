@@ -23,7 +23,7 @@ class MenuRequest extends FormRequest
     {
         return [
             'name' => ['required','unique:menu,menu_name'],
-            'position' => ['required','min:0', 'max:100000000', 'numeric','integer','unique:menu,menu_position'],
+            'position' => ['nullable', 'min:0', 'max:100000000', 'numeric', 'integer'],
             'slug' => ['required']
         ];
     }
