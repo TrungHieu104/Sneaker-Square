@@ -46,11 +46,12 @@
                 </div>
                 <div class="row">
                     <div class="col-lg-3 mb-3">
-                        <label for="title" class="form-label">Vị trí</label>
-                        <input type="number" class="form-control w-100" name="position" min=0 value="{{old('position')}}"/>
+                        <label for="title" class="form-label">Vị trí (STT)</label>
+                        <input type="number" class="form-control w-100" name="position" min="0" value="{{ old('position', $nextPosition ?? 1) }}" placeholder="Tự động ({{ $nextPosition ?? 1 }})"/>
+                        <small class="text-muted fst-italic">Tự động gợi ý STT tiếp theo (có thể để trống hoặc thay đổi).</small>
                         @if ($errors->has("position")) 
                             @foreach ($errors->get("position") as $error) 
-                                <small class="text-danger fst-italic">
+                                <small class="text-danger fst-italic d-block">
                                     {{ $error }}
                                 </small> 
                             @endforeach 

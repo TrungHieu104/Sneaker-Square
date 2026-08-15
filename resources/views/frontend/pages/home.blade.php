@@ -196,7 +196,7 @@
                 <div class="row">
                     @foreach ($catePro as $item)
                         <a class="col single-img" href="{{route('product.by.cate', $item->cate_slug)}}">
-                            <img class="img-fluid d-block mx-auto" src="{{asset($item->cate_img)}}" alt="{{$item->cate_name}}" width="108px" height="70px">
+                            <img class="img-fluid d-block mx-auto object-fit-contain" onerror="this.src='/uploads/img_error2.jpg'" src="{{asset($item->cate_img)}}" alt="{{$item->cate_name}}" width="108px" height="70px">
                         </a>
                     @endforeach
                 </div>

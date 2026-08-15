@@ -24,12 +24,15 @@
             <li class="nav-item navbar-dropdown dropdown-user dropdown me-4">
                 <a id="viewButton" href="#" class="fs-4 link-bell" data-bs-toggle="dropdown">
                     <i class="fas fa-bell"></i>
-                    <span id="notification-count" class="top-2 text-white fs-6 d-flex justify-content-center align-items-center notifi">0</span>
+                    <span id="notification-count" class="top-2 text-white fs-6 d-flex justify-content-center align-items-center notifi d-none">0</span>
                 </a>
                 <div class="dropdown-menu drop dropdown-menu-end mb-0 pb-0">
-                    <h5 class="p-3 pb-0 mb-0">Thông báo</h5>
+                    <div class="d-flex justify-content-between align-items-center p-3 pb-0 mb-0">
+                        <h5 class="mb-0">Thông báo</h5>
+                        <a href="javascript:void(0);" id="markAllRead" class="small text-primary text-decoration-none me-2">Đánh dấu đã đọc</a>
+                    </div>
                     <div class="row pb-2 align-items-center pt-2">
-                        <span class="text-center" id="noti-alert"></span>
+                        <span class="text-center text-muted small" id="noti-alert"></span>
                     </div>
                 @can('Quản trị Đơn hàng')
                     <a href="{{route('order.index')}}" class="tab-sort neworder">
@@ -222,6 +225,31 @@
     }
 
     $(document).ready(function() {
+        let latestTimestamps = {};
+
+        function markRead(type) {
+            if (latestTimestamps[type]) {
+                localStorage.setItem('noti_read_' + type, latestTimestamps[type]);
+            }
+        }
+
+        $(document).on('click', '.tab-sort', function() {
+            const classList = $(this).attr('class').split(' ');
+            const types = ['neworder', 'success', 'return', 'coupon', 'promotion', 'contact'];
+            types.forEach(type => {
+                if (classList.includes(type)) {
+                    markRead(type);
+                }
+            });
+        });
+
+        $(document).on('click', '#markAllRead', function(e) {
+            e.preventDefault();
+            const types = ['neworder', 'success', 'return', 'coupon', 'promotion', 'contact'];
+            types.forEach(type => markRead(type));
+            $('#notification-count').addClass('d-none').removeClass('d-flex');
+        });
+
         if (!!window.EventSource) {
             const source = new EventSource("{{ route('sse.noti') }}");
             
@@ -231,10 +259,19 @@
                 $('#newOrderCount').text(response.newOrderCount);
                 $('#returnOrderCount').text(response.returnOrderCount);
                 $('#sucessOrderCount').text(response.sucessOrderCount);
-                $('#couponCount').text(response.couponCount);
+                $('#couponCount').text(response.couponCount.length !== undefined ? response.couponCount.length : response.couponCount);
                 $('#contactCount').text(response.contactCount);
-                $('#slideCount').text(response.slideCount);
+                $('#slideCount').text(response.slideCount.length !== undefined ? response.slideCount.length : response.slideCount);
                 
+                latestTimestamps = {
+                    neworder: response.timestampOrder,
+                    return: response.timestampReturnOrder,
+                    success: response.timestampSuccessOrder,
+                    contact: response.timestampContact,
+                    promotion: response.timestampSlide,
+                    coupon: response.timestampCoupon,
+                };
+
                 const elementsToUpdate = {
                     timestampOrder: 'timeAgo',
                     timestampReturnOrder: 'timeReturnAgo',
@@ -252,54 +289,41 @@
                     }
                 }
 
-                let zeroCount = 0;
-                
-                if (response.returnOrderCount === 0) {
-                    $('.return').hide();
-                } else {
-                    $('.return').show(); 
-                    zeroCount++;
+                let unreadCount = 0;
+                let activeTypeCount = 0;
+
+                function processNoti(type, val, timestamp) {
+                    const hasData = Array.isArray(val) ? val.length > 0 : Boolean(val && val > 0);
+                    if (!hasData) {
+                        $('.' + type).hide();
+                        return;
+                    }
+                    $('.' + type).show();
+                    activeTypeCount++;
+
+                    const lastRead = parseInt(localStorage.getItem('noti_read_' + type) || '0');
+                    if (timestamp > lastRead) {
+                        unreadCount++;
+                    }
                 }
 
-                if (response.sucessOrderCount === 0) {
-                    $('.success').hide();
-                } else {
-                    $('.success').show(); 
-                    zeroCount++;
-                }
+                processNoti('return', response.returnOrderCount, response.timestampReturnOrder);
+                processNoti('success', response.sucessOrderCount, response.timestampSuccessOrder);
+                processNoti('neworder', response.newOrderCount, response.timestampOrder);
+                processNoti('coupon', response.couponCount, response.timestampCoupon);
+                processNoti('promotion', response.slideCount, response.timestampSlide);
+                processNoti('contact', response.contactCount, response.timestampContact);
 
-                if (response.newOrderCount === 0) {
-                    $('.neworder').hide();
-                } else {
-                    $('.neworder').show(); 
-                    zeroCount++;
-                }
-               
-                if (response.couponCount.length === 0) {
-                    $('.coupon').hide();
-                } else {
-                    $('.coupon').show(); 
-                    zeroCount++;
-                }
-
-                if (response.slideCount.length === 0) {
-                    $('.promotion').hide();
-                } else {
-                    $('.promotion').show(); 
-                    zeroCount++;
-                }
-                
-                if (response.contactCount === 0) {
-                    $('.contact').hide();
-                } else {
-                    $('.contact').show(); 
-                    zeroCount++;
-                }
-
-                if (zeroCount === 0) {
+                if (activeTypeCount === 0) {
                     $('#noti-alert').text('Không có thông báo mới');
                 } else {
-                    $('#notification-count').text(zeroCount);
+                    $('#noti-alert').text('');
+                }
+
+                if (unreadCount === 0) {
+                    $('#notification-count').addClass('d-none').removeClass('d-flex');
+                } else {
+                    $('#notification-count').text(unreadCount).removeClass('d-none').addClass('d-flex');
                 }
             };
 
