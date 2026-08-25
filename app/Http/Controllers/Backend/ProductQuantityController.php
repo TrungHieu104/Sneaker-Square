@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use App\Http\Requests\Backend\ProductQuantityRequest;
 use App\Http\Requests\Backend\ColorRequest;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -63,49 +62,25 @@ class ProductQuantityController extends Controller
     /**
      * Update color
      */
-    public function updateColor(Request $request, string $colorId) 
+    public function updateColor(ColorRequest $request, string $colorId)
     {
-        $input = $request->post();
         $color = Color::find($colorId);
-        $color_eng = ($request->has('color'))? $input['color']:"";
-        $color_vn = ($request->has('color_vn'))? mb_convert_case($input['color_vn'], MB_CASE_TITLE, "UTF-8"):"";
-        $rules = (new ColorRequest)->rules();
-        $messages = (new ColorRequest)->messages();
-        if (($color->color != $color_eng) && ($color->color_vn != $color_vn)){
-            $validation = Validator::make($input, $rules, $messages);
-            if ($validation->fails()) {
-                $request->session();
-                Session::flash('iconMessage', 'error');
-                return back()->with('message', 'Cập nhật màu sắc thất bại!');
-            }
-        } elseif ($color->color != $color_eng) {
-            $rule = [
-                'color' => 'required|unique:color',
-            ];
-            $validation = Validator::make($input, $rule, $messages);
-            $errors = $validation->errors();
-            if ($validation->fails()) {
-                $request->session();
-                Session::flash('iconMessage', 'error');
-                return back()->with('message', $errors->first());
-            }
-        } elseif ($color->color_vn != $color_vn) {
-            $rule = [
-                'color_vn' => 'required|unique:color',
-            ];
-            $validation = Validator::make($input, $rule, $messages);
-            $errors = $validation->errors();
-            if ($validation->fails()) {
-                $request->session();
-                Session::flash('iconMessage', 'error');
-                return back()->with('message', $errors->first());
-            }
+
+        if (! $color) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', 'Không tìm thấy màu này!');
         }
-        
-        $color->color = $color_eng;
-        $color->color_vn = $color_vn;
+
+        // ColorRequest has already checked both names and title-cased the
+        // Vietnamese one, which is why the branching that used to live here is
+        // gone.
+        $color->color = (string) $request->input('color');
+        $color->color_vn = (string) $request->input('color_vn');
         $color->save();
+
         Session::flash('iconMessage', 'success');
+
         return back()->with('message', 'Cập nhật màu sắc thành công!');
     }
 
@@ -127,33 +102,19 @@ class ProductQuantityController extends Controller
 
     /**
      * Store a newly created resource in storage.
+     *
+     * ProductQuantityRequest holds the rules for both kinds of product now;
+     * this method used to build them inline and run its own Validator.
      */
-    public function store(Request $request)
+    public function store(ProductQuantityRequest $request)
     {
         $input = $request->all();
         $pro_id = ($request->has('pro_id'))? $input['pro_id']:"";
         $quantity_date = ($request->has('quantity_date'))? $input['quantity_date']:"";
         $pro_type = ($request->has('pro_type'))? (int)$input['pro_type']:0;
 
-        $rule = (new ProductQuantityRequest)->rules();
-        $message = (new ProductQuantityRequest)->messages();
-
         $q = Quantity::where('pro_id', $pro_id)->first();
         if ($pro_type == 0) {
-            $rule += [
-                'quantityColorAndSize' => 'required',
-                'quantityColorAndSize.*' => 'gt:0'
-            ];
-            $message += [
-                'quantityColorAndSize.required' => 'Vui lòng nhập số lượng!',
-                'quantityColorAndSize.*' => 'Vui lòng nhập số lượng lớn hơn 0!',
-            ];
-            $validation = Validator::make($input, $rule, $message);
-            if ($validation->fails()) {
-                Session::flash('iconMessage', 'error');
-                return back()->with('message', 'Nhật hàng thất bại!')->withErrors($validation)->withInput();
-            }
-
             if (is_null($q)) {
                 if (isset($input['color_id']) && is_array($input['color_id']) && count($input['color_id']) > 0) {
                     $checkedColor = $request->input('color_id', []);
@@ -252,17 +213,6 @@ class ProductQuantityController extends Controller
         if ($pro_type == 1) {
             $quantity = ($request->has('quantityOthers'))? $input['quantityOthers']:"";
 
-            $rule += ['quantityOthers' => 'required|gt:0'];
-            $message += [
-                'quantityOthers.required' => 'Vui lòng nhập số lượng!',
-                'quantityOthers.gt' => 'Vui lòng nhập số lượng lớn hơn 0!'
-            ];
-            $validation = Validator::make($input, $rule, $message);
-            if ($validation->fails()) {
-                Session::flash('iconMessage', 'error');
-                return back()->with('message', 'Nhật hàng thất bại!')->withErrors($validation)->withInput();
-            }
-
             if (is_null($q)) {
                 $quan = new Quantity;
                 $quan->pro_id = $pro_id;
@@ -295,7 +245,9 @@ class ProductQuantityController extends Controller
             return redirect()->route('product.index')->with('message', 'Sản phẩm không tồn tại');
         }
 
-        $allQuantity = Quantity::where('pro_id', $proId)
+        // Each row prints the product, the size and the colour.
+        $allQuantity = Quantity::with(['getProducts', 'getSize', 'getColor'])
+                                ->where('pro_id', $proId)
                                 -> orderBy('quantity_date', 'desc')
                                 -> orderBy('color_id', 'asc')
                                 -> orderBy('size_id', 'asc')

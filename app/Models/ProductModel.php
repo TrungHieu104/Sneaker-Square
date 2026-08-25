@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -69,15 +70,55 @@ class ProductModel extends Model
         return $this->belongsTo(OrderDetail::class, 'pro_id', 'pro_id');
     }
 
-    public function getAverageRating() {
-        $comments = $this->getComments()->where('comment_hidden', 1)->get();
-        if ($comments->isEmpty()) {
-            return 0;
-        }
-        return round($comments->avg('rating'), 1);
+    /**
+     * Loads the rating figures alongside the products in one query.
+     *
+     * Without this, every product card on a listing page runs its own AVG and
+     * its own COUNT — the home page alone lists products in four separate
+     * blocks, so it was issuing dozens of round trips just to draw stars.
+     */
+    public function scopeWithRatingSummary(Builder $query): Builder
+    {
+        return $query
+            ->withAvg(
+                ['getComments as average_rating' => fn (Builder $comments) => $comments
+                    ->where('comment_hidden', 1)
+                    ->whereNotNull('rating')],
+                'rating'
+            )
+            ->withCount(
+                ['getComments as review_count' => fn (Builder $comments) => $comments
+                    ->where('comment_hidden', 1)]
+            );
     }
 
-    public function getReviewCount() {
+    /**
+     * Average star rating across visible reviews, rounded to one decimal.
+     *
+     * Reviews written before the `rating` column existed have no score and are
+     * excluded from the average. Returns 0.0 when nothing has been rated yet.
+     *
+     * Uses the figure withRatingSummary() already loaded when there is one, and
+     * only falls back to its own query for a product fetched without the scope.
+     */
+    public function getAverageRating(): float
+    {
+        $average = array_key_exists('average_rating', $this->getAttributes())
+            ? $this->getAttributes()['average_rating']
+            : $this->getComments()
+                ->where('comment_hidden', 1)
+                ->whereNotNull('rating')
+                ->avg('rating');
+
+        return round((float) $average, 1);
+    }
+
+    public function getReviewCount(): int
+    {
+        if (array_key_exists('review_count', $this->getAttributes())) {
+            return (int) $this->getAttributes()['review_count'];
+        }
+
         return $this->getComments()->where('comment_hidden', 1)->count();
     }
 }

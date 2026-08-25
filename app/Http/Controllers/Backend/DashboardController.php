@@ -11,6 +11,7 @@ use App\Models\ContactFormModel;
 use App\Models\ProductModel;
 use App\Models\PromotionModel;
 use App\Models\VisitorModel;
+use App\Services\DashboardStatisticsService;
 use Illuminate\Http\Request;
 use Spatie\Analytics\Period;
 use App\Models\StatisticModel;
@@ -56,111 +57,37 @@ class DashboardController extends Controller
         View::share(compact('keyword', 'dataTopBrowsers', 'dataTopReferrers', 'dataSystems', 'datatAccountCount'));
     }
 
-    public function index(Request $request)
+    /**
+     * The dashboard.
+     *
+     * Every figure comes from DashboardStatisticsService now. This method used
+     * to build them all itself: the rule for "an order that counts" appeared
+     * three times written out in full, and the seven-day revenue query was
+     * built twice in a row with the second assignment discarding the first.
+     */
+    public function index(Request $request, DashboardStatisticsService $stats)
     {
-        $totalOrder = OrderModel::where('order_status', 0)
-        ->where(function ($query) {
-            $query->where('order_payment', 'cod')
-                ->where('order_payment_status', 0)
-                ->orWhere(function ($query) {
-                    $query->whereIn('order_payment', ['payUrl', 'redirect'])
-                        ->where('order_payment_status', 1);
-                });
-            })->count();
-        $today = Carbon::today();
-        $totalOrderToday = OrderModel::where(function ($query) {
-            $query->where('order_payment', 'cod')
-                ->where('order_payment_status', 0)
-                ->orWhere(function ($query) {
-                    $query->whereIn('order_payment', ['payUrl', 'redirect'])
-                        ->where('order_payment_status', 1);
-                });
-            })
-            ->where('order_date',$today)->count();
-        $get = StatisticModel::orderBy('order_date', 'ASC')->get();
-        $revenue = StatisticModel::get();
-        $countVisitor = VisitorModel::all()->count();
+        $totalOrder = $stats->newOrderCount();
+        $totalOrderToday = $stats->todayOrderCount();
+        $revenue = $stats->allRevenueRows();
+        $countVisitor = $stats->totalVisitorCount();
+        $onlineVisitorCount = $stats->onlineVisitorCount();
+        $dataTotal = $stats->totals();
+        $dataOrder = $stats->ordersThisMonth();
+        $dataTotalCoupon = $stats->coupons();
+        $couponName = $dataTotalCoupon['couponPopular']?->coupon_code;
+        $chart_data = $stats->revenueChart();
 
-        // Online users counted by IP address.
-        $onlineVisitors = VisitorModel::where('visitor_date', '>=', now()->subMinutes(10))->get();
-        $onlineVisitorCount = $onlineVisitors->count();
-
-        // Visit statistics.
-        $dataVisitor = []; 
+        // Visits, from Google Analytics rather than our own tables.
+        $dataVisitor = [];
         $dataTotalVisitor = Analytics::fetchTotalVisitorsAndPageViews(Period::days(7))->sortBy('date');
-        $dataVisitor['date'] = $dataTotalVisitor->pluck('date')->map(function ($date){
-            return $date->format('d/m/Y');
-        });
+        $dataVisitor['date'] = $dataTotalVisitor->pluck('date')->map(fn ($date) => $date->format('d/m/Y'));
         $dataVisitor['activeUsers'] = $dataTotalVisitor->pluck('activeUsers');
         $dataVisitor['screenPageViews'] = $dataTotalVisitor->pluck('screenPageViews');
 
-        // Record counts per section.
-        $dataTotal = [];
-        $dataTotal['totalNews'] = NewsModel::all()->count();
-        $dataTotal['totalPro'] = ProductModel::all()->count();
-        $dataTotal['totalAccountUser'] = UserModel::where('user_role', 0)->get()->count();
-        $dataTotal['totalAccountAdmin'] = UserModel::where('user_role', 1)->get()->count();
-        $dataTotal['totalOrder'] = OrderModel::where(function ($query) {
-            $query->where('order_payment', 'cod')
-                ->where('order_payment_status', 0)
-                ->orWhere(function ($query) {
-                    $query->whereIn('order_payment', ['payUrl', 'redirect'])
-                        ->where('order_payment_status', 1);
-                });
-            })
-        ->count();
-        $dataTotal['totalCoupon'] = CouponModel::get()->count();
-
-        // Coupon statistics.
-        $dataTotalCoupon = [];
-        $dataTotalCoupon['totalCoupon'] = CouponModel::get()->count();
-        $dataTotalCoupon['stillValid'] = CouponModel::where('coupon_end','>=',$today)->count();
-        $dataTotalCoupon['expiredValid'] = CouponModel::where('coupon_end','<',$today)->count();
-        $dataTotalCoupon['couponPopular'] = CouponModel::orderBy('coupon_used', 'desc')->limit(1)->first();
-
-        if ($dataTotalCoupon['couponPopular']) {
-            $couponName = $dataTotalCoupon['couponPopular']->coupon_code;
-            // $couponName is available here if needed.
-        } else {
-            // Handle the case where no coupon was used.
-            $couponName = null;
-        }
-
-        // Order statistics.
-        $dataOrder = [];
-        $dataOrder['orderMonth'] = OrderModel::whereMonth('order_date', now()->startOfMonth())->count();
-        $dataOrder['revenueOrder'] = StatisticModel::whereMonth('order_date', now()->startOfMonth())->sum('sales');
-        $dataOrder['orderFail'] = OrderModel::where('order_status', 2)->whereMonth('order_date', now()->startOfMonth())->count();
-        $dataOrder['orderWaitDelivery'] = OrderModel::whereMonth('order_date', now()->startOfMonth())
-        ->where('order_status',0)->orwhere('order_status', 1)->where('order_delivery_status', 0)
-        ->where('order_status','!=', 2)
-        ->count();
-        $dataOrder['orderDelivering'] = OrderModel::where('order_status',1)->where('order_delivery_status', 1)
-        ->where('order_status','!=', 2)
-        ->whereMonth('order_date', now()->startOfMonth())->count();
-        $dataOrder['orderDelivered'] = OrderModel::where('order_status', 10)->whereMonth('order_date', now()->startOfMonth())->count();
-        
-        $sub7days = Carbon::now('Asia/Ho_Chi_minh')->subDays(7)->toDateString();
-        $data = StatisticModel::whereBetween('order_date', [$sub7days, $today])
-            ->orderBy('order_date', 'ASC')->get();
-
-        $sub7days = Carbon::now('Asia/Ho_Chi_minh')->subDays(7)->toDateString();
-        $data = StatisticModel::whereBetween('order_date', [$sub7days, $today])
-            ->orderBy('order_date', 'ASC')->get();
-
-        $chart_data = [];
-        foreach ($data as $key => $item) {
-            $chart_data[] = [
-                'period' => date('d/m/Y', strtotime($item->order_date)),
-                'total' => $item->total_order,
-                'sales' => $item->sales,
-                'profit' => $item->profit,
-            ];
-        }
-
-
-        return view('backend.pages.dashboard',compact('revenue','totalOrder', 'countVisitor', 'chart_data', 'totalOrderToday',
-            'dataTotal', 'dataVisitor', 'onlineVisitorCount', 'dataOrder','dataTotalCoupon','couponName'));
+        return view('backend.pages.dashboard', compact('revenue', 'totalOrder', 'countVisitor', 'chart_data',
+            'totalOrderToday', 'dataTotal', 'dataVisitor', 'onlineVisitorCount', 'dataOrder', 'dataTotalCoupon',
+            'couponName'));
     }
 
     public function indexPost(Request $request) 

@@ -31,7 +31,8 @@ class CommentAdminController extends Controller
 
         $keyword = $request->input('keyword');
         $searchableFields = ['comment_content'];
-        $allComments = $this->performSearch(Comment::orderBy($orderBy, $orderType), $keyword, $searchableFields)
+        // Each row shows who wrote the review and which product it is on.
+        $allComments = $this->performSearch(Comment::with(['getUsers', 'getProducts'])->orderBy($orderBy, $orderType), $keyword, $searchableFields)
         ->paginate(20)
         ->withQueryString();
 
@@ -82,7 +83,7 @@ class CommentAdminController extends Controller
         $comment = Comment::find($commentId);
 
         if (!$comment) {
-            return response()->json(['message' => 'Không tìm thấy dữ liệu'], abort(404));
+            return response()->json(['message' => 'Không tìm thấy dữ liệu'], 404);
         }
 
         $comment->comment_hidden = $comment_hidden;
@@ -112,7 +113,7 @@ class CommentAdminController extends Controller
      */
     public function trashed() 
     {
-        $commentTrash = Comment::onlyTrashed()
+        $commentTrash = Comment::with(['getUsers', 'getProducts'])->onlyTrashed()
                                     -> paginate(20);
         return view('backend.pages.product.comment.comment_trash', compact('commentTrash'));
     }

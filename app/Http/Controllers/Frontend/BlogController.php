@@ -22,7 +22,9 @@ class BlogController extends Controller
         $slide = Promotion::where('cate_slide_id',1)->where('promotion_hidden',1)->get();
         $contact = Contact::where('contact_hidden',1)->limit(1)->get();
         $faq = Faq::where('faq_hidden',1)->where('faq_about',0)->orderBy('faq_id','desc')->get();
-        $cateNews = CateNews::where('cate_news_hidden',1)
+        // The sidebar prints how many articles each category holds; withCount
+        // fetches that number instead of every article row.
+        $cateNews = CateNews::withCount('getNewsInCate')->where('cate_news_hidden',1)
         ->orderBy('cate_news_sort', 'asc')
         ->get();
         $data = Menu::where('menu_hidden',1)->orderBy('menu_position','asc')->get();
@@ -71,7 +73,7 @@ class BlogController extends Controller
         ->limit(5)
         ->get();
 
-        $tags = Tags::where('tag_hidden',1)
+        $tags = Tags::withCount('getNews')->where('tag_hidden',1)
         ->orderBy('created_at','asc')
         ->limit(20)
         ->get();
@@ -156,7 +158,7 @@ class BlogController extends Controller
         ->limit(5)
         ->get();
 
-        $tags = Tags::where('tag_hidden',1)
+        $tags = Tags::withCount('getNews')->where('tag_hidden',1)
         ->orderBy('created_at','asc')
         ->limit(20)
         ->get();

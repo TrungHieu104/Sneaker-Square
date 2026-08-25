@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\Backend\ProductCateRequest;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Session;
 use App\Models\CategoryModel as Category;
 use App\Models\ProductModel as Product;
@@ -34,7 +33,9 @@ class ProductCateController extends Controller
         }
         $keyword = $request->input('keyword');
         $searchableFields = ['category.cate_name'];
-        $allCates = $this->performSearch(Category::orderBy($orderBy, $orderType), $keyword, $searchableFields)
+        // The table shows a product count per category; count them in SQL
+        // instead of loading every product of every category.
+        $allCates = $this->performSearch(Category::withCount('getProductsInCate')->orderBy($orderBy, $orderType), $keyword, $searchableFields)
                                 -> paginate(10)
                                 -> withQueryString();
         $cate = $this->cate_tree($allCates);
@@ -77,7 +78,9 @@ class ProductCateController extends Controller
         $cate_slug = ($request->has('cate_slug'))? $input['cate_slug']:"";
         $cate_sort = ($request->has('cate_sort'))? $input['cate_sort']:"";
         $cate_meta_keywords = ($request->has('cate_meta_keywords'))? $input['cate_meta_keywords']:"";
-        $cate_parent_id = ($request->has('cate_parent_id'))? $input['cate_parent_id']:"";
+        // A top-level category has no parent. The empty string this used to fall
+        // back on is not a valid category id, so saving one broke the foreign key.
+        $cate_parent_id = $request->filled('cate_parent_id') ? $input['cate_parent_id'] : null;
         $cate_hidden = ($request->has('cate_hidden'))? (int)$input['cate_hidden']:0;
         $cate = new Category;
         $cate->cate_name = $cate_name;
@@ -116,71 +119,41 @@ class ProductCateController extends Controller
 
     /**
      * Update the specified resource in storage.
+     *
+     * ProductCateRequest validates this now. The chain of Validator calls it
+     * replaces existed only because the unique rules ignored a route parameter
+     * that does not exist, so an ordinary edit collided with its own row.
      */
-    public function update(Request $request, string $cateId)
+    public function update(ProductCateRequest $request, string $cateId)
     {
         $input = $request->post();
         $cate = Category::find($cateId);
+
+        if (! $cate) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', 'Không tìm thấy danh mục này!');
+        }
+
         $cate_name = ($request->has('cate_name'))? ucwords($input['cate_name']):"";
         $cate_slug = ($request->has('cate_slug'))? $input['cate_slug']:"";
         $cate_sort = ($request->has('cate_sort'))? $input['cate_sort']:"";
         $cate_meta_keywords = ($request->has('cate_meta_keywords'))? $input['cate_meta_keywords']:"";
-        $cate_parent_id = ($request->has('cate_parent_id'))? $input['cate_parent_id']:"";
-        $rules = (new ProductCateRequest)->rules();
-        $messages = (new ProductCateRequest)->messages();
-        if (($cate->cate_name != $cate_name) && ($cate->cate_sort != $cate_sort)){
-            $validation = Validator::make($input, $rules, $messages);
-            if ($validation->fails()) {
-                $request->session();
-                Session::flash('iconMessage', 'error');
-                return back()->with('message', 'Cập nhật danh mục thất bại!');
-            }
-        } elseif ($cate->cate_name != $cate_name) {
-            $rule = [
-                'cate_name' => 'required|unique:category',
-            ];
-            $validation = Validator::make($input, $rule, $messages);
-            $errors = $validation->errors();
-            if ($validation->fails()) {
-                $request->session();
-                Session::flash('iconMessage', 'error');
-                return back()->with('message', $errors->first());
-            }
-        } elseif ($cate->cate_sort != $cate_sort) {
-            $rule = [
-                'cate_sort' => 'required|min:0|max:100000000|numeric|integer|unique:category',
-            ];
-            $validation = Validator::make($input, $rule, $messages);
-            $errors = $validation->errors();
-            if ($validation->fails()) {
-                $request->session();
-                Session::flash('iconMessage', 'error');
-                return back()->with('message', $errors->first());
-            }
-        }
-        
+        // A top-level category has no parent. The empty string this used to fall
+        // back on is not a valid category id, so saving one broke the foreign key.
+        $cate_parent_id = $request->filled('cate_parent_id') ? $input['cate_parent_id'] : null;
+
         $cate->cate_name = $cate_name;
         $cate->cate_slug = $cate_slug;
         $cate->cate_sort = $cate_sort;
         $cate->cate_meta_keywords = $cate_meta_keywords;
         $cate->cate_parent_id = $cate_parent_id;
-        if($request->has('cate_img'))
-        {
-            $rule = [
-                'cate_img' => 'image',
-            ];
-            $validation = Validator::make($request->all(), $rule, $messages);
-            $errors = $validation->errors();
-            if ($validation->fails()) {
-                $request->session();
-                Session::flash('iconMessage', 'error');
-                return back()->with('message', $errors->first());
-            } else {
-                $file = $request->file('cate_img');
-                $file_name = time().'-'.$file->getClientOriginalName();
-                $file->move(public_path('backend/uploads/product/category/'), $file_name);
-                $cate->cate_img = 'backend/uploads/product/category/'.$file_name;
-            }
+        // The uploaded file itself is checked by ProductCateRequest.
+        if ($request->hasFile('cate_img')) {
+            $file = $request->file('cate_img');
+            $file_name = time().'-'.$file->getClientOriginalName();
+            $file->move(public_path('backend/uploads/product/category/'), $file_name);
+            $cate->cate_img = 'backend/uploads/product/category/'.$file_name;
         }
         $cate->save();
         Session::flash('iconMessage', 'success');
@@ -196,7 +169,7 @@ class ProductCateController extends Controller
         $cate = Category::find($cateId);
 
         if (!$cate) {
-            return response()->json(['message' => 'Không tìm thấy dữ liệu'], abort(404));
+            return response()->json(['message' => 'Không tìm thấy dữ liệu'], 404);
         }
 
         $cate->cate_hidden = $cate_hidden;
@@ -250,7 +223,7 @@ class ProductCateController extends Controller
         $keyword = $request->input('keyword');
         $searchableFields = ['cate_name'];
 
-        $cateTrash = $this->performSearch(Category::onlyTrashed($orderBy, $orderType), $keyword, $searchableFields)->paginate(20)->withQueryString();
+        $cateTrash = $this->performSearch(Category::withCount('getProductsInCate')->onlyTrashed($orderBy, $orderType), $keyword, $searchableFields)->paginate(20)->withQueryString();
         return view('backend.pages.product.product-cate.product_cate_trash', compact('cateTrash', 'orderBy', 'orderType'));
     }
 

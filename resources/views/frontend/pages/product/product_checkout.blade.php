@@ -714,34 +714,12 @@
                             </div>
                             <form action="{{ route('product.checkoutPOST') }}" method="post" id="checkoutForm">
                                 @csrf
-                                @php
-                                    $date = date('dmY');
-                                    $random_number = rand(0000, 9999);
-                                    $check_oc_exist = DB::table('order')
-                                        ->where('order_code', '=', $date . $random_number)
-                                        ->first();
-                                    if ($check_oc_exist) {
-                                        $random_number = rand(0000, 9999);
-                                    }
-                                    $order_code = $date . $random_number;
-                                @endphp
-                                <input type="hidden" name="deliFee" value="{{$item->info_delivery_fee ?? 0}}">
-                                @php
-                                    $defaultValue = null;
-            
-                                    if(isset($coupon_data) && isset($coupon_data->coupon_condition) && isset($giatri_donhang)){
-                                        if ($coupon_data->coupon_condition == 1) {
-                                            $defaultValue = $coupon_data->coupon_value;
-                                        } else {
-                                            $defaultValue = $giatri_donhang * ($coupon_data->coupon_value / 100);
-                                        }
-                                    }
-                                @endphp
-            
-                                <input type="hidden" name="couVal" value="{{ $defaultValue ?? 0 }}">
-                                <input type="hidden" name="order_code" value="{{ $order_code }}">
+                                {{-- The order code, the shipping fee, the discount and the total
+                                     used to be posted from here, and the server used what it was
+                                     given — so editing them in the browser set the price of the
+                                     order. PlaceOrderAction now works all four out from the
+                                     database, and the fields are gone rather than merely ignored. --}}
                                 <input type="hidden" name="note_customer" value="" id="note_customer">
-                                <input type="hidden" value="{{ $thanhtien }}" name="thanhtien">
                                 <input type="hidden" name="payment" value="cod">
                                 <button type="submit" name="cod"
                                     class="btn btn-primary border-0 w-100 btn-checkout text-white font__size">Đặt Hàng</button>
@@ -749,9 +727,9 @@
                             </form>
                             <div class="my-3">
                                 <span>Nhấn "<span class="fw-bold">Đặt Hàng</span>" đồng nghĩa với việc bạn đồng ý với các chính sách
-                                    <a href="{{ env('APP_URL') }}/chinh-sach/chinh-sach-thanh-toan.html" target="_blank">thanh toán</a>,
-                                    <a href="{{ env('APP_URL') }}/chinh-sach/chinh-sach-bao-hanh-va-doi-tra.html" target="_blank">bảo hành & đổi trả</a> và
-                                    <a href="{{ env('APP_URL') }}/chinh-sach/chinh-sach-giao-hang.html" target="_blank">giao hàng</a> của chúng tôi.
+                                    <a href="{{ config('app.url') }}/chinh-sach/chinh-sach-thanh-toan.html" target="_blank">thanh toán</a>,
+                                    <a href="{{ config('app.url') }}/chinh-sach/chinh-sach-bao-hanh-va-doi-tra.html" target="_blank">bảo hành & đổi trả</a> và
+                                    <a href="{{ config('app.url') }}/chinh-sach/chinh-sach-giao-hang.html" target="_blank">giao hàng</a> của chúng tôi.
                                 </span>
                             </div>
                         </div>

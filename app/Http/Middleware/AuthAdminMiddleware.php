@@ -25,7 +25,7 @@ class AuthAdminMiddleware
             if ($user->user_role == 1 && $user->user_status == 1) {
                 if ($user->locked_at > Carbon::now()) {
                     Session::flash('iconMessage', 'error');
-                    $remainingTime = now()->diffInMinutes($user->locked_at) . ' phút ' . now()->diffInSeconds($user->locked_at) % 60 . ' giây';
+                    $remainingTime = (int) now()->diffInMinutes($user->locked_at, true) . ' phút ' . (int) now()->diffInSeconds($user->locked_at, true) % 60 . ' giây';
                     return redirect(route('admin.login'))->with('message', 'Vui lòng thử lại sau '. $remainingTime . '!');
                 }
                 return $next($request);

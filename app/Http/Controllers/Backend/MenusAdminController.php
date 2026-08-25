@@ -226,7 +226,7 @@ class MenusAdminController extends Controller
     }
     
     public function forceDelete($id){
-        $menuDe = MenuModel::withTrashed()->find($id); // Lấy bản ghi đã xóa mềm
+        $menuDe = MenuModel::withTrashed()->find($id); // Fetch the soft-deleted record
         if ($menuDe) {
             $menuDe->forceDelete();
             Session::flash('iconMessage', 'success');

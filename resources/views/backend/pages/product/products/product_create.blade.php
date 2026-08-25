@@ -16,7 +16,7 @@
                         <label for="path" class="form-label">Đường dẫn</label>
                         <input type="text" class="form-control" id="path" name="pro_slug" readonly value="{{ old('pro_slug') }}" />
                         <div class="mb-1">
-                            <small class="text-lowercase">{{route('product.detail', '')}}/<small class="fw-bold" id="url-slug"></small> </small>
+                            <small class="text-lowercase">{{url('/san-pham')}}/<small class="fw-bold" id="url-slug"></small> </small>
                         </div>
                         @if ($errors->has("pro_slug")) 
                             @foreach ($errors->get("pro_slug") as $error) 

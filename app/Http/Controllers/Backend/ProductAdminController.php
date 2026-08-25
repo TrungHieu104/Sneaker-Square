@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use App\Http\Requests\Backend\ProductRequest;
-use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\Backend\ProductUpdateRequest;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -40,7 +40,9 @@ class ProductAdminController extends Controller
         }
         $keyword = $request->input('keyword');
         $searchableFields = ['pro_code', 'pro_name'];
-        $allProducts = $this->performSearch(Product::orderBy($orderBy, $orderType), $keyword, $searchableFields)
+        // The table prints each product's category, so load them together
+        // rather than one query per row.
+        $allProducts = $this->performSearch(Product::with('getCate')->orderBy($orderBy, $orderType), $keyword, $searchableFields)
         ->paginate(10)
         ->withQueryString();
 
@@ -68,7 +70,8 @@ class ProductAdminController extends Controller
         $searchStock = ['products.pro_name', 'color.color_vn'];
         $searchableFields = ['products.pro_name', 'order_details.color'];
 
-        $statistical = OrderDetail::select(
+        // Both tables on this page print the product behind each row.
+        $statistical = OrderDetail::with('product')->select(
                 'products.pro_name',
                 'color',
                 'price',
@@ -91,7 +94,7 @@ class ProductAdminController extends Controller
             ->limit(10)
             ->get();
         $stock = $this->performSearch(
-            Quantity::select(
+            Quantity::with('getProducts')->select(
                 DB::raw('SUM(products_quantity.quantity) AS total_quantity'),
                 'products_quantity.pro_id',
                 'products_quantity.color_id',
@@ -186,11 +189,23 @@ class ProductAdminController extends Controller
 
     /**
      * Update the specified resource in storage.
+     *
+     * Validation is ProductUpdateRequest's job now. What stood here was a chain
+     * of hand-written Validator calls shaped `if (the name changed) … elseif
+     * (the code changed) …`, so an edit that changed both checked only the name
+     * and let a duplicate product code through.
      */
-    public function update(Request $request, string $proId)
+    public function update(ProductUpdateRequest $request, string $proId)
     {
         $input = $request->post();
         $product = Product::find($proId);
+
+        if (! $product) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', 'Không tìm thấy sản phẩm này!');
+        }
+
         $pro_name = ($request->has('pro_name'))? ucwords($input['pro_name']):"";
         $pro_slug = ($request->has('pro_slug'))? $input['pro_slug']:"";
         $pro_code = ($request->has('pro_code'))? $input['pro_code']:"";
@@ -204,32 +219,6 @@ class ProductAdminController extends Controller
         $pro_date = ($request->has('pro_date'))? $input['pro_date']:"";
         $cate_id = ($request->has('cate_id'))? $input['cate_id']:"";
 
-        $rules = (new ProductRequest)->rules();
-        $messages = (new ProductRequest)->messages();
-        if ($product->pro_name != $pro_name) {
-            $rule = [
-                'pro_name' => 'required|max: 255|unique:products',
-            ];
-            $validation = Validator::make($input, $rule, $messages);
-            $errors = $validation->errors();
-            if ($validation->fails()) {
-                $request->session();
-                Session::flash('iconMessage', 'error');
-                return back()->with('message', $errors->first());
-            }
-        } elseif ($product->pro_code != $pro_code) {
-            $rule = [
-                'pro_code' => 'required|max: 50|unique:products',
-            ];
-            $validation = Validator::make($input, $rule, $messages);
-            $errors = $validation->errors();
-            if ($validation->fails()) {
-                $request->session();
-                Session::flash('iconMessage', 'error');
-                return back()->with('message', $errors->first());
-            }
-        }
-
         $product->pro_name = $pro_name;
         $product->pro_slug = $pro_slug;
         $product->pro_code = $pro_code;
@@ -242,41 +231,12 @@ class ProductAdminController extends Controller
         $product->pro_meta_description = $pro_meta_description;
         $product->pro_date = date('Y-m-d', strtotime($pro_date));
         $product->cate_id = $cate_id;
-        if($request->has('pro_img'))
-        {
-            $rule = [
-                'pro_img' => 'image',
-            ];
-            $validation = Validator::make($request->all(), $rule, $messages);
-            $errors = $validation->errors();
-            if ($validation->fails()) {
-                $request->session();
-                Session::flash('iconMessage', 'error');
-                return back()->with('message', $errors->first());
-            } else {
-                $file = $request->file('pro_img');
-                $file_name = time().'-'.$file->getClientOriginalName();
-                $file->move(public_path('backend/uploads/product/'), $file_name);
-                $product->pro_img = 'backend/uploads/product/'.$file_name;
-            }
-            
-        }
-        $rule = [
-            'capital_price' => 'required|numeric|min: 1|max: 9999999999|integer',
-            'pro_price' => 'required|numeric|min: 1|max: 9999999999|integer|gt:capital_price',
-            'pro_price_sale' => 'nullable|numeric|min: 0|max: 9999999999|integer|lt:pro_price',
-            'pro_SEO_title' => 'nullable|max: 255',
-            'pro_meta_keywords' => 'nullable|max: 2000',
-            'pro_meta_description' => 'nullable|max: 2000',
-            'pro_date' => 'required',
-            'cate_id' => 'required',
-        ];
-        $validation = Validator::make($input, $rule, $messages);
-        $errors = $validation->errors();
-        if ($validation->fails()) {
-            $request->session();
-            Session::flash('iconMessage', 'error');
-            return back()->with('message', $errors->first());
+        // The uploaded file itself is checked by ProductUpdateRequest.
+        if ($request->hasFile('pro_img')) {
+            $file = $request->file('pro_img');
+            $file_name = time().'-'.$file->getClientOriginalName();
+            $file->move(public_path('backend/uploads/product/'), $file_name);
+            $product->pro_img = 'backend/uploads/product/'.$file_name;
         }
         $product->save();
         Session::flash('iconMessage', 'success');
@@ -290,7 +250,7 @@ class ProductAdminController extends Controller
         $product = Product::find($proId);
 
         if (!$product) {
-            return response()->json(['message' => 'Không tìm thấy dữ liệu'], abort(404));
+            return response()->json(['message' => 'Không tìm thấy dữ liệu'], 404);
         }
 
         $product->pro_hidden = $pro_hidden;
@@ -308,7 +268,7 @@ class ProductAdminController extends Controller
         $product = Product::find($proId);
 
         if (!$product) {
-            return response()->json(['message' => 'Không tìm thấy dữ liệu'], abort(404));
+            return response()->json(['message' => 'Không tìm thấy dữ liệu'], 404);
         }
 
         $product->pro_hot = $pro_hot;
@@ -364,7 +324,7 @@ class ProductAdminController extends Controller
         $keyword = $request->input('keyword');
         $searchableFields = ['products.pro_code', 'products.pro_name'];
 
-        $productTrash = $this->performSearch(Product::onlyTrashed($orderBy, $orderType), $keyword, $searchableFields)
+        $productTrash = $this->performSearch(Product::with('getCate')->onlyTrashed($orderBy, $orderType), $keyword, $searchableFields)
                                     ->paginate(20)
                                     ->withQueryString();
         return view('backend.pages.product.products.product_trash', compact('productTrash', 'orderBy', 'orderType'));

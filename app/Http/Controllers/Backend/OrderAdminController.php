@@ -32,7 +32,7 @@ class OrderAdminController extends Controller
     public function checkForNewOrders()
     {
         $newOrdersCount = OrderModel::where('order_status', 0)
-            ->where('created_at', '>=', now()->subDay()) // Đơn hàng tạo trong 24 giờ qua
+            ->where('created_at', '>=', now()->subDay()) // Orders created in the last 24 hours
             ->count();
 
         return response()->json(['newOrders' => $newOrdersCount]);
@@ -183,7 +183,10 @@ class OrderAdminController extends Controller
     {
         try {
             $order_id = Crypt::decrypt($encryptedOrderId);
-            $order = OrderModel::with(['orderDetail', 'Coupon'], ['orderDetail', 'User'])->find($order_id);
+            // The second array here used to be passed as with()'s $callback
+            // argument, where it is silently ignored — so `User` was never
+            // eager loaded despite being listed.
+            $order = OrderModel::with(['orderDetail', 'Coupon', 'User'])->find($order_id);
     
             if ($order == null) {
                 $request->session();
@@ -191,7 +194,8 @@ class OrderAdminController extends Controller
                 return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
             }
     
-            $orderDetail = OrderDetailModel::where('order_id', $order_id)->get();
+            // Each line prints its product, so load them in one query.
+            $orderDetail = OrderDetailModel::with('product')->where('order_id', $order_id)->get();
     
             return view("backend.pages.order.order_detail", compact('order', 'orderDetail'));
         } catch (DecryptException $e) {

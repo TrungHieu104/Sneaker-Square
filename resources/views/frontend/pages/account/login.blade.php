@@ -80,7 +80,7 @@
                                             <span>Quên mật khẩu?</span>
                                         </a>
                                     </div>
-                                    <input type="password" id="password" class="form-control" name="password" @if(Cookie::has('password')) value="{{Cookie::get('password')}}" @endif
+                                    <input type="password" id="password" class="form-control" name="password" {{-- The password is never carried back into the form. --}}
                                         placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;"
                                         aria-describedby="password" />
                                     <small class="error-text position-absolute text-danger fst-italic">a</small>
@@ -105,8 +105,8 @@
                                     <i class="text-danger">{{ Session::get('Notification') }} </i>
                                 </div>
                             @endif
-                            @if (session('login_attempts', 0) > 3)
-                                <div class="g-recaptcha d-flex justify-content-center" data-sitekey="{{ env('CAPTCHA_KEY') }}"></div>
+                            @if (\App\Http\Requests\Frontend\Authuser\LoginRequest::captchaRequired())
+                                <div class="g-recaptcha d-flex justify-content-center" data-sitekey="{{ config('services.captcha.key') }}"></div>
                                 <br>
                             @endif
                             @if($errors->has('g-recaptcha-response'))

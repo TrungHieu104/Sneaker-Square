@@ -113,7 +113,7 @@ class AuthAdminController extends Controller
             if ($user->locked_at !== null && $user->locked_at > now()) {
                 Auth::logout();
                 Session::flash('iconMessage', 'error');
-                $remainingTime = now()->diffInMinutes($user->locked_at) . ' phút ' . now()->diffInSeconds($user->locked_at) % 60 . ' giây';
+                $remainingTime = (int) now()->diffInMinutes($user->locked_at, true) . ' phút ' . (int) now()->diffInSeconds($user->locked_at, true) % 60 . ' giây';
                 return redirect(route('admin.login'))->with('message', 'Vui lòng thử lại sau ' . $remainingTime . '!');
             }
         
@@ -141,7 +141,7 @@ class AuthAdminController extends Controller
                     ]);
                 } else {
                     Session::flash('iconMessage', 'error');
-                    $remainingTime = now()->diffInMinutes($user->locked_at) . ' phút ' . now()->diffInSeconds($user->locked_at) % 60 . ' giây';
+                    $remainingTime = (int) now()->diffInMinutes($user->locked_at, true) . ' phút ' . (int) now()->diffInSeconds($user->locked_at, true) % 60 . ' giây';
                     return redirect(route('admin.login'))->with('message', 'Vui lòng thử lại sau ' . $remainingTime . '!');
                 }
             } else {

@@ -64,12 +64,12 @@
                                         @if (count($getAllCate) > 0)
                                             @foreach ($getAllCate as $itemCate)
                                                 @if ($itemCate->cate_parent_id == 1)
-                                                    @if (count($itemCate->getProductsInCate) != 0)
+                                                    @if ($itemCate->get_products_in_cate_count != 0)
                                                         <li class="main-nav-list">
                                                             <a data-toggle="collapse" class="{{( (url()->current()) == (route('product.by.cate', $itemCate->cate_slug)) ) ? 'active' : ''}}" href="{{route('product.by.cate', $itemCate->cate_slug)}}" aria-expanded="false"
                                                                 aria-controls="fruitsVegetable">
                                                                 <span class="lnr lnr-arrow-right"></span>{{$itemCate->cate_name}}<span
-                                                                    class="number">({{ count($itemCate->getProductsInCate) }})</span>
+                                                                    class="number">({{ $itemCate->get_products_in_cate_count }})</span>
                                                             </a>
                                                         </li>
                                                     @endif
@@ -140,12 +140,12 @@
                                         @if (count($getAllCate) > 0)
                                             @foreach ($getAllCate as $itemCate)
                                                 @if ($itemCate->cate_parent_id == 6)
-                                                    @if (count($itemCate->getProductsInCate) != 0)
+                                                    @if ($itemCate->get_products_in_cate_count != 0)
                                                         <li class="main-nav-list">
                                                             <a data-toggle="collapse" class="{{( (url()->current()) == (route('product.by.cate', $itemCate->cate_slug)) ) ? 'active' : ''}}" href="{{route('product.by.cate', $itemCate->cate_slug)}}" aria-expanded="false"
                                                                 aria-controls="fruitsVegetable">
                                                                 <span class="lnr lnr-arrow-right"></span>{{$itemCate->cate_name}}<span
-                                                                    class="number">({{ count($itemCate->getProductsInCate) }})</span>
+                                                                    class="number">({{ $itemCate->get_products_in_cate_count }})</span>
                                                             </a>
                                                         </li>
                                                     @endif

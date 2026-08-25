@@ -30,7 +30,7 @@ use App\Http\Controllers\Frontend\UserController;
 use App\Http\Controllers\Frontend\WishListController;
 use App\Http\Controllers\Frontend\DeliveryInfoController;
 use App\Http\Controllers\Frontend\SearchController;
-use App\Http\Controllers\Frontend\PaymentCheckoutController;
+use App\Http\Controllers\Frontend\PaymentCallbackController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -52,6 +52,11 @@ Route::fallback(function() {
     abort(404);
 });
 
+// Everything in this group is response-cached for 10 minutes at the bottom of
+// the file. Pages that show one person's own state — cart, checkout, orders,
+// account — and the payment callbacks are marked doNotCacheResponse, because a
+// cached copy of those is either somebody else's data or a callback that never
+// reaches the controller.
 Route::group(['middleware' => 'web'], function () {
 
     Route::get('/', [HomeController::class, 'index'])->name('home.page');
@@ -69,25 +74,25 @@ Route::group(['middleware' => 'web'], function () {
     Route::get('/tim-kiem', [SearchController::class, 'search'])->name('search.frontend');
 
     // Route Product WishList
-    Route::get('/san-pham-yeu-thich', [WishListController::class, 'index'])->name('product.wishlist');
+    Route::get('/san-pham-yeu-thich', [WishListController::class, 'index'])->name('product.wishlist')->middleware('doNotCacheResponse');
     Route::post('/them-san-pham-yeu-thich', [WishListController::class, 'store'])->name('product.wishlist_store');
     Route::post('/yeu-thich-total', [WishListController::class, 'count'])->name('product.wishlist_count');
     Route::post('/xoa-yeu-thich', [WishListController::class, 'destroy'])->name('product.wishlist_destroy');
 
     // Route Cart
-    Route::get('/gio-hang', [ProductController::class, 'cart'])->name('product.cart');
+    Route::get('/gio-hang', [ProductController::class, 'cart'])->name('product.cart')->middleware('doNotCacheResponse');
     Route::post('/them-san-pham/{pro_slug}', [ProductController::class, 'addPro'])->name('addProduct.cart');
     Route::post('/ma-giam-gia', [ProductController::class, 'checkCoupon'])->name('checkCoupon.cart');
     Route::post('/bo-ma-giam-gia', [ProductController::class, 'removeCoupon'])->name('removeCoupon.cart');
     Route::post('/xoa-san-pham/{pro_slug}', [ProductController::class, 'delPro'])->name('delProduct.cart');
-    Route::get('/xoa-gio-hang', [ProductController::class, 'delcart'])->name('del.cart');
-    Route::get('/gio-hang-trong', [ProductController::class, 'emptyCart'])->name('empty.cart');
+    Route::get('/xoa-gio-hang', [ProductController::class, 'delcart'])->name('del.cart')->middleware('doNotCacheResponse');
+    Route::get('/gio-hang-trong', [ProductController::class, 'emptyCart'])->name('empty.cart')->middleware('doNotCacheResponse');
 
     // Route Payment
-    Route::get('/thanh-toan', [ProductController::class, 'checkout'])->name('product.checkout');
+    Route::get('/thanh-toan', [ProductController::class, 'checkout'])->name('product.checkout')->middleware('doNotCacheResponse');
     Route::post('/thanh-toan', [ProductController::class, 'checkoutPOST'])->name('product.checkoutPOST');
     Route::post('/token-delivery', [ProductController::class, 'getToken']);
-    Route::resource('dia-chi', (DeliveryInfoController::class))->names([
+    Route::resource('dia-chi', (DeliveryInfoController::class))->middleware('doNotCacheResponse')->names([
         'index' => 'diachi.index',
         'create' => 'diachi.create',
         'store' => 'diachi.store',
@@ -97,13 +102,17 @@ Route::group(['middleware' => 'web'], function () {
         'destroy' => 'diachi.destroy',
     ]);
     Route::post('/dia-chi-selected', [DeliveryInfoController::class, 'deliInfoSelected'])->name('deliInfoSelected');
-    Route::get('/kiem-tra-trang-thai-dat-hang', [ProductController::class, 'processCheckout'])->name('process.checkout');
-    Route::get('/dat-hang-thanh-cong', [ProductController::class, 'successCheckout'])->name('success.checkout');
-    Route::get('/dat-hang-that-bai', [ProductController::class, 'failedCheckout'])->name('failed.checkout');
-    Route::get('/mail-don-hang', [ProductController::class, 'orderMail'])->name('orderMail.checkout');
-    Route::get('/don-hang/{order_code}', [ProductController::class, 'orderBill'])->name('orderBill.checkout');
+    // Where the payment gateways send the customer back. Every parameter is
+    // signature-checked in PaymentCallbackController before anything is acted on.
+    Route::get('/kiem-tra-trang-thai-dat-hang', [PaymentCallbackController::class, 'handleReturn'])->name('process.checkout')->middleware('doNotCacheResponse');
+    // The gateway's server-to-server notification, which arrives even when the
+    // customer closes the tab before being redirected back.
+    Route::post('/ipn-thanh-toan', [PaymentCallbackController::class, 'handleIpn'])->name('payment.ipn');
+    Route::get('/dat-hang-thanh-cong', [ProductController::class, 'successCheckout'])->name('success.checkout')->middleware('doNotCacheResponse');
+    Route::get('/dat-hang-that-bai', [ProductController::class, 'failedCheckout'])->name('failed.checkout')->middleware('doNotCacheResponse');
+    Route::get('/don-hang/{order_code}', [ProductController::class, 'orderBill'])->name('orderBill.checkout')->middleware('doNotCacheResponse');
     Route::patch('/don-hang/{order_code}', [ProductController::class, 'cancelOrder'])->name('cancelOrder');
-    Route::get('/in-don-hang/{order_code}', [ProductController::class, 'printBill'])->name('printBill.checkout');
+    Route::get('/in-don-hang/{order_code}', [ProductController::class, 'printBill'])->name('printBill.checkout')->middleware('doNotCacheResponse');
 
     // Route Blog
     Route::get('/bai-viet', [BlogController::class, 'index'])->name('blog.page');
@@ -133,7 +142,7 @@ Route::group(['middleware' => 'web'], function () {
     Route::get('/verified-email-register/{user}', [AuthUserController::class, 'verifiedRegister'])->name('verifed_register');
 
     // Info account user
-    Route::middleware(['auth'])->group(function () {
+    Route::middleware(['auth', 'doNotCacheResponse'])->group(function () {
         Route::resource('/thong-tin-tai-khoan', (UserController::class));
         Route::get('cap-nhat-mat-khau',[UserController::class ,'updatePass'])->name('user.update_pass');
         Route::get('thay-doi-mat-khau/{token}',[UserController::class ,'changePass'])->name('user.change_pass')->middleware('auth');

@@ -10,7 +10,6 @@ class CouponModel extends Model
     use HasFactory, SoftDeletes;
     protected $table ="coupon"; 
     public $primaryKey = "coupon_id";
-    protected $dates = ['deleted_at'];
     public $timestamps = true;  
     protected $fillable = ['coupon_name', 'coupon_code', 'coupon_value','coupon_quantity','coupon_used','coupon_condition','coupon_date','coupon_start','coupon_end'];
     public function Coupon()

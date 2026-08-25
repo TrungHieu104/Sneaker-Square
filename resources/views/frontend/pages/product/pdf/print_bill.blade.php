@@ -628,7 +628,7 @@
                             <div class="BTN-info">
                                 <center>
 
-                                    <img src="{{ env('APP_URL') }}/frontend/img/logo_sn.png" alt="" style="width: 50%;">
+                                    <img src="{{ config('app.url') }}/frontend/img/logo_sn.png" alt="" style="width: 50%;">
                                 </center>
                             </div>
                         </div>

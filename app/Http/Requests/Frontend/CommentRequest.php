@@ -2,16 +2,52 @@
 
 namespace App\Http\Requests\Frontend;
 
+use App\Enums\OrderStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 
+/**
+ * A product review.
+ *
+ * Both halves of the decision live here now — who may review, and what a
+ * review has to contain. The controller used to hold the purchase check itself
+ * and then borrow these rules through `(new CommentRequest)->rules()`, which
+ * meant instantiating a request object purely to read a property off it.
+ */
 class CommentRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Only a signed-in customer who has actually received this product.
      */
     public function authorize(): bool
     {
-        return true;
+        if (! Auth::check()) {
+            return false;
+        }
+
+        return DB::table('order')
+            ->join('order_details', 'order.order_id', '=', 'order_details.order_id')
+            ->where('order.user_id', Auth::id())
+            ->where('order_details.pro_id', $this->route('pro_id'))
+            ->where('order.order_status', OrderStatus::Completed->value)
+            ->exists();
+    }
+
+    /**
+     * Sends the customer back with an explanation instead of a bare 403.
+     */
+    protected function failedAuthorization(): void
+    {
+        Session::flash('iconMessage', 'error');
+
+        throw new HttpResponseException(
+            back()->with('message', Auth::check()
+                ? 'Bạn chỉ có thể đánh giá sản phẩm sau khi đã mua và nhận hàng thành công.'
+                : 'Bạn cần đăng nhập để đánh giá sản phẩm.')
+        );
     }
 
     /**
@@ -29,7 +65,8 @@ class CommentRequest extends FormRequest
         ];
     }
 
-    public function messages(){
+    public function messages()
+    {
         return [
             'comment_content.required' => 'Vui lòng nhập nội dung đánh giá!',
             'comment_content.min' => 'Nội dung đánh giá quá ngắn!',

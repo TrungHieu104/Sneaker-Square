@@ -23,7 +23,7 @@ role-based permissions, statistics, a blog/CMS, and online payment (MoMo & VNPay
 
 ## Tech stack
 
-- **Backend:** Laravel, PHP 8.1+
+- **Backend:** Laravel 12, PHP 8.2+
 - **Database:** MySQL
 - **Frontend:** Blade, Bootstrap, Vite
 - **Key packages:** spatie/laravel-permission, maatwebsite/excel,
@@ -32,9 +32,10 @@ role-based permissions, statistics, a blog/CMS, and online payment (MoMo & VNPay
 
 ## Requirements
 
-- PHP >= 8.1 and Composer
+- PHP >= 8.2 and Composer
 - Node.js + npm
 - MySQL
+- Redis (dùng cho hàng đợi, cache, session và response cache)
 
 ## Installation
 
@@ -44,6 +45,10 @@ cd Sneaker-Square
 
 composer install
 npm install && npm run build
+
+# Tải phần connector của CKFinder (không đi kèm composer,
+# phải chạy lại sau mỗi lần composer install/update)
+php artisan ckfinder:download
 
 cp .env.example .env
 php artisan key:generate
@@ -70,7 +75,24 @@ php artisan storage:link
 
 ```bash
 php artisan serve
+
+# Bắt buộc chạy song song: mail (xác nhận đơn, đăng ký, quên mật khẩu, gửi mã
+# giảm giá) đều đi qua hàng đợi Redis. Không chạy worker thì mail không được gửi.
+php artisan queue:work
 ```
+
+### Chạy test
+
+```bash
+php artisan config:clear   # bắt buộc trước khi chạy test
+./vendor/bin/phpunit
+```
+
+> ⚠️ **Phải `config:clear` trước.** `phpunit.xml` trỏ database về SQLite in-memory bằng thẻ `<env>`,
+> nhưng những thẻ này **bị bỏ qua khi còn file `bootstrap/cache/config.php`** — lúc đó `config()` đọc
+> từ file cache, thấy MySQL, và `RefreshDatabase` sẽ chạy `migrate:fresh` **xóa sạch database phát
+> triển**. `tests/CreatesApplication.php` đã chặn trường hợp này: bộ test từ chối khởi động nếu
+> không trỏ đúng SQLite `:memory:`.
 
 - Storefront: <http://localhost:8000>
 - Admin: <http://localhost:8000/admin>
@@ -116,3 +138,8 @@ Tên chủ thẻ: NGUYEN VAN A
 Ngày phát hành: 07/15 
 Mã OTP: 000000
 sdt: 0912345678
+
+## Tài liệu
+
+- [`docs/LO-TRINH-PHAT-TRIEN.md`](docs/LO-TRINH-PHAT-TRIEN.md) — hướng phát triển tiếp cho đồ án tốt nghiệp
+- [`docs/XU-LY-NO-KY-THUAT.md`](docs/XU-LY-NO-KY-THUAT.md) — nợ kỹ thuật đã xử lý ở luồng đặt hàng

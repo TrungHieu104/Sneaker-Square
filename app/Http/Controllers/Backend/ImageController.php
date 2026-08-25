@@ -93,7 +93,7 @@ class ImageController extends Controller
         $image = Image::find($imgId);
 
         if (!$image) {
-            return response()->json(['message' => 'Không tìm thấy dữ liệu'], abort(404));
+            return response()->json(['message' => 'Không tìm thấy dữ liệu'], 404);
         }
 
         $image->img_hidden = $img_hidden;

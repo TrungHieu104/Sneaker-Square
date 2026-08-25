@@ -16,7 +16,7 @@
                         <label for="path" class="form-label">Đường dẫn</label>
                         <input type="text" class="form-control" id="path" name="cate_slug" readonly value="{{ old('cate_slug') }}" />
                         <div class="mb-1">
-                            <small class="text-lowercase">{{route('product.by.cate', '')}}/<small class="fw-bold" id="url-slug"></small> </small>
+                            <small class="text-lowercase">{{url('/danh-muc')}}/<small class="fw-bold" id="url-slug"></small> </small>
                         </div>
                     </div>
                 {{-- </div>

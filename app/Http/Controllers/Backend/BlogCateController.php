@@ -206,8 +206,8 @@ class BlogCateController extends Controller
         return back()->with('message', 'Hoàn tác thành công!');
     }
     
-    public function forceDelete($id){ // xóa vĩnh viễn
-        $cateBl = CateNews::withTrashed()->find($id); // Lấy bản ghi đã xóa mềm
+    public function forceDelete($id){ // Delete permanently
+        $cateBl = CateNews::withTrashed()->find($id); // Fetch the soft-deleted record
         if ($cateBl) {
             $cateBl->forceDelete();
             Session::flash('iconMessage', 'success');

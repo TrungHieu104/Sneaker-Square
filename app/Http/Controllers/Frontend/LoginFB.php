@@ -9,6 +9,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 use Exception;
 
 class LoginFB extends Controller
@@ -106,18 +107,25 @@ class LoginFB extends Controller
                     'email' => $user->email,
                     'facebook_id' => $user->id,
                     'user_img' => $user->avatar,
-                    'password' => Hash::make('SneakerSquare@#')
+                    // A random password, not a shared literal. Every account
+                    // created through social sign-in used to get the same
+                    // hard-coded password, which is in the repository — so
+                    // anyone could sign in as any of them through the ordinary
+                    // login form. The customer sets a real one via "forgot
+                    // password" if they ever want to sign in without Google.
+                    'password' => Hash::make(Str::random(40))
                 ]);
                 Auth::login($newUser);
                 return redirect()->intended(route('home.page'));
             }
         } catch (Exception $e) {
-            dd([
-                'class'   => get_class($e),
-                'message' => $e->getMessage(),
-                'file'    => $e->getFile(),
-                'line'    => $e->getLine(),
-            ]);
+            // dd() here dumped the exception, its file and its line number to
+            // the visitor's browser.
+            report($e);
+            Session::flash('iconMessage', 'error');
+
+            return redirect()->route('user.login')
+                ->with('message', 'Không đăng nhập được bằng Facebook, vui lòng thử lại.');
         }
     }
 }

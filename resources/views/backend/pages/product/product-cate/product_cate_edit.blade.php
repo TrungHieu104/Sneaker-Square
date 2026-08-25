@@ -17,7 +17,7 @@
                                     <label for="path" class="form-label">Đường dẫn</label>
                                     <input type="text" class="form-control" id="path-update-{{$cates->cate_id}}" value="{{ $cates->cate_slug }}" name="cate_slug" readonly />
                                     <div class="mb-1">
-                                        <small class="text-lowercase">{{route('product.by.cate', '')}}/<small class="fw-bold" id="url-slug-update-{{$cates->cate_id}}">{{ $cates->cate_slug }}</small> </small>
+                                        <small class="text-lowercase">{{url('/danh-muc')}}/<small class="fw-bold" id="url-slug-update-{{$cates->cate_id}}">{{ $cates->cate_slug }}</small> </small>
                                     </div>
                                 </div>
                             </div>

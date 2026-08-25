@@ -5,6 +5,12 @@ namespace App\Http\Requests\Backend;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * Rules for creating or editing a product category.
+ *
+ * See ColorRequest: the unique rules ignored a route parameter that does not
+ * exist, so an edit always collided with the row being edited.
+ */
 class ProductCateRequest extends FormRequest
 {
     /**
@@ -16,6 +22,17 @@ class ProductCateRequest extends FormRequest
     }
 
     /**
+     * Capitalises the category name before it is checked, matching what the
+     * controller stores.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('cate_name')) {
+            $this->merge(['cate_name' => ucwords((string) $this->input('cate_name'))]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
@@ -23,8 +40,8 @@ class ProductCateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'cate_name' => ['required', Rule::unique('category', 'cate_name')->ignore( request()->id,'cate_id')],
-            'cate_sort' => ['required', 'numeric', 'min: 0', 'max: 9999999999', 'integer', Rule::unique('category', 'cate_sort')->ignore( request()->id,'cate_id')],
+            'cate_name' => ['required', Rule::unique('category', 'cate_name')->ignore($this->route('product_category'), 'cate_id')],
+            'cate_sort' => ['required', 'numeric', 'min: 0', 'max: 9999999999', 'integer', Rule::unique('category', 'cate_sort')->ignore($this->route('product_category'), 'cate_id')],
             'cate_img' => ['nullable', 'image'],
         ];
     }

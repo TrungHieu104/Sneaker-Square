@@ -50,6 +50,16 @@ return [
         'secret_key' => env('MOMO_SECRET_KEY'),
     ],
 
+    'captcha' => [
+        'key' => env('CAPTCHA_KEY'),
+        'secret' => env('CAPTCHA_SECRET'),
+
+        // The login form shows the reCAPTCHA widget once this many sign-in
+        // attempts have failed, and from that point the token is required.
+        // Both the form and LoginRequest read this same number.
+        'after_failed_attempts' => env('CAPTCHA_AFTER_FAILED_ATTEMPTS', 3),
+    ],
+
     'vnpay' => [
         'url' => env('VNPAY_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'),
         'tmn_code' => env('VNPAY_TMN_CODE'),

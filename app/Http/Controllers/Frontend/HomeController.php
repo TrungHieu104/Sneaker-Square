@@ -60,21 +60,24 @@ class HomeController extends Controller
 
     public function index(Request $request)
     {
-        $hotProduct = Product::where('pro_hot', 1)
+        $hotProduct = Product::withRatingSummary()
+                                ->where('pro_hot', 1)
                                 ->where('pro_hidden', 1)
                                 ->where('pro_date','<=', date('Y-m-d'))
                                 ->orderBy('pro_date', 'desc')
                                 ->limit(8)
                                 ->get();
 
-        $saleProduct = Product::where('pro_price_sale', '!=', 0)
+        $saleProduct = Product::withRatingSummary()
+                                ->where('pro_price_sale', '!=', 0)
                                 ->where('pro_hidden', 1)
                                 ->whereDate('pro_date', '<=', date('Y-m-d'))
                                 ->orderBy('updated_at', 'desc')
                                 ->limit(3)
                                 ->get();
                                 
-        $mostViewProduct = Product::where('pro_hidden', 1)
+        $mostViewProduct = Product::withRatingSummary()
+                                ->where('pro_hidden', 1)
                                 ->whereDate('pro_date', '<=', date('Y-m-d'))
                                 ->orderBy('pro_views', 'desc')
                                 ->limit(9)

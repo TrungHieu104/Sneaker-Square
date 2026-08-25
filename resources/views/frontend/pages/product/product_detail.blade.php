@@ -328,15 +328,25 @@
                                                                 @endif
                                                             </a>
                                                         </h5>
-                                                        <div class="rating-stars mb-2" style="color: #ffc107;">
-                                                            @for ($i = 1; $i <= 5; $i++)
-                                                                @if ($i <= ($comment->rating ?? 5))
-                                                                    <i class="fas fa-star"></i>
-                                                                @else
-                                                                    <i class="far fa-star"></i>
-                                                                @endif
-                                                            @endfor
-                                                        </div>
+                                                        {{-- Reviews written before star ratings existed carry no score.
+                                                             Showing them as five stars would put words in the
+                                                             reviewer's mouth, and would not match the average, which
+                                                             leaves them out. --}}
+                                                        @if ($comment->rating)
+                                                            <div class="rating-stars mb-2" style="color: #ffc107;">
+                                                                @for ($i = 1; $i <= 5; $i++)
+                                                                    @if ($i <= $comment->rating)
+                                                                        <i class="fas fa-star"></i>
+                                                                    @else
+                                                                        <i class="far fa-star"></i>
+                                                                    @endif
+                                                                @endfor
+                                                            </div>
+                                                        @else
+                                                            <div class="mb-2 text-muted" style="font-size: 13px;">
+                                                                <i class="far fa-comment-dots"></i> Nhận xét chưa chấm điểm
+                                                            </div>
+                                                        @endif
                                                         <p class="date">
                                                             {{ date('d-m-Y', strtotime($comment->comment_date)) }} lúc
                                                             {{ date('H:i', strtotime($comment->comment_date)) }}

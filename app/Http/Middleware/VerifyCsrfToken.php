@@ -13,5 +13,9 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         'ckfinder/*',
+        // The payment gateways post here from their own servers, so they have
+        // no session and no token. Authenticity is proved by the HMAC on the
+        // payload instead, which PaymentCallbackController checks.
+        'ipn-thanh-toan',
     ];
 }

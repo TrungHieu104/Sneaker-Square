@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('comments', function (Blueprint $table) {
             $table->id('comment_id');
             $table->text('comment_content');
-            $table->unsignedTinyInteger('rating')->default(5);
+            // Nullable: a review written before ratings existed carries no score,
+            // and counting it as five stars would invent data.
+            $table->unsignedTinyInteger('rating')->nullable();
             $table->boolean('comment_hidden')->default(1);
             $table->dateTime('comment_date', $precision = 0);
             $table->unsignedBigInteger('pro_id');

@@ -286,8 +286,7 @@ class CouponAdminController extends Controller
             $customers = UserModel::where('user_role',0)->where('user_status',1)->get(); 
             $cou = CouponModel::find($cou_id);
             foreach ($customers as $customer) {
-                $email = Auth::user()->email;
-                Mail::to($customer->email)->send(new CouponMail($email, $cou));
+                Mail::to($customer->email)->send(new CouponMail($cou));
             }
         }
         if ($coupon == 2) {
@@ -298,8 +297,7 @@ class CouponAdminController extends Controller
             foreach ($usersWithOrders as $user) {
                 $orderCount = $user->order_count;
                 if ($orderCount >= 0 && $orderCount < 2) {
-                $email = Auth::user()->email;
-                Mail::to($user->email)->send(new CouponMail($email, $cou));
+                Mail::to($user->email)->send(new CouponMail($cou));
                 }
             }
         }
@@ -311,8 +309,7 @@ class CouponAdminController extends Controller
             foreach ($usersWithOrders as $user) {
                 $orderCount = $user->order_count;
                 if ($orderCount >= 2 && $orderCount <= 5) {
-                $email = Auth::user()->email;
-                Mail::to($user->email)->send(new CouponMail($email, $cou));
+                Mail::to($user->email)->send(new CouponMail($cou));
                 }
             }
         }
@@ -324,8 +321,7 @@ class CouponAdminController extends Controller
             foreach ($usersWithOrders as $user) {
                 $orderCount = $user->order_count;
                 if ($orderCount > 5) {
-                $email = Auth::user()->email;
-                Mail::to($user->email)->send(new CouponMail($email, $cou));
+                Mail::to($user->email)->send(new CouponMail($cou));
                 }
             }
         }

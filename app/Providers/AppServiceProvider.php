@@ -3,8 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Models\ProductModel;
-use App\Models\OrderModel;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -12,24 +11,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        \Laravel\Sanctum\Sanctum::ignoreMigrations();
+        //
     }
 
     /**
      * Bootstrap any application services.
+     *
+     * A view composer registered on '*' used to live here. It ran four queries
+     * — including two `all()->count()` calls that load the whole `products` and
+     * `order` tables into memory — and it ran them again for every view
+     * rendered, so a listing page with nine product cards paid for them nine
+     * times over. None of the four variables it shared was read by any
+     * template. Removing it costs the application nothing.
      */
     public function boot(): void
     {
-        view()->composer('*', function($view){
-            $min_price = ProductModel::min('pro_price');
-            $max_price = ProductModel::max('pro_price');
-
-            $app_product = ProductModel::all()->count();
-            $app_order = OrderModel::all()->count();
-
-            $view->with('min_price', $min_price)->with('max_price',$max_price)
-            ->with('app_product', $app_product)
-            ->with('app_order', $app_order);
-        });
+        //
     }
 }

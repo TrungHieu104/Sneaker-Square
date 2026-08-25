@@ -31,7 +31,7 @@ class AuthUserController extends Controller
         $slide = Promotion::where('cate_slide_id',1)->where('promotion_hidden',1)->get();
         $contact = Contact::where('contact_hidden',1)->limit(1)->get();
         $faq = Faq::where('faq_hidden',1)->where('faq_about',0)->orderBy('faq_id','desc')->get();
-        $cateNews = CateNews::where('cate_news_hidden',1)
+        $cateNews = CateNews::withCount('getNewsInCate')->where('cate_news_hidden',1)
         -> orderBy('cate_news_sort', 'asc')
         -> get();
         view()->share(compact('slide','contact','faq','cateNews'));
@@ -44,15 +44,24 @@ class AuthUserController extends Controller
 
     public function loginPost(LoginRequest $request)
     {
-        if (auth()->attempt(['email' => $request->input('email'), 'password' => $request->input('password')])) {
-            // Signed in successfully.
-            if ($request->has('remember')) {
-                Cookie::queue('email', $request->email, 1440);
-                Cookie::queue('password', $request->password, 1440);
-            } else {
-                Cookie::queue('email', "");
-                Cookie::queue('password', "");
-            }
+        $remember = $request->boolean('remember');
+
+        // "Remember me" is Laravel's own long-lived token now. It used to write
+        // the customer's password into a cookie for 24 hours and print it back
+        // into the form's value attribute — the password itself was the
+        // remember-me token, sitting in the browser in readable form.
+        if (auth()->attempt(
+            ['email' => $request->input('email'), 'password' => $request->input('password')],
+            $remember
+        )) {
+            // The address is safe to keep so the field comes back filled in.
+            $remember
+                ? Cookie::queue('email', $request->input('email'), 1440)
+                : Cookie::queue(Cookie::forget('email'));
+
+            // Clears the password cookie left behind by the previous scheme.
+            Cookie::queue(Cookie::forget('password'));
+
             // Reset the failed-attempt counter.
             session()->forget('login_attempts');
             return redirect(route('home.page'));

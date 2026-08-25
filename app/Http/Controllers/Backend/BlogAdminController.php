@@ -40,7 +40,8 @@ class BlogAdminController extends Controller
         $keyword = $request->input('keyword');
         $searchableFields = ['news.news_title'];
 
-        $news = $this->performSearch(News::orderBy($orderBy, $orderType), $keyword, $searchableFields)->paginate(10)->withQueryString();
+        // Each row lists the article's tags.
+        $news = $this->performSearch(News::with('getTags')->orderBy($orderBy, $orderType), $keyword, $searchableFields)->paginate(10)->withQueryString();
         
         return view('backend.pages.blog.blogs.blog_list',compact('news', 'orderBy', 'orderType'));
     }

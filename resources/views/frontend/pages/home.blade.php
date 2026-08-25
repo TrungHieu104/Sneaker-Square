@@ -14,12 +14,12 @@
                         <div
                             class="col-lg-3 col-md-6 col-sm-6 p-3 d-flex justify-content-center align-items-center flex-column single-features">
                             <div class="f-icon">
-                                <a href="{{ env('APP_URL') }}/chinh-sach/chinh-sach-giao-hang.html">
+                                <a href="{{ config('app.url') }}/chinh-sach/chinh-sach-giao-hang.html">
                                     <img src="/frontend/img/features/f-icon1.png" alt="" class="w-100 h-100">
                                 </a>
                             </div>
                             <div class="text-center mt-2">
-                                <a href="{{ env('APP_URL') }}/chinh-sach/chinh-sach-giao-hang.html">
+                                <a href="{{ config('app.url') }}/chinh-sach/chinh-sach-giao-hang.html">
                                     <h6 class="fw-bold">Chính sách giao hàng</h6>
                                 </a>
                                 <p class="mt-2">Phí vận chuyển ưu đãi</p>
@@ -28,12 +28,12 @@
                         <div
                             class="col-lg-3 col-md-6 col-sm-6 p-3 d-flex justify-content-center align-items-center flex-column single-features">
                             <div class="f-icon">
-                                <a href="{{ env('APP_URL') }}/chinh-sach/chinh-sach-bao-hanh-va-doi-tra.html">
+                                <a href="{{ config('app.url') }}/chinh-sach/chinh-sach-bao-hanh-va-doi-tra.html">
                                     <img src="/frontend/img/features/f-icon3.png" alt="" class="w-100 h-100">
                                 </a>
                             </div>
                             <div class="text-center mt-2">
-                                <a href="{{ env('APP_URL') }}/chinh-sach/chinh-sach-bao-hanh-va-doi-tra.html">
+                                <a href="{{ config('app.url') }}/chinh-sach/chinh-sach-bao-hanh-va-doi-tra.html">
                                     <h6 class="fw-bold">Chính sách đổi trả</h6>
                                 </a>
                                 <p class="mt-2">Đổi trả & quyền lợi khách hàng</p>
@@ -56,12 +56,12 @@
                         <div
                             class="col-lg-3 col-md-6 col-sm-6 p-3 d-flex justify-content-center align-items-center flex-column single-features">
                             <div class="f-icon">
-                                <a href="{{ env('APP_URL') }}/chinh-sach/chinh-sach-bao-mat.html">
+                                <a href="{{ config('app.url') }}/chinh-sach/chinh-sach-bao-mat.html">
                                     <img src="/frontend/img/features/f-icon4.png" alt="" class="w-100 h-100">
                                 </a>
                             </div>
                             <div class="text-center mt-2">
-                                <a href="{{ env('APP_URL') }}/chinh-sach/chinh-sach-bao-mat.html">
+                                <a href="{{ config('app.url') }}/chinh-sach/chinh-sach-bao-mat.html">
                                     <h6 class="fw-bold">Bảo mật thông tin</h6> 
                                 </a>
                                 <p class="mt-2">An tâm trải nghiệm dịch vụ</p>

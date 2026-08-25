@@ -103,14 +103,26 @@ class LoginGoogle extends Controller
                     'name'      => $user->name,
                     'email'     => $user->email,
                     'google_id' => $user->id,
-                    'user_img'  => $user->avatar,   // ← lưu avatar
-                    'password'  => Hash::make('SneakerSquare@#')
+                    'user_img'  => $user->avatar,   // store the avatar
+                    // A random password, not a shared literal. Every account
+                    // created through social sign-in used to get the same
+                    // hard-coded password, which is in the repository — so
+                    // anyone could sign in as any of them through the ordinary
+                    // login form. The customer sets a real one via "forgot
+                    // password" if they ever want to sign in without Google.
+                    'password'  => Hash::make(Str::random(40))
                 ]);
                 Auth::login($newUser);
                 return redirect()->intended(route('home.page'));
             } 
         } catch (Exception $e) {
-            dd($e->getMessage());
+            // dd() here meant a failed sign-in printed the exception straight
+            // to the visitor's browser.
+            report($e);
+            Session::flash('iconMessage', 'error');
+
+            return redirect()->route('user.login')
+                ->with('message', 'Không đăng nhập được bằng Google, vui lòng thử lại.');
         }
     }
 }

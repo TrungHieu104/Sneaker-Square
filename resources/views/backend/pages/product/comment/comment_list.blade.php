@@ -60,13 +60,18 @@
                                     </td>
 
                                     <td class="text-center text-warning text-nowrap">
-                                        @for ($i = 1; $i <= 5; $i++)
-                                            @if ($i <= ($comments->rating ?? 5))
-                                                <i class="fas fa-star"></i>
-                                            @else
-                                                <i class="far fa-star"></i>
-                                            @endif
-                                        @endfor
+                                        {{-- No score at all on reviews left before ratings were added. --}}
+                                        @if ($comments->rating)
+                                            @for ($i = 1; $i <= 5; $i++)
+                                                @if ($i <= $comments->rating)
+                                                    <i class="fas fa-star"></i>
+                                                @else
+                                                    <i class="far fa-star"></i>
+                                                @endif
+                                            @endfor
+                                        @else
+                                            <span class="text-muted">&mdash;</span>
+                                        @endif
                                     </td>
 
                                     <td class="text-center">

@@ -2,9 +2,20 @@
 
 namespace App\Http\Controllers\Frontend;
 
+use App\Actions\CancelOrderAction;
+use App\Actions\PlaceOrderAction;
+use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
+use App\Services\CartPricingService;
+use App\Services\CartService;
+use App\Services\OrderMailer;
+use App\Services\Payment\InvalidPaymentCallbackException;
+use App\Services\Payment\PaymentGatewayManager;
+use Illuminate\Http\RedirectResponse;
+use Throwable;
 use Carbon\Traits\Timestamp;
 use Illuminate\Http\Request;
+use App\Http\Requests\Frontend\CheckoutRequest;
 use App\Http\Requests\Frontend\CouponCheckRequest;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
@@ -41,8 +52,21 @@ class ProductController extends Controller
 {
     public $keyword;
 
-    public function __construct(Request $request)
-    {
+    /**
+     * The value `order.order_payment` holds for cash on delivery.
+     *
+     * The two other values it can hold are the gateway names, so the payment
+     * method the customer picked is enough to find the gateway again later.
+     */
+    private const PAYMENT_ON_DELIVERY = 'cod';
+
+    public function __construct(
+        Request $request,
+        private readonly PaymentGatewayManager $gateways,
+        private readonly CancelOrderAction $cancelOrder,
+        private readonly OrderMailer $mailer,
+        private readonly CartService $cart,
+    ) {
         $keyword = $request->input('keyword');
         $slide = Promotion::where('cate_slide_id', 1)->where('promotion_hidden', 1)->get();
         $contact = Contact::where('contact_hidden', 1)->limit(1)->get();
@@ -69,15 +93,20 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $url = Route::getFacadeRoot()->current()->uri;
-        $getAllCate = Category::where('cate_hidden', 1)->orderBy('cate_sort', 'asc')->get();
-        $getAllProduct = Product::where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d"));
-        $getAccessories = Category::where('cate_parent_id', 6)->where('cate_hidden', 1)->get();
+        $getAllCate = Category::withCount('getProductsInCate')
+            ->where('cate_hidden', 1)->orderBy('cate_sort', 'asc')->get();
+        $getAllProduct = Product::withRatingSummary()->where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d"));
+        $getAccessories = Category::with([
+            // The accessories block on product_page.blade.php draws stars for
+            // every product in these categories, so load the ratings with them.
+            'getProductsInCate' => fn ($products) => $products->withRatingSummary(),
+        ])->where('cate_parent_id', 6)->where('cate_hidden', 1)->get();
         $getOneCate = Category::where(['cate_slug' => $request->route('cate_slug'), 'cate_hidden' => 1])->first();
-        $getHotProduct = Product::where('pro_hot', 1)->where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d"))->get();
-        $getSaleProduct = Product::where('pro_price_sale', '!=', 0)->where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d"))->get();
+        $getHotProduct = Product::withRatingSummary()->where('pro_hot', 1)->where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d"))->get();
+        $getSaleProduct = Product::withRatingSummary()->where('pro_price_sale', '!=', 0)->where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d"))->get();
 
         if ($getOneCate) {
-            $getAllProduct = $getOneCate->getProductsInCate()->where('pro_hidden', 1);
+            $getAllProduct = $getOneCate->getProductsInCate()->withRatingSummary()->where('pro_hidden', 1);
         } elseif (url()->current() == route('product.hot')) {
             $getAllProduct = $getAllProduct->where('pro_hot', 1);
         } elseif (url()->current() == route('product.sale')) {
@@ -138,7 +167,16 @@ class ProductController extends Controller
             return redirect()->route('product.page')->with('message', 'Sản phẩm không tồn tại');
         }
 
-        $detailProduct = Product::where('pro_id', $proId)->first();
+        // The page prints the category, the gallery and every visible review with
+        // its author. Loaded here in four queries rather than one per review.
+        $detailProduct = Product::withRatingSummary()
+            ->with([
+                'getCate',
+                'getImages',
+                'getComments' => fn ($comments) => $comments->where('comment_hidden', 1)->with('getUsers'),
+            ])
+            ->where('pro_id', $proId)
+            ->first();
         $detailProduct->pro_views++;
         $detailProduct->save();
 
@@ -154,14 +192,14 @@ class ProductController extends Controller
             ->groupBy('pro_id', 'products_quantity.size_id', 'size')
             ->get();
 
-        $relatedProduct = Product::where('cate_id', $detailProduct->cate_id)
+        $relatedProduct = Product::withRatingSummary()->where('cate_id', $detailProduct->cate_id)
             ->where('pro_id', '!=', $detailProduct->pro_id)
             ->where('pro_hidden', 1)
             ->orderBy('pro_views', 'desc')
             ->limit(5)
             ->get();
 
-        $hotProduct = Product::where('pro_hot', 1)
+        $hotProduct = Product::withRatingSummary()->where('pro_hot', 1)
             ->where('pro_hidden', 1)
             ->orderBy('pro_date', 'desc')
             ->limit(5)
@@ -209,20 +247,25 @@ class ProductController extends Controller
 
     public function addPro(Request $request, string $proSlug = '')
     {
-        $pro_name = $request['pro_name'];
         $quantity = $request['quantity'];
         $color_id = $request['options-color'];
         $size_id = $request['options-size'];
-        $pro_price = $request['pro_price'];
 
         $pro_slug_db = Product::where('pro_slug', $proSlug)->first();
-        $check_pro_quantity = Quantity::where('pro_id', $pro_slug_db->pro_id)->get();
-        $check_current_pro_quantity = Quantity::where('pro_id', $pro_slug_db->pro_id)->where('color_id', $color_id)->where('size_id', $size_id)->first();
-        if (!$pro_slug_db)
+
+        if (! $pro_slug_db) {
             return back()->with([
                 'iconMessage' => 'warning',
                 'message' => 'Opps!!! Sản phẩm bạn vừa chọn không có trong hệ thống'
             ]);
+        }
+
+        // Name and price come from the database, never from the request. The cart
+        // now holds only what the customer picked: product, size, colour, quantity.
+        $pro_name = $pro_slug_db->pro_name;
+        $pro_price = app(CartPricingService::class)->unitPrice($pro_slug_db);
+        $check_pro_quantity = Quantity::where('pro_id', $pro_slug_db->pro_id)->get();
+        $check_current_pro_quantity = Quantity::where('pro_id', $pro_slug_db->pro_id)->where('color_id', $color_id)->where('size_id', $size_id)->first();
         if (!$check_pro_quantity || !$check_current_pro_quantity)
             return back()->with([
                 'iconMessage' => 'warning',
@@ -386,152 +429,102 @@ class ProductController extends Controller
 
     }
 
-    public function checkoutPOST(Request $request)
+    public function checkoutPOST(CheckoutRequest $request, PlaceOrderAction $placeOrder)
     {
-        if (Auth::check()) {
-            $isSuccess = false;
-            $user = Auth::user();
-            $deliInfo = Info::where('user_id', $user->user_id)->get();
-            // $cart = $this->checkProduct($request) ?? $request->session()->get('cart');
-            $get = $this->checkProduct($request);
-            $cart = $request->session()->get('cart');
-            $coupon_data = $request->session()->get('coupon_data');
-            if (!is_array($cart) || empty($cart)) {
-                $request->session()->forget('coupon_data');
-                return redirect('/gio-hang-trong');
-            }
-            if (isset($get['isRemove']) && $get['isRemove']) {
-                Session::flash('iconMessage', 'error');
-                return redirect()->back()->with('message', 'Opps!!! Sản phẩm trong giỏ hàng của bạn vừa bị ẩn, hãy mua sản phẩm khác !');
-            }
-            if (isset($get['isntEnough']) && $get['isntEnough']) {
-                Session::flash('iconMessage', 'error');
-                return redirect()->back()->with('message', 'Opps!!! Sản phẩm trong giỏ hàng của bạn không đủ số lượng trong kho, hãy giảm số lượng mua !');
-            }
-            $coupon_data = $request->session()->get('coupon_data') ?? null;
-            $date_format = Carbon::now('Asia/Ho_Chi_Minh')->format('Y/m/d');
-
-            //create order
-            $order_code = $request->order_code;
-            $order = new Order();
-            $order->order_code = $order_code;
-            $defaultDeliInfo = null;
-            foreach ($deliInfo as $dI) {
-                if ($dI->info_default == 1) {
-                    $defaultDeliInfo = $dI;
-                    break;
-                }
-            }
-            if ($defaultDeliInfo) {
-                $order->order_name = $defaultDeliInfo->info_name;
-                $order->order_phone = $defaultDeliInfo->info_phone;
-                $order->order_email = $defaultDeliInfo->info_email;
-                $order->order_address = $defaultDeliInfo->info_address;
-                $order->order_local = $defaultDeliInfo->info_ward . ', ' . $defaultDeliInfo->info_district . ', ' . $defaultDeliInfo->info_province;
-                $isSuccess = true;
-            } else {
-                Session::flash('iconMessage', 'warning');
-                return redirect()->back()->with('message', 'Hãy chọn địa chỉ nhận hàng !');
-            }
-            $order->order_delivery_fee = $request['deliFee'];
-            $order->order_coupon_value = $request['couVal'];
-            $order->order_total = $request['thanhtien'];
-            $order->order_payment = $request['payment'];
-            $order->order_payment_status = 0;
-            $order->order_date = $date_format;
-            $order->note_customer = $request['note_customer'];
-            $order->coupon_id = $coupon_data->coupon_id ?? null;
-            $order->user_id = $user->user_id;
-            $order->save();
-
-            if (is_array($cart)) {
-                foreach ($cart as $item) {
-                    $pro_id = Product::where('pro_slug', $item['proSlug'])->value('pro_id');
-                    $pro_quantity = Quantity::where('pro_id', $pro_id)
-                        ->where('size_id', $item['size_id'])
-                        ->where('color_id', $item['color_id'])
-                        ->first();
-                    $pro_quantity->quantity -= $item['quantity'];
-                    $pro_quantity->save();
-                    $size = Size::where('size_id', $item['size_id'])->value('size');
-                    $color = Color::where('color_id', $item['color_id'])->value('color_vn');
-                    $OD = new OrderDetail();
-                    $OD->order_id = $order->order_id;
-                    $OD->pro_name = $item['pro_name'];
-                    $OD->size = $size ?? null;
-                    $OD->color = $color ?? null;
-                    $OD->price = $item['pro_price'];
-                    $OD->quantity = $item['quantity'];
-                    $OD->pro_id = $pro_id;
-                    $OD->save();
-                }
-            } else
-                $isSuccess = false;
-
-            if (!$isSuccess) {
-                Session::flash('iconMessage', 'error');
-                return redirect()->back()->with('message', 'Đặt hàng thất bại!');
-            }
-
-            if ($coupon_data) {
-                $coupon_DB = Coupon::find($coupon_data->coupon_id);
-                if ($coupon_DB->coupon_quantity != 0) {
-                    $coupon_DB->coupon_quantity = $coupon_DB->coupon_quantity - 1;
-                    $coupon_DB->coupon_used = $coupon_DB->coupon_used + 1;
-                    $coupon_DB->save();
-                }
-            }
-            session()->forget('cart');
-            session()->forget('coupon_data');
-            if ($request->input('payment') !== 'cod') {
-                $payment = new PaymentCheckoutController();
-                return $payment->paymentCheckout($request);
-
-            }
-            return $this->processCheckout($order->order_code);
+        if (! Auth::check()) {
+            return redirect()->route('user.login');
         }
+
+        $user = Auth::user();
+
+        // checkProduct() may drop items from the cart, so it has to run before we read it.
+        $check = $this->checkProduct($request);
+        $cart = $request->session()->get('cart');
+        $coupon = $request->session()->get('coupon_data');
+        $coupon = $coupon instanceof Coupon ? $coupon : null;
+
+        if (! is_array($cart) || empty($cart)) {
+            $request->session()->forget('coupon_data');
+
+            return redirect('/gio-hang-trong');
+        }
+
+        if (isset($check['isRemove']) && $check['isRemove']) {
+            Session::flash('iconMessage', 'error');
+
+            return redirect()->back()->with('message', 'Opps!!! Sản phẩm trong giỏ hàng của bạn vừa bị ẩn, hãy mua sản phẩm khác !');
+        }
+
+        if (isset($check['isntEnough']) && $check['isntEnough']) {
+            Session::flash('iconMessage', 'error');
+
+            return redirect()->back()->with('message', 'Opps!!! Sản phẩm trong giỏ hàng của bạn không đủ số lượng trong kho, hãy giảm số lượng mua !');
+        }
+
+        $address = Info::where('user_id', $user->user_id)->where('info_default', 1)->first();
+
+        if (! $address) {
+            Session::flash('iconMessage', 'warning');
+
+            return redirect()->back()->with('message', 'Hãy chọn địa chỉ nhận hàng !');
+        }
+
+        // Every amount is recomputed inside PlaceOrderAction from the database.
+        // The thanhtien / deliFee / couVal values posted by the browser are ignored.
+        try {
+            $order = $placeOrder->execute($user, $cart, $coupon, $address, [
+                'payment' => $request->input('payment'),
+                'note_customer' => $request->input('note_customer'),
+            ]);
+        } catch (InsufficientStockException $e) {
+            Session::flash('iconMessage', 'error');
+
+            return redirect()->back()->with('message', $e->userMessage());
+        }
+
+        session()->forget('cart');
+        session()->forget('coupon_data');
+
+        if ($order->order_payment === self::PAYMENT_ON_DELIVERY) {
+            $this->mailer->sendConfirmation($order);
+
+            return redirect()->route('success.checkout');
+        }
+
+        return $this->startGatewayPayment($order);
     }
 
-    public function processCheckout($order_code = null)
+    /**
+     * Sends the customer to the gateway that will take their money.
+     *
+     * If building that URL fails the order is cancelled straight away, so the
+     * stock it reserved goes back instead of sitting behind an order nobody can
+     * ever pay for.
+     */
+    private function startGatewayPayment(Order $order): RedirectResponse
     {
-        if (
-            (isset($_GET['resultCode']) && $_GET['resultCode'] == 1006) ||
-            (isset($_GET['vnp_ResponseCode']) && $_GET['vnp_ResponseCode'] == 24)
-        ) {
-            $order = Order::where('order_code', $_GET['orderId'] ?? $_GET['vnp_TxnRef'])->first();
-            if ($order && $order->coupon_id !== null) {
-                $coupon_DB = Coupon::where('coupon_id', $order->coupon_id)->first();
-                $coupon_DB->coupon_quantity += 1;
-                $coupon_DB->coupon_used -= 1;
-                $coupon_DB->save();
-            }
-            $order->forceDelete();
-            $cart = session()->get('cart') ?? null;
-            if (is_array($cart)) {
-                foreach ($cart as $item) {
-                    $pro_id = Product::where('pro_slug', $item['proSlug'])->value('pro_id');
-                    $pro_quantity = Quantity::where('pro_id', $pro_id)
-                        ->where('size_id', $item['size_id'])
-                        ->where('color_id', $item['color_id'])
-                        ->first();
-                    $pro_quantity->quantity += $item['quantity'];
-                    $pro_quantity->save();
-                }
-            }
-            session()->forget('coupon_data');
-            return redirect()->route('failed.checkout');
-        }
-        if (isset($_GET['orderId']) || isset($_GET['vnp_TxnRef'])) {
-            $order = Order::where('order_code', $_GET['orderId'] ?? $_GET['vnp_TxnRef'])->first();
-            $order->order_payment_status = 1;
-            $order->order_payment_time = Carbon::now('Asia/Ho_Chi_Minh');
-            $order->save();
-        }
-        $this->orderMail($order_code);
-        session()->forget('coupon_data');
-        session()->forget('cart');
-        return redirect()->route('success.checkout');
+        $gateway = $this->gateways->byName((string) $order->order_payment);
 
+        try {
+            if (! $gateway) {
+                throw new InvalidPaymentCallbackException('Phương thức thanh toán không hợp lệ.');
+            }
+
+            $checkoutUrl = $gateway->checkoutUrl($order);
+        } catch (Throwable $e) {
+            report($e);
+            $this->cancelOrder->execute($order);
+
+            Session::flash('iconMessage', 'error');
+
+            return redirect()->route('product.cart')
+                ->with('message', 'Không thể kết nối cổng thanh toán, đơn hàng đã được hủy.');
+        }
+
+        $order->order_payment_url = $checkoutUrl;
+        $order->save();
+
+        return redirect()->away($checkoutUrl);
     }
 
     public function successCheckout()
@@ -544,67 +537,34 @@ class ProductController extends Controller
         return view('frontend.pages.product.failed_checkout');
     }
 
+    /**
+     * Drops anything from the cart the shop can no longer sell.
+     *
+     * Returns the same shape the callers have always expected: the surviving
+     * cart, or a flag array saying why something went missing.
+     *
+     * @return array<int, array<string, mixed>>|array<string, bool>
+     */
     private function checkProduct(Request $request)
     {
-        $isRemove = false;
-        $isntEnough = false;
-        $isEmpty = false;
         $cart = $request->session()->get('cart');
-        if ($cart) {
-            foreach ($cart as $key => $cart_item) {
-                $pro_slug_db = Product::where('pro_slug', $cart_item['proSlug'])->first();
-                if ($pro_slug_db) {
-                    $check_quantity_pro = Quantity::where('pro_id', $pro_slug_db->pro_id)
-                        ->where('color_id', $cart_item['color_id'])
-                        ->where('size_id', $cart_item['size_id'])
-                        ->first();
-                    if ($cart_item['quantity'] > $check_quantity_pro->quantity) {
-                        array_splice($cart, $key, 1);
-                        $request->session()->put('cart', $cart);
-                        $isntEnough = true;
-                    }
-                    if ($pro_slug_db->pro_hidden == 0) {
-                        array_splice($cart, $key, 1);
-                        $request->session()->put('cart', $cart);
-                        $isRemove = true;
-                    }
-                    if (!$pro_slug_db) {
-                        array_splice($cart, $key, 1);
-                        $request->session()->put('cart', $cart);
-                        $isRemove = true;
-                    }
-                } else {
-                    array_splice($cart, $key, 1);
-                    $request->session()->put('cart', $cart);
-                    $isRemove = true;
-                }
 
-                if ($isRemove) {
-                    $data['isRemove'] = $isRemove;
-                    return $data;
-                }
-                if ($isntEnough) {
-                    $data['isntEnough'] = $isntEnough;
-                    return $data;
-                }
-            }
-            return $cart;
-        } else
-            $isEmpty = true;
-        if ($isEmpty) {
-            $data['isEmpty'] = $isEmpty;
-            return $data;
+        if (! is_array($cart) || $cart === []) {
+            return ['isEmpty' => true];
         }
-    }
 
-    public function orderMail($order_code = null)
-    {
-        if (Auth::check()) {
-            $email = Auth::user()->email;
-            $order = Order::where('order_code', $order_code ?? $_GET['orderId'] ?? $_GET['vnp_TxnRef'])->first();
-            Mail::to($email)
-                ->send(new ConfirmOrder($order));
+        $result = $this->cart->screen($cart);
+        $request->session()->put('cart', $result['cart']);
+
+        if ($result['removed']) {
+            return ['isRemove' => true];
         }
+
+        if ($result['insufficient']) {
+            return ['isntEnough' => true];
+        }
+
+        return $result['cart'];
     }
 
     public function orderBill(string $order_code = '')
@@ -649,18 +609,47 @@ class ProductController extends Controller
         return view('frontend.pages.product.pdf.print_bill', compact('od', 'order'));
     }
 
+    /**
+     * A customer cancelling their own order.
+     *
+     * Two things were missing. Anyone signed in could cancel any order by
+     * guessing its code, because the order was never checked against the
+     * caller. And the goods stayed reserved: the order was marked cancelled
+     * without ever putting the stock back.
+     */
     public function cancelOrder(Request $request, $order_code)
     {
-        $order = Order::where('order_code', $order_code)->first();
-        $order->order_status = 2;
-        $order->note_customer = 'Lí do hủy đơn: ' . $request->inputCancelOrder;
+        if (! Auth::check()) {
+            return redirect()->route('user.login');
+        }
+
+        $order = Order::where('order_code', $order_code)
+            ->where('user_id', Auth::user()->user_id)
+            ->first();
+
+        if (! $order) {
+            Session::flash('iconMessage', 'warning');
+
+            return redirect()->back()->with('message', 'Không tìm thấy đơn hàng này trong tài khoản của bạn !');
+        }
+
+        // A person cancelling an order they paid for is a refund, not a fraud
+        // attempt, so this call is allowed to touch paid orders.
+        if (! $this->cancelOrder->execute($order, allowPaid: true)) {
+            Session::flash('iconMessage', 'warning');
+
+            return redirect()->back()->with('message', 'Đơn hàng này đã được hủy trước đó.');
+        }
+
+        $order->note_customer = 'Lí do hủy đơn: ' . $request->input('inputCancelOrder');
         $order->save();
+
         Session::flash('iconMessage', 'success');
+
         return redirect()->back()->with([
             'message' => ' Gửi yêu cầu hủy đơn thành công !',
             'text' => 'Số tiền sẽ được hoàn trả trong vòng 24h',
         ]);
-
     }
 
     public function getToken()

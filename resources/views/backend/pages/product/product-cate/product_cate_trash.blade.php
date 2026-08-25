@@ -88,7 +88,7 @@
                                     </td>
     
                                     <td class="text-center">
-                                        {{ count($cates->getProductsInCate) }}
+                                        {{ $cates->get_products_in_cate_count }}
                                     </td>
 
                                     <td class="text-center dx-res">

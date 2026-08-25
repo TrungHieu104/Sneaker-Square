@@ -18,7 +18,7 @@
     <link rel="canonical" href="{{request()->fullUrl()}}">
     <!-- meta title Facebook Twitter  -->
     <meta property="og:title" content="@yield('meta_title','The Sneaker Square')" />
-    <meta property="og:site_name" content="{{env('APP_URL')}}">
+    <meta property="og:site_name" content="{{config('app.url')}}">
     <meta property="og:url" content="{{ request()->fullUrl() }}">
     <meta property="og:type" content="webiste">
     <meta property="og:description" content="@yield('description','Bước chân đẹp - Mua giày thời trang chất lượng ngay hôm nay!')" />

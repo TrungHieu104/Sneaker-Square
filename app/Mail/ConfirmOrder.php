@@ -8,13 +8,12 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Auth;
 use App\Models\OrderModel as Order;
 use App\Models\OrderDetailModel as OrderDetail;
 use App\Models\CouponModel as Coupon;
 use Illuminate\Mail\Mailables\Attachment;
 
-class ConfirmOrder extends Mailable
+class ConfirmOrder extends Mailable implements ShouldQueue
 { 
     use Queueable, SerializesModels;
 
@@ -22,10 +21,28 @@ class ConfirmOrder extends Mailable
      * Create a new message instance.
      */
     public $order;
+
+    /**
+     * The short name used to greet the customer.
+     *
+     * Taken from the order's own recipient name rather than the logged-in user.
+     * This mailable is queued, and it is now also sent from a payment gateway
+     * notification, so there is no session to read a name from in either case.
+     */
+    public $lastName;
+
     public function __construct(
         $order
     ) {
         $this->order = $order;
+        $this->lastName = self::lastNameOf($order->order_name ?? null);
+    }
+
+    private static function lastNameOf(?string $fullName): string
+    {
+        $parts = preg_split('/\s+/', trim((string) $fullName), -1, PREG_SPLIT_NO_EMPTY);
+
+        return $parts ? end($parts) : '';
     }
 
     /**
@@ -44,12 +61,7 @@ class ConfirmOrder extends Mailable
     public function content(): Content
     {
         $od = OrderDetail::where('order_id', $this->order->order_id)->get();
-        $info = Auth::user()->name;
-        // Tách tên thành mảng các phần
-        $nameParts = explode(' ', $info);
-
-        // Lấy phần cuối cùng (Hieu)
-        $lastName = end($nameParts);
+        $lastName = $this->lastName;
 
         return new Content(
             view: 'mail.confirmOrder',

@@ -5,6 +5,12 @@ namespace App\Http\Requests\Backend;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * Rules for creating a product.
+ *
+ * See ColorRequest for why the unique rules had to change. ProductUpdateRequest
+ * extends this for the edit form, where the image is optional.
+ */
 class ProductRequest extends FormRequest
 {
     /**
@@ -16,6 +22,19 @@ class ProductRequest extends FormRequest
     }
 
     /**
+     * Capitalises the product name before it is checked.
+     *
+     * The controllers ran ucwords() on the name after validating and before
+     * saving, so the value checked for uniqueness was not the value stored.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('pro_name')) {
+            $this->merge(['pro_name' => ucwords((string) $this->input('pro_name'))]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
@@ -23,9 +42,9 @@ class ProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pro_name' => ['required','max: 255', Rule::unique('products', 'pro_name')->ignore(request()->id, 'pro_id')],
-            'pro_slug' => ['required','max: 255', Rule::unique('products', 'pro_slug')->ignore(request()->id, 'pro_id')],
-            'pro_code' => ['required', 'max: 50', Rule::unique('products', 'pro_code')->ignore(request()->id, 'pro_id')],
+            'pro_name' => ['required','max: 255', Rule::unique('products', 'pro_name')->ignore($this->editedProductId(), 'pro_id')],
+            'pro_slug' => ['required','max: 255', Rule::unique('products', 'pro_slug')->ignore($this->editedProductId(), 'pro_id')],
+            'pro_code' => ['required', 'max: 50', Rule::unique('products', 'pro_code')->ignore($this->editedProductId(), 'pro_id')],
             'capital_price' => ['required', 'numeric', 'min: 1', 'max: 9999999999', 'integer'],
             'pro_price' => ['required', 'numeric', 'min: 1', 'max: 9999999999', 'integer', 'gt:capital_price'],
             'pro_price_sale' => ['nullable', 'numeric', 'min: 0', 'max: 9999999999', 'integer', 'lt:pro_price'],
@@ -36,6 +55,18 @@ class ProductRequest extends FormRequest
             'pro_date' => ['required'],
             'cate_id' => ['required'],
         ];
+    }
+
+    /**
+     * The product being edited, or null when one is being created.
+     *
+     * `product` is the parameter Route::resource gives the product routes.
+     */
+    protected function editedProductId(): ?string
+    {
+        $id = $this->route('product');
+
+        return $id === null ? null : (string) $id;
     }
 
     public function messages() 

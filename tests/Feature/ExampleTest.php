@@ -2,11 +2,15 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
+    // Tests run against in-memory SQLite (see phpunit.xml), so the schema has to
+    // be built before hitting a route. They used to run against the real database.
+    use RefreshDatabase;
+
     /**
      * A basic test example.
      */

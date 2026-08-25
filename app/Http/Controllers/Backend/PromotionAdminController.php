@@ -260,9 +260,9 @@ class PromotionAdminController extends Controller
     }
     
     public function forceDelete($id){
-        $promotionDe = PromotionModel::withTrashed()->find($id); // Lấy bản ghi đã xóa mềm
+        $promotionDe = PromotionModel::withTrashed()->find($id); // Fetch the soft-deleted record
         if ($promotionDe) {
-            $promotionDe->forceDelete(); // Xóa vĩnh viễn
+            $promotionDe->forceDelete(); // Delete permanently
             Session::flash('iconMessage', 'success');
             return redirect()->back()->with('message', 'Xóa thành công');
         } else {

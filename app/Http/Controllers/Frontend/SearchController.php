@@ -51,7 +51,7 @@ class SearchController extends Controller
         }
 
         $results = Search::add(NewsModel::where('news_hidden', 1)->whereDate('post_date', '<=', date('Y-m-d')), 'news_title')
-        ->add(ProductModel::where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d")), 'pro_name')
+        ->add(ProductModel::withRatingSummary()->where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d")), 'pro_name')
         ->dontParseTerm()
         ->paginate(8)
         ->search($keyword);

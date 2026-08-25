@@ -500,7 +500,7 @@
                              <tr>
                               <td valign="top" align="left">
                                <div class="pc-font-alt" style="line-height: 143%;font-family: Arial, Helvetica;font-size: 14px;font-weight: 500;color: #1595e7;text-align: left;text-align-last: left;">
-                                <div><span style="font-weight: 700;font-style: normal;color: rgb(255, 255, 255);">Website:</span><span> </span><a href="{{env('APP_URL')}}" target="_blank" style="text-decoration: none; color: #1595e7; line-height: 1;"><span style="text-decoration: underline;color: rgb(255, 255, 255);">{{ env('APP_URL') }}</span></a><span>﻿</span>
+                                <div><span style="font-weight: 700;font-style: normal;color: rgb(255, 255, 255);">Website:</span><span> </span><a href="{{config('app.url')}}" target="_blank" style="text-decoration: none; color: #1595e7; line-height: 1;"><span style="text-decoration: underline;color: rgb(255, 255, 255);">{{ config('app.url') }}</span></a><span>﻿</span>
                                 </div>
                                 <div><span style="color: #ffffff;">Hotline: 0369.469.525﻿</span>
                                 </div>

@@ -208,12 +208,12 @@
                         <h4 class="widget_title">Danh mục bài viết</h4>
                         <ul class="list cat-list">
                             @foreach ($cateNews as $cN)
-                                @if (count($cN->getNewsInCate) != 0)
+                                @if ($cN->get_news_in_cate_count != 0)
                                     <li>
                                         <a href="{{ route('cate.news', $cN->cate_news_slug) }}"
                                             class="d-flex justify-content-between">
                                             <p>{{ $cN->cate_news_name }}</p>
-                                            <p>{{ count($cN->getNewsInCate) }}</p>
+                                            <p>{{ $cN->get_news_in_cate_count }}</p>
                                         </a>
                                     </li>
                                 @endif
@@ -225,7 +225,7 @@
                         <h4 class="widget_title">Thẻ tag</h4>
                         <ul class="list">
                             @foreach ($tags as $tg)
-                                @if (count($tg->getNews) != 0)
+                                @if ($tg->get_news_count != 0)
                                     <li><a href="{{ route('tags.news', $tg->tag_slug) }}">{{ $tg->tag_content }}</a></li>
                                 @endif
                             @endforeach

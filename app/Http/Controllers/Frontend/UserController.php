@@ -39,7 +39,7 @@ class UserController extends Controller
         $slide = Promotion::where('cate_slide_id', 1)->where('promotion_hidden', 1)->get();
         $contact = Contact::where('contact_hidden', 1)->limit(1)->get();
         $faq = Faq::where('faq_hidden',1)->where('faq_about',0)->orderBy('faq_id','desc')->get();
-        $cateNews = CateNews::where('cate_news_hidden', 1)
+        $cateNews = CateNews::withCount('getNewsInCate')->where('cate_news_hidden', 1)
             ->orderBy('cate_news_sort', 'asc')
             ->get();
         view()->share(compact('slide', 'contact', 'faq', 'cateNews', 'menu'));
