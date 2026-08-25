@@ -138,7 +138,7 @@ class OrderAdminController extends Controller
             $pdf->loadHTML($this->print_order_convert($order_id));
             return $pdf->stream();
         } catch (DecryptException $e) {
-            // Xử lý khi giải mã thất bại
+            // The identifier could not be decrypted.
             $request->session();
             Session::flash('iconMessage', 'info');
             return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
@@ -195,7 +195,7 @@ class OrderAdminController extends Controller
     
             return view("backend.pages.order.order_detail", compact('order', 'orderDetail'));
         } catch (DecryptException $e) {
-            // Xử lý khi giải mã thất bại
+            // The identifier could not be decrypted.
             $request->session();
             Session::flash('iconMessage', 'info');
             return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');

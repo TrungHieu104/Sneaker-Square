@@ -22,8 +22,7 @@ class OrdersSheet implements FromCollection, WithHeadings, WithMapping, WithEven
     private $count = 1; 
     public function collection()
     {
-        // Thực hiện lấy dữ liệu từ model và trả về một collection
-        // Ví dụ:
+        // Pull the rows from the model and return them as a collection.
         return OrderModel::orderBy('order_id','desc')->get();
     }
     public function title(): string

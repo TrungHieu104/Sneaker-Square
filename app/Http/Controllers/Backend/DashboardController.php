@@ -32,11 +32,11 @@ class DashboardController extends Controller
     public function __construct(Request $request)
     {
         $keyword = $request->input('keyword');
-        //truy cập theo trình duyệt
+        // Visits by browser.
         $dataTopBrowsers = Analytics::fetchTopBrowsers(Period::days(7));
-        //truy cập theo đường đẫn
+        // Visits by referring path.
         $dataTopReferrers= Analytics::fetchTopReferrers(Period::days(7), 15);
-        //truy cập theo hệ điều hành
+        // Visits by operating system.
         $dataSystems= Analytics::fetchTopOperatingSystems(Period::days(7));
         //chart account
         $sub7days = Carbon::now('Asia/Ho_Chi_minh')->subDays(7)->toDateString();
@@ -81,11 +81,11 @@ class DashboardController extends Controller
         $revenue = StatisticModel::get();
         $countVisitor = VisitorModel::all()->count();
 
-        //thống kê người dùng online theo ip
+        // Online users counted by IP address.
         $onlineVisitors = VisitorModel::where('visitor_date', '>=', now()->subMinutes(10))->get();
         $onlineVisitorCount = $onlineVisitors->count();
 
-        //thống kê truy cập
+        // Visit statistics.
         $dataVisitor = []; 
         $dataTotalVisitor = Analytics::fetchTotalVisitorsAndPageViews(Period::days(7))->sortBy('date');
         $dataVisitor['date'] = $dataTotalVisitor->pluck('date')->map(function ($date){
@@ -94,7 +94,7 @@ class DashboardController extends Controller
         $dataVisitor['activeUsers'] = $dataTotalVisitor->pluck('activeUsers');
         $dataVisitor['screenPageViews'] = $dataTotalVisitor->pluck('screenPageViews');
 
-        //số lượng dữ liệu theo mục
+        // Record counts per section.
         $dataTotal = [];
         $dataTotal['totalNews'] = NewsModel::all()->count();
         $dataTotal['totalPro'] = ProductModel::all()->count();
@@ -111,7 +111,7 @@ class DashboardController extends Controller
         ->count();
         $dataTotal['totalCoupon'] = CouponModel::get()->count();
 
-        // Thống kê mã giảm
+        // Coupon statistics.
         $dataTotalCoupon = [];
         $dataTotalCoupon['totalCoupon'] = CouponModel::get()->count();
         $dataTotalCoupon['stillValid'] = CouponModel::where('coupon_end','>=',$today)->count();
@@ -120,13 +120,13 @@ class DashboardController extends Controller
 
         if ($dataTotalCoupon['couponPopular']) {
             $couponName = $dataTotalCoupon['couponPopular']->coupon_code;
-            // Sử dụng $couponName theo nhu cầu của bạn
+            // $couponName is available here if needed.
         } else {
-            // Xử lý trường hợp không có mã giảm giá
+            // Handle the case where no coupon was used.
             $couponName = null;
         }
 
-        // Thống kê đơn hàng     
+        // Order statistics.
         $dataOrder = [];
         $dataOrder['orderMonth'] = OrderModel::whereMonth('order_date', now()->startOfMonth())->count();
         $dataOrder['revenueOrder'] = StatisticModel::whereMonth('order_date', now()->startOfMonth())->sum('sales');
@@ -165,7 +165,7 @@ class DashboardController extends Controller
 
     public function indexPost(Request $request) 
     {
-        //thống kê người dùng online theo ip
+        // Online users counted by IP address.
         $onlineVisitors = VisitorModel::where('visitor_date', '>=', now()->subMinutes(10))->get();
         $onlineVisitorCount = $onlineVisitors->count();
         if($request->ajax()) {

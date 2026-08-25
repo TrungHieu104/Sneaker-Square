@@ -123,7 +123,7 @@ class FaqAdminController extends Controller
             }
             return view("backend.pages.faq.faq_edit", compact('faq'));
         } catch (DecryptException $e) {
-            // Xử lý khi giải mã thất bại
+            // The identifier could not be decrypted.
             $request->session();
             Session::flash('iconMessage', 'info');
             return redirect('admin/faq')->with('message', 'Không tồn tại nội dung!');
@@ -241,7 +241,7 @@ class FaqAdminController extends Controller
                 return abort(404);
             }
         } catch (DecryptException $e) {
-            // Xử lý khi giải mã thất bại
+            // The identifier could not be decrypted.
             $request->session();
             Session::flash('iconMessage', 'info');
             return redirect('admin/faq')->with('message', 'Không tồn tại nội dung!');
@@ -272,7 +272,7 @@ class FaqAdminController extends Controller
                 return abort(404); 
             }
         } catch (DecryptException $e) {
-            // Xử lý khi giải mã thất bại
+            // The identifier could not be decrypted.
             $request->session();
             Session::flash('iconMessage', 'info');
             return redirect('admin/faq')->with('message', 'Không tồn tại nội dung!');

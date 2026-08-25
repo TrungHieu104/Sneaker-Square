@@ -30,13 +30,13 @@ class VisitorMiddleware
         $visitorIP = $request->ip();
         $visitorLastActive = now();
 
-        // Kiểm tra xem người dùng đã truy cập trong khoảng thời gian ngắn
+        // Check whether this visitor has already been seen recently.
         $existingVisitor = VisitorModel::where('visitor_ip', $visitorIP)
         ->where('visitor_date', '>=', now()->subMinutes(10))
         ->first();
 
         if (!$existingVisitor) {
-            // Tạo một bản ghi mới nếu người dùng là một người truy cập mới
+            // Record a new row when this is a first-time visitor.
             $existingVisitor = VisitorModel::updateOrCreate([
                 'visitor_ip' => $visitorIP,
             ], [

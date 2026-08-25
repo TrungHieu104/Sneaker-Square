@@ -92,7 +92,7 @@ class LoginGoogle extends Controller
                 ->with('message','Tài khoản Google đã tồn tại');
             }
             elseif($findUser){
-                // Chỉ cập nhật tên, không ghi đè ảnh user đã tự đổi
+                // Only refresh the name; never overwrite an avatar the user set themselves.
                 $findUser->name = $user->name;
                 $findUser->save();
 

@@ -66,7 +66,7 @@ class AboutAdminController extends Controller
             }
             return view("backend.pages.about.about_edit", compact('about'));
         } catch (DecryptException $e) {
-            // Xử lý khi giải mã thất bại
+            // The identifier could not be decrypted.
             $request->session();
             Session::flash('iconMessage', 'info');
             return redirect('admin/about')->with('message', 'Không tồn tại nội dung!');

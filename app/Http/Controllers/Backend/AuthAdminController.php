@@ -40,7 +40,7 @@ class AuthAdminController extends Controller
     }
 
     /**
-     * Danh sách tài khoản quản trị
+     * Lists administrator accounts.
      */
     public function index(Request $request)
     {
@@ -66,7 +66,7 @@ class AuthAdminController extends Controller
     }
     
     /**
-     * Danh sách tài khoản khách hàng
+     * Lists customer accounts.
      */
     public function listAccountUser(Request $request)
     {
@@ -213,7 +213,7 @@ class AuthAdminController extends Controller
             }
             return view('backend.pages.account.info.info_user',compact('info','role'));
         } catch (DecryptException $e) {
-            // Xử lý khi giải mã thất bại
+            // The identifier could not be decrypted.
             $request->session();
             Session::flash('iconMessage', 'info');
             return redirect('admin/dashboard')->with('message', 'Không tồn tại tài khoản!');
@@ -515,7 +515,7 @@ class AuthAdminController extends Controller
     // }
     
     // public function forceDelete($id){
-    //     $accountDe = UserModel::withTrashed()->find($id); // Lấy bản ghi đã xóa mềm
+    //     $accountDe = UserModel::withTrashed()->find($id); // Fetch the soft-deleted record
     //     if ($accountDe) {
     //         $accountDe->forceDelete();
     //         Session::flash('iconMessage', 'success');

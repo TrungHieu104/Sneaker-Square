@@ -45,7 +45,7 @@ class AuthUserController extends Controller
     public function loginPost(LoginRequest $request)
     {
         if (auth()->attempt(['email' => $request->input('email'), 'password' => $request->input('password')])) {
-            // Đăng nhập thành công
+            // Signed in successfully.
             if ($request->has('remember')) {
                 Cookie::queue('email', $request->email, 1440);
                 Cookie::queue('password', $request->password, 1440);
@@ -53,11 +53,11 @@ class AuthUserController extends Controller
                 Cookie::queue('email', "");
                 Cookie::queue('password', "");
             }
-            // Reset biến đếm đăng nhập sai
+            // Reset the failed-attempt counter.
             session()->forget('login_attempts');
             return redirect(route('home.page'));
         } else {
-            // Đăng nhập thất bại, tăng biến đếm đăng nhập sai
+            // Sign-in failed; bump the failed-attempt counter.
             $loginAttempts = session('login_attempts', 0) + 1;
             session(['login_attempts' => $loginAttempts]);
             Session::flash('iconMessage','error');

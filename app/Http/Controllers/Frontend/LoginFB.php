@@ -94,7 +94,7 @@ class LoginFB extends Controller
 
             $finduser = UserModel::where('facebook_id', $user->id)->first();
             if ($finduser) {
-                // Chỉ cập nhật tên, không ghi đè ảnh user đã tự đổi
+                // Only refresh the name; never overwrite an avatar the user set themselves.
                 $finduser->name = $user->name;
                 $finduser->save();
 
