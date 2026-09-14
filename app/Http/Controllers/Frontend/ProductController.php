@@ -218,16 +218,22 @@ class ProductController extends Controller
 
         $likeStatus = LikeModel::where('pro_id', $proId)->where('user_id', Auth::id())->first();
 
-        // Keyed "colour-size", for the script that swaps the displayed price.
+        // Both keyed "colour-size": one for the script that swaps the displayed
+        // price, one for the script that greys out the sizes a colour has run out
+        // of.
         $variantPrices = [];
+        $variantStock = [];
         foreach ($detailProduct->getQuantities as $variant) {
-            $variantPrices[$variant->color_id . '-' . $variant->size_id] = [
+            $key = $variant->color_id . '-' . $variant->size_id;
+
+            $variantPrices[$key] = [
                 'price' => $variant->sellingPrice($detailProduct),
                 'list' => $variant->listPrice($detailProduct),
             ];
+            $variantStock[$key] = (int) $variant->quantity;
         }
 
-        return view('frontend.pages.product.product_detail', compact('detailProduct', 'getColor', 'getSize', 'relatedProduct', 'hotProduct', 'likeStatus', 'hasPurchased', 'variantPrices'));
+        return view('frontend.pages.product.product_detail', compact('detailProduct', 'getColor', 'getSize', 'relatedProduct', 'hotProduct', 'likeStatus', 'hasPurchased', 'variantPrices', 'variantStock'));
     }
 
     public function cart(Request $request)
@@ -246,9 +252,12 @@ class ProductController extends Controller
             return redirect()->back()->with('message', 'Opps!!! Sản phẩm trong giỏ hàng của bạn vừa bị ẩn, hãy mua sản phẩm khác !');
         }
 
+        // Shown on the cart itself rather than bounced back to wherever the
+        // customer came from: the quantities have just been trimmed and this is
+        // the page where that can be seen.
         if (isset($get['isntEnough']) && $get['isntEnough']) {
-            Session::flash('iconMessage', 'error');
-            return redirect()->back()->with('message', 'Opps!!! Sản phẩm trong giỏ hàng của bạn không đủ số lượng trong kho, hãy giảm số lượng mua !');
+            Session::flash('iconMessage', 'warning');
+            Session::flash('message', 'Số lượng trong giỏ đã được điều chỉnh theo số lượng còn trong kho!');
         }
 
         return view('frontend.pages.product.product_cart', compact('cart', 'coupon_data'));
@@ -286,10 +295,24 @@ class ProductController extends Controller
                 'iconMessage' => 'warning',
                 'message' => 'Opps!!! Sản phẩm bạn vừa chọn đã hết hàng'
             ]);
-        if ($quantity > $check_current_pro_quantity->quantity) {
+        // Counted against what this variant already holds in the cart, not against
+        // the amount being added: two helpings of five each passed a stock of five
+        // one at a time.
+        $alreadyInCart = 0;
+        foreach ($request->session()->get('cart', []) as $item) {
+            if (($item['proSlug'] ?? null) == $proSlug
+                && ($item['color_id'] ?? null) == $color_id
+                && ($item['size_id'] ?? null) == $size_id) {
+                $alreadyInCart += (int) ($item['quantity'] ?? 0);
+            }
+        }
+
+        if ($quantity + $alreadyInCart > $check_current_pro_quantity->quantity) {
             return back()->with([
                 'iconMessage' => 'warning',
-                'message' => 'Opps!!! Số lượng bạn chọn vượt quá số lượng trong kho'
+                'message' => $alreadyInCart > 0
+                    ? 'Opps!!! Giỏ hàng của bạn đã có ' . $alreadyInCart . ' sản phẩm này, trong kho chỉ còn ' . $check_current_pro_quantity->quantity
+                    : 'Opps!!! Số lượng bạn chọn vượt quá số lượng trong kho'
             ]);
         }
 

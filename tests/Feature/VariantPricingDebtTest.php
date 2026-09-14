@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\OrderDetailModel;
 use App\Models\OrderModel;
 use App\Models\ProductModel;
 use App\Models\ProductQuantityModel;
 use App\Models\UserModel;
+use App\Services\CartPricingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -136,7 +136,7 @@ class VariantPricingDebtTest extends TestCase
         $product = $this->makeProduct(price: 100_000, stock: 10, slug: 'phu-kien-gia-rieng', withVariant: false);
         $this->priceVariant($product, price: 150_000, colorId: null, sizeId: null);
 
-        $this->assertSame(150_000, app(\App\Services\CartPricingService::class)->unitPrice($product, null, null));
+        $this->assertSame(150_000, app(CartPricingService::class)->unitPrice($product, null, null));
     }
 
     // --------------------------------------------------- stocking through admin
@@ -222,8 +222,8 @@ class VariantPricingDebtTest extends TestCase
 
         $errors = session('errors');
 
-        $this->assertTrue($errors->getBag('variant-price-' . $edited->quantity_id)->has('pro_price'));
-        $this->assertFalse($errors->getBag('variant-price-' . $other->quantity_id)->has('pro_price'));
+        $this->assertTrue($errors->getBag('variant-price-'.$edited->quantity_id)->has('pro_price'));
+        $this->assertFalse($errors->getBag('variant-price-'.$other->quantity_id)->has('pro_price'));
         $this->assertFalse($errors->getBag('default')->has('pro_price'));
     }
 
@@ -283,7 +283,7 @@ class VariantPricingDebtTest extends TestCase
         session(['cart' => [
             $this->cartLine($product, 1),
             ['proSlug' => $product->pro_slug, 'pro_name' => $product->pro_name,
-             'quantity' => 1, 'color_id' => 2, 'size_id' => 1, 'pro_price' => 120_000],
+                'quantity' => 1, 'color_id' => 2, 'size_id' => 1, 'pro_price' => 120_000],
         ]]);
 
         $this->post(route('delProduct.cart', $product->pro_slug), [
@@ -350,5 +350,99 @@ class VariantPricingDebtTest extends TestCase
             ->whereNull('size_id')
             ->whereNull('color_id')
             ->firstOrFail();
+    }
+
+    // ------------------------------- every row of a colour, not just the first
+
+    /**
+     * A blank box merges the delivery into every row of that colour, so the check
+     * has to look at every one of them.
+     *
+     * Asking a single row let this through: the product sells at 1.000.000, one
+     * size priced itself at 350.000, and a cost of 500.000 was measured against
+     * whichever row the database returned first.
+     */
+    public function test_gia_von_nhap_kho_khong_duoc_dim_size_khac_xuong_duoi_gia_von(): void
+    {
+        DB::table('size')->insertOrIgnore(['size_id' => 2, 'size' => '36', 'size_hidden' => 1]);
+
+        $product = $this->makeProduct(price: 1_000_000, slug: 'giay-hai-size');
+        ProductQuantityModel::query()->delete();
+        $this->addVariant($product, colorId: 1, sizeId: 1);
+        $this->addVariant($product, colorId: 1, sizeId: 2, price: 350_000, capitalPrice: 100_000);
+
+        $this->actingAs($this->makeStockAdmin())
+            ->post(route('stock.store'), [
+                'pro_id' => $product->pro_id,
+                'quantity_date' => now()->toDateString(),
+                'pro_type' => 0,
+                'size_id' => [1, 2],
+                'color_id' => [1],
+                'quantityColorAndSize' => [1 => 5],
+                'capitalPriceColor' => [1 => 500_000],
+            ])
+            ->assertSessionHasErrors('priceColor.1');
+
+        foreach (ProductQuantityModel::where('pro_id', $product->pro_id)->get() as $row) {
+            $this->assertGreaterThan(
+                $row->capitalPrice($product),
+                $row->listPrice($product),
+                'size_id '.$row->size_id.' dang ban duoi gia von',
+            );
+        }
+    }
+
+    /**
+     * The same check, with the priced row the other way round: it used to pass or
+     * fail on row order alone.
+     */
+    public function test_thu_tu_dong_khong_quyet_dinh_ket_qua_kiem_tra(): void
+    {
+        DB::table('size')->insertOrIgnore(['size_id' => 2, 'size' => '36', 'size_hidden' => 1]);
+
+        $product = $this->makeProduct(price: 1_000_000, slug: 'giay-dao-thu-tu');
+        ProductQuantityModel::query()->delete();
+        $this->addVariant($product, colorId: 1, sizeId: 1, price: 350_000, capitalPrice: 100_000);
+        $this->addVariant($product, colorId: 1, sizeId: 2);
+
+        $this->actingAs($this->makeStockAdmin())
+            ->post(route('stock.store'), [
+                'pro_id' => $product->pro_id,
+                'quantity_date' => now()->toDateString(),
+                'pro_type' => 0,
+                'size_id' => [1, 2],
+                'color_id' => [1],
+                'quantityColorAndSize' => [1 => 5],
+                'capitalPriceColor' => [1 => 500_000],
+            ])
+            ->assertSessionHasErrors('priceColor.1');
+    }
+
+    /**
+     * A cost every row of the colour can carry still goes through.
+     */
+    public function test_gia_von_hop_le_voi_moi_size_van_duoc_nhap(): void
+    {
+        DB::table('size')->insertOrIgnore(['size_id' => 2, 'size' => '36', 'size_hidden' => 1]);
+
+        $product = $this->makeProduct(price: 1_000_000, slug: 'giay-von-hop-le');
+        ProductQuantityModel::query()->delete();
+        $this->addVariant($product, colorId: 1, sizeId: 1);
+        $this->addVariant($product, colorId: 1, sizeId: 2, price: 350_000, capitalPrice: 100_000);
+
+        $this->actingAs($this->makeStockAdmin())
+            ->post(route('stock.store'), [
+                'pro_id' => $product->pro_id,
+                'quantity_date' => now()->toDateString(),
+                'pro_type' => 0,
+                'size_id' => [1, 2],
+                'color_id' => [1],
+                'quantityColorAndSize' => [1 => 5],
+                'capitalPriceColor' => [1 => 200_000],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(200_000, (int) ProductQuantityModel::where('pro_id', $product->pro_id)
+            ->where('size_id', 2)->value('capital_price'));
     }
 }

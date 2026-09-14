@@ -10738,7 +10738,7 @@ section.single-post-area .single-post .feature-img {
     --bs-btn-border-color: var(--color-orange) !important;
 }
 
-label#color-style {
+label.color-swatch {
     padding: 14px;
     width: 32px !important;
     height: 32px !important;

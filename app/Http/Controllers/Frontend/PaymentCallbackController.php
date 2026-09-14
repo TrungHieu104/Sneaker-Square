@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Actions\CancelOrderAction;
 use App\Actions\ConfirmPaymentAction;
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\OrderModel;
 use App\Services\OrderMailer;
@@ -57,9 +58,27 @@ class PaymentCallbackController extends Controller
             return redirect()->route('failed.checkout');
         }
 
-        return $callback->outcome === PaymentOutcome::Failed || $callback->outcome === PaymentOutcome::Cancelled
-            ? redirect()->route('failed.checkout')
-            : redirect()->route('success.checkout');
+        if ($callback->outcome === PaymentOutcome::Failed || $callback->outcome === PaymentOutcome::Cancelled) {
+            return redirect()->route('failed.checkout');
+        }
+
+        // The gateway saying "paid" is not the same as the order having gone
+        // through: money can arrive for an order a failed callback already
+        // cancelled, and showing that customer the success page tells them they
+        // have an order they do not have.
+        $order = OrderModel::where('order_code', $callback->orderCode)->first();
+
+        if ($order && (int) $order->order_status === OrderStatus::Cancelled->value) {
+            Session::flash('iconMessage', 'error');
+            Session::flash(
+                'message',
+                'Đơn hàng đã bị hủy trước khi thanh toán được ghi nhận. Khoản tiền này sẽ được hoàn lại, vui lòng liên hệ cửa hàng.'
+            );
+
+            return redirect()->route('failed.checkout');
+        }
+
+        return redirect()->route('success.checkout');
     }
 
     /**

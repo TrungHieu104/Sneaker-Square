@@ -161,4 +161,58 @@ class VariantPricingTest extends TestCase
         $this->assertSame($viaPhp, $viaSql);
         $this->assertSame(['min' => 80_000, 'max' => 99_000], $viaSql);
     }
+
+    // -------------------------------------------- what the detail page can offer
+
+    /**
+     * The page needs the stock of each pair so it can grey out the sizes a colour
+     * has run out of.
+     */
+    public function test_trang_chi_tiet_nhan_ton_kho_tung_bien_the(): void
+    {
+        $product = $this->makeProduct(price: 100_000, stock: 4, slug: 'giay-ton-kho');
+        $this->addVariant($product, colorId: 2, sizeId: 1, stock: 0);
+
+        $stock = $this->get(route('product.detail', $product->pro_slug))->viewData('variantStock');
+
+        $this->assertSame(4, $stock['1-1']);
+        $this->assertSame(0, $stock['2-1'], 'Màu hết hàng phải về 0 chứ không biến mất');
+    }
+
+    public function test_cap_mau_size_chua_tung_nhap_khong_co_trong_ton_kho(): void
+    {
+        $product = $this->makeProduct(price: 100_000, slug: 'giay-thieu-cap');
+
+        $stock = $this->get(route('product.detail', $product->pro_slug))->viewData('variantStock');
+
+        $this->assertArrayNotHasKey('2-1', $stock);
+    }
+
+    /**
+     * The quantity box needs the stock of the exact pair, not of the product: two
+     * colours of the same shoe run out at different times.
+     */
+    public function test_ton_kho_gui_ra_trang_la_cua_dung_cap_mau_size(): void
+    {
+        $product = $this->makeProduct(price: 100_000, stock: 3, slug: 'giay-le-ton');
+        $this->addVariant($product, colorId: 2, sizeId: 1, stock: 11);
+
+        $stock = $this->get(route('product.detail', $product->pro_slug))->viewData('variantStock');
+
+        $this->assertSame(3, $stock['1-1']);
+        $this->assertSame(11, $stock['2-1']);
+    }
+
+    /**
+     * main.css sizes the swatches through `label.color-swatch`, and the page dims
+     * the unavailable ones through the same class — a rename here goes unnoticed
+     * until the colours are the wrong size on screen.
+     */
+    public function test_o_chon_mau_mang_class_color_swatch(): void
+    {
+        $product = $this->makeProduct(price: 100_000, slug: 'giay-o-mau');
+
+        $this->get(route('product.detail', $product->pro_slug))
+            ->assertSee('color-swatch');
+    }
 }

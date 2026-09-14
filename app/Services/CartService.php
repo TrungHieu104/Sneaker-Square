@@ -49,7 +49,15 @@ class CartService
             if ((int) ($item['quantity'] ?? 0) > $inStock) {
                 $insufficient = true;
 
-                continue;
+                // Trimmed to what is left rather than thrown away. The customer is
+                // told to reduce the quantity, so the line has to still be there to
+                // reduce — dropping it emptied the cart and left the message
+                // pointing at nothing.
+                if ($inStock === 0) {
+                    continue;
+                }
+
+                $item['quantity'] = $inStock;
             }
 
             $kept[] = $item;

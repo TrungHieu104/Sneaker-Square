@@ -181,9 +181,9 @@
 
                                 <td class="text-center">
                                     <div>
-                                        <button type="button" class="btn btn-success btn-sm m-1" title="Nhập thêm"
-                                                data-bs-toggle="modal" data-bs-target="#restock-modal-{{ $quantity->quantity_id }}">
-                                            <i class="fas fa-plus"></i>
+                                        <button type="button" class="btn btn-success btn-sm m-1" title="Điều chỉnh tồn kho"
+                                                data-bs-toggle="modal" data-bs-target="#adjust-modal-{{ $quantity->quantity_id }}">
+                                            <i class="fas fa-sliders-h"></i>
                                         </button>
                                         <button type="button" class="btn btn-primary btn-sm m-1" title="Sửa giá"
                                                 data-bs-toggle="modal" data-bs-target="#price-modal-{{ $quantity->quantity_id }}">
@@ -212,7 +212,7 @@
                  the modal's text off the side of the card. --}}
             @foreach ($allQuantity as $quantity)
                 @include('backend.pages.product.stock.variant_price_edit')
-                @include('backend.pages.product.stock.variant_restock')
+                @include('backend.pages.product.stock.variant_adjust')
             @endforeach
 
             @include('backend.pages.product.stock.variant_add')

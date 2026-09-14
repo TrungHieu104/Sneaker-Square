@@ -506,7 +506,7 @@
     </section>
 @endsection
 @push('script-access')
-    <script src="{{ asset('frontend/js/pro-detail.js') }}"></script>
+    <script src="{{ asset_v('frontend/js/pro-detail.js') }}"></script>
     <script>
         const formCoupon = document.getElementById("checkCoupon");
         const couponCheck = document.getElementById("coupon");

@@ -4,8 +4,11 @@ namespace App\Http\Requests\Backend;
 
 use App\Models\ProductModel;
 use App\Models\ProductQuantityModel;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Session;
 
 class ProductQuantityRequest extends FormRequest
 {
@@ -22,7 +25,7 @@ class ProductQuantityRequest extends FormRequest
      * colours and sizes carries a quantity per variant, a plain one a single
      * number.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -82,7 +85,7 @@ class ProductQuantityRequest extends FormRequest
                         ProductQuantityModel::where('pro_id', $product->pro_id)
                             ->whereNull('size_id')
                             ->whereNull('color_id')
-                            ->first(),
+                            ->get(),
                     );
 
                     return;
@@ -92,10 +95,10 @@ class ProductQuantityRequest extends FormRequest
                     $this->checkPriceTrio(
                         $validator,
                         $product,
-                        'priceColor.' . $colorId,
-                        'priceSaleColor.' . $colorId,
-                        'capitalPriceColor.' . $colorId,
-                        $this->existingVariant($product, $colorId),
+                        'priceColor.'.$colorId,
+                        'priceSaleColor.'.$colorId,
+                        'capitalPriceColor.'.$colorId,
+                        $this->existingVariants($product, $colorId),
                     );
                 }
             },
@@ -105,6 +108,13 @@ class ProductQuantityRequest extends FormRequest
     /**
      * Checks the three prices the variant will hold once saved, not the three that
      * were typed: a blank box keeps whatever the variant already has.
+     *
+     * Every row the delivery will touch is checked, not one of them. Asking a
+     * single row let a cost price through that put a different size of the same
+     * colour under water — which row answered depended on the order the database
+     * happened to return.
+     *
+     * @param  Collection<int, ProductQuantityModel>  $variants
      */
     private function checkPriceTrio(
         Validator $validator,
@@ -112,38 +122,50 @@ class ProductQuantityRequest extends FormRequest
         string $priceKey,
         string $saleKey,
         string $capitalKey,
-        ?ProductQuantityModel $variant = null,
+        Collection $variants,
     ): void {
-        $merged = $variant ? clone $variant : new ProductQuantityModel;
+        $rows = $variants->isEmpty() ? collect([new ProductQuantityModel]) : $variants;
 
-        foreach ([$priceKey => 'pro_price', $saleKey => 'pro_price_sale', $capitalKey => 'capital_price'] as $key => $column) {
-            if ($this->filled($key)) {
-                $merged->{$column} = (int) $this->input($key);
+        $belowCost = false;
+        $saleTooHigh = false;
+
+        foreach ($rows as $variant) {
+            $merged = clone $variant;
+
+            foreach ([$priceKey => 'pro_price', $saleKey => 'pro_price_sale', $capitalKey => 'capital_price'] as $key => $column) {
+                if ($this->filled($key)) {
+                    $merged->{$column} = (int) $this->input($key);
+                }
             }
+
+            $listPrice = $merged->listPrice($product);
+            $salePrice = $merged->salePrice($product);
+            $capitalPrice = $merged->capitalPrice($product);
+
+            $belowCost = $belowCost || $listPrice <= $capitalPrice;
+            $saleTooHigh = $saleTooHigh || ($salePrice != 0 && $salePrice >= $listPrice);
         }
 
-        $listPrice = $merged->listPrice($product);
-        $salePrice = $merged->salePrice($product);
-        $capitalPrice = $merged->capitalPrice($product);
-
-        if ($listPrice <= $capitalPrice) {
+        if ($belowCost) {
             $validator->errors()->add($priceKey, 'Giá bán phải lớn hơn giá vốn!');
         }
 
-        if ($salePrice != 0 && $salePrice >= $listPrice) {
+        if ($saleTooHigh) {
             $validator->errors()->add($saleKey, 'Giá giảm phải thấp hơn giá bán!');
         }
     }
 
     /**
-     * Prices are entered per colour, so any one of that colour's rows carries the
-     * prices this delivery is about to merge into.
+     * Every row of that colour, because prices are entered per colour and the
+     * delivery merges into all of them at once.
+     *
+     * @return Collection<int, ProductQuantityModel>
      */
-    private function existingVariant(ProductModel $product, $colorId): ?ProductQuantityModel
+    private function existingVariants(ProductModel $product, $colorId): Collection
     {
         return ProductQuantityModel::where('pro_id', $product->pro_id)
             ->where('color_id', $colorId)
-            ->first();
+            ->get();
     }
 
     /**
@@ -155,7 +177,8 @@ class ProductQuantityRequest extends FormRequest
         return (int) $this->input('pro_type', 0) === 0;
     }
 
-    public function messages() {
+    public function messages()
+    {
         return [
             'pro_id.required' => 'Vui lòng chọn sản phẩm!',
 
@@ -185,8 +208,8 @@ class ProductQuantityRequest extends FormRequest
 
     protected function failedValidation(Validator $validator): void
     {
-        \Illuminate\Support\Facades\Session::flash('iconMessage', 'error');
-        \Illuminate\Support\Facades\Session::flash('message', 'Nhập hàng thất bại!');
+        Session::flash('iconMessage', 'error');
+        Session::flash('message', 'Nhập hàng thất bại!');
 
         parent::failedValidation($validator);
     }

@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <!-- Icons. Uncomment required icon fonts -->
-    <link rel="stylesheet" href="{{ asset('backend/assets/vendor/fonts/boxicons.css') }}" />
+    <link rel="stylesheet" href="{{ asset_v('backend/assets/vendor/fonts/boxicons.css') }}" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.2/css/all.min.css"
         integrity="sha512-rqQltXRuHxtPWhktpAZxLHUVJ3Eombn3hvk9PHjV/N5DMUYnzKPC1i3ub0mEXgFzsaZNeJcoE0YHq0j/GFsdGg=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -87,7 +87,6 @@
     <script src="{{ asset('backend/assets/vendor/js/bootstrap.js') }}"></script>
     <script src="{{ asset('backend/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js') }}"></script>
     <script src="{{ asset('backend/assets/vendor/js/menu.js') }}"></script>
-    <script src="{{ asset('backend/assets/vendor/js/jquery.js') }}"></script>
     <!-- endbuild -->
 
     <!-- Vendors JS -->
@@ -108,11 +107,9 @@
     <!-- Ckeditor JS -->
     <script src="/backend/ckeditor/ckeditor.js"></script>
     <script type="text/javascript" src="/js/ckfinder/ckfinder.js"></script>
-    {{-- Morris JS --}}
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
-    <script src="{{ asset('backend/assets/vendor/js/datepicker.js') }}"></script>
+    <script src="{{ asset_v('backend/assets/vendor/js/datepicker.js') }}"></script>
     <script>
         CKEDITOR.replace('content', {
             filebrowserBrowseUrl: "{{ route('ckfinder_browser') }}",

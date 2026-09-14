@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use App\Http\Requests\Backend\ProductQuantityRequest;
 use App\Http\Requests\Backend\ProductVariantPriceRequest;
-use App\Http\Requests\Backend\StockRestockRequest;
+use App\Http\Requests\Backend\StockAdjustRequest;
 use App\Http\Requests\Backend\StockVariantRequest;
 use App\Http\Requests\Backend\ColorRequest;
 use Illuminate\Support\Facades\Session;
@@ -309,11 +309,11 @@ class ProductQuantityController extends Controller
     }
 
     /**
-     * Adds a delivery to one variant already on the shelf.
+     * Moves one variant's stock up or down.
      *
      * Prices are not touched: the row has its own form for those.
      */
-    public function restock(StockRestockRequest $request, string $quantityId)
+    public function adjustStock(StockAdjustRequest $request, string $quantityId)
     {
         $variant = Quantity::find($quantityId);
 
@@ -323,9 +323,30 @@ class ProductQuantityController extends Controller
             return back()->with('message', 'Không tìm thấy sản phẩm này trong kho!');
         }
 
+        $amount = (int) $request->input('quantity');
+
+        if ($request->reducing()) {
+            // The `>= $amount` guard lives in the statement, so a sale landing at
+            // the same moment cannot take the row negative between the check the
+            // request ran and this write.
+            $affected = Quantity::where('quantity_id', $variant->quantity_id)
+                ->where('quantity', '>=', $amount)
+                ->decrement('quantity', $amount);
+
+            if ($affected === 0) {
+                Session::flash('iconMessage', 'error');
+
+                return back()->with('message', 'Tồn kho vừa thay đổi, hãy thử lại!');
+            }
+
+            Session::flash('iconMessage', 'success');
+
+            return back()->with('message', 'Giảm tồn kho thành công!');
+        }
+
         // Incremented in the statement rather than read and written back, so two
         // deliveries booked at once cannot lose one another.
-        $variant->increment('quantity', (int) $request->input('quantity'), [
+        $variant->increment('quantity', $amount, [
             'quantity_date' => $request->input('quantity_date'),
         ]);
 

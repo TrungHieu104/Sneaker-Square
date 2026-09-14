@@ -79,7 +79,7 @@ class PaymentCallbackTest extends TestCase
         $params = [
             'vnp_Amount' => (string) (($amount ?? (int) $order->order_total) * 100),
             'vnp_BankCode' => 'NCB',
-            'vnp_OrderInfo' => 'Thanh toan hoa don ' . $order->order_code,
+            'vnp_OrderInfo' => 'Thanh toan hoa don '.$order->order_code,
             'vnp_ResponseCode' => $responseCode,
             'vnp_TmnCode' => 'TESTCODE',
             'vnp_TransactionNo' => '14022189',
@@ -91,7 +91,7 @@ class PaymentCallbackTest extends TestCase
 
         $pairs = [];
         foreach ($params as $key => $value) {
-            $pairs[] = urlencode($key) . '=' . urlencode($value);
+            $pairs[] = urlencode($key).'='.urlencode($value);
         }
 
         $params['vnp_SecureHash'] = hash_hmac('sha512', implode('&', $pairs), self::VNPAY_SECRET);
@@ -109,7 +109,7 @@ class PaymentCallbackTest extends TestCase
         $params = [
             'partnerCode' => 'MOMOTEST',
             'orderId' => $order->order_code,
-            'requestId' => $order->order_code . '-1',
+            'requestId' => $order->order_code.'-1',
             'amount' => (string) ($amount ?? (int) $order->order_total),
             'orderInfo' => 'Thanh toan hoa don',
             'orderType' => 'momo_wallet',
@@ -121,19 +121,19 @@ class PaymentCallbackTest extends TestCase
             'extraData' => '',
         ];
 
-        $raw = 'accessKey=' . self::MOMO_ACCESS_KEY
-            . '&amount=' . $params['amount']
-            . '&extraData=' . $params['extraData']
-            . '&message=' . $params['message']
-            . '&orderId=' . $params['orderId']
-            . '&orderInfo=' . $params['orderInfo']
-            . '&orderType=' . $params['orderType']
-            . '&partnerCode=' . $params['partnerCode']
-            . '&payType=' . $params['payType']
-            . '&requestId=' . $params['requestId']
-            . '&responseTime=' . $params['responseTime']
-            . '&resultCode=' . $params['resultCode']
-            . '&transId=' . $params['transId'];
+        $raw = 'accessKey='.self::MOMO_ACCESS_KEY
+            .'&amount='.$params['amount']
+            .'&extraData='.$params['extraData']
+            .'&message='.$params['message']
+            .'&orderId='.$params['orderId']
+            .'&orderInfo='.$params['orderInfo']
+            .'&orderType='.$params['orderType']
+            .'&partnerCode='.$params['partnerCode']
+            .'&payType='.$params['payType']
+            .'&requestId='.$params['requestId']
+            .'&responseTime='.$params['responseTime']
+            .'&resultCode='.$params['resultCode']
+            .'&transId='.$params['transId'];
 
         $params['signature'] = hash_hmac('sha256', $raw, self::MOMO_SECRET);
 
@@ -401,5 +401,48 @@ class PaymentCallbackTest extends TestCase
 
         $this->assertSame(OrderStatus::Cancelled->value, (int) $order->fresh()->order_status);
         $this->assertSame(10, $this->stockOf(ProductModel::first()));
+    }
+
+    /**
+     * Money can still arrive for an order a failed callback already cancelled.
+     * The payment is recorded so it can be refunded, but the customer must not be
+     * shown the success page for an order that no longer stands.
+     */
+    public function test_tra_tien_cho_don_da_huy_thi_khong_ve_trang_thanh_cong(): void
+    {
+        $order = $this->placeOrder();
+
+        $this->get(route('process.checkout', $this->vnpayCallback($order, responseCode: '24')))
+            ->assertRedirect(route('failed.checkout'));
+
+        $this->get(route('process.checkout', $this->vnpayCallback($order)))
+            ->assertRedirect(route('failed.checkout'));
+
+        $order->refresh();
+        $this->assertSame(OrderStatus::Cancelled->value, (int) $order->order_status);
+        $this->assertSame(1, (int) $order->order_payment_status, 'Tiền vẫn phải được ghi nhận để còn hoàn lại');
+        $this->assertStringContainsString('hoàn lại', session('message'));
+    }
+
+    public function test_tra_tien_cho_don_binh_thuong_van_ve_trang_thanh_cong(): void
+    {
+        $order = $this->placeOrder();
+
+        $this->get(route('process.checkout', $this->vnpayCallback($order)))
+            ->assertRedirect(route('success.checkout'));
+    }
+
+    /**
+     * The gateway telling us twice is not a failure: the second visit still lands
+     * on the success page.
+     */
+    public function test_callback_lap_lai_van_ve_trang_thanh_cong(): void
+    {
+        $order = $this->placeOrder();
+
+        $this->get(route('process.checkout', $this->vnpayCallback($order)));
+
+        $this->get(route('process.checkout', $this->vnpayCallback($order)))
+            ->assertRedirect(route('success.checkout'));
     }
 }

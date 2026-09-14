@@ -1,3 +1,21 @@
+// Noty is loaded by the layout on both the product page and the cart. The alert()
+// it replaces froze the page until the customer dismissed it.
+function notifyQuantity(text) {
+    if (window.Noty) {
+        new Noty({
+            type: 'warning',
+            layout: 'topRight',
+            theme: 'mint',
+            text: text,
+            timeout: 2500,
+        }).show();
+
+        return;
+    }
+
+    alert(text);
+}
+
 document.addEventListener("DOMContentLoaded", function () {
 
     //click button quality product detail
@@ -8,12 +26,16 @@ document.addEventListener("DOMContentLoaded", function () {
         let plusButton = amountInput.nextElementSibling;
         let minusButton = amountInput.previousElementSibling;
 
+        // Read off the input rather than hard-coded, so the product page can lower
+        // it to what the chosen variant actually has in stock.
+        const ceiling = () => parseInt(amountInput.getAttribute('max')) || 20;
+
         plusButton.addEventListener('click', () => {
             if (amount >= 1) {
 
                 amountInput.value = ++amount;
 
-                if (amount >= 20) {
+                if (amount >= ceiling()) {
                     plusButton.disabled = true;
                     plusButton.style.opacity = 0.6;
                 }
@@ -24,7 +46,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 amountInput.value = --amount;
 
-                if (amount < 20) {
+                if (amount < ceiling()) {
                     plusButton.disabled = false;
                     plusButton.style.opacity = 1;
                 }
@@ -33,16 +55,17 @@ document.addEventListener("DOMContentLoaded", function () {
         amountInput.addEventListener('input', () => {
             amount = amountInput.value;
             amount = parseInt(amount);
-            amount = (isNaN(amount) || amount == 0) ? 1 : (amount > 20) ? 20 : amount;
+            const max = ceiling();
+            amount = (isNaN(amount) || amount == 0) ? 1 : (amount > max) ? max : amount;
             if (isNaN(amount) || amount == 0) {
                 amount = 1;
-            } else if (amount >= 20) {
-                alert("Tối đa 20 sản phẩm");
+            } else if (amount >= max) {
+                notifyQuantity("Chỉ có thể mua tối đa " + max + " sản phẩm");
                 plusButton.disabled = true;
                 plusButton.style.opacity = 0.6;
-                amount = 20;
+                amount = max;
             } else if(amount < 1) {
-                alert("Phải là số dương");
+                notifyQuantity("Số lượng phải lớn hơn 0");
                 amount = 1;
             } else {
                 plusButton.disabled = false;

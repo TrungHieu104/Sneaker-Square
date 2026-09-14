@@ -188,7 +188,6 @@
     </div>
 </nav>
 <!-- / Navbar -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
     function checkKeyword() {
         const keyword = document.getElementById('searchInput').value.trim();

@@ -49,7 +49,7 @@
     <link rel="stylesheet" href="{{ asset('frontend/css/magnific-popup.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/css/jquery.simplyscroll.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-    <link rel="stylesheet" href="{{ asset('frontend/css/main.css') }}">
+    <link rel="stylesheet" href="{{ asset_v('frontend/css/main.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/mmenu/demo.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/aos/aos.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/css/animate.css') }}">

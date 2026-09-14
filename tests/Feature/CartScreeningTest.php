@@ -68,17 +68,35 @@ class CartScreeningTest extends TestCase
         $this->assertTrue($result['insufficient']);
     }
 
-    public function test_mua_qua_so_luong_ton_kho_thi_bi_loai(): void
+    /**
+     * Trimmed to what is left rather than dropped: the customer is told to reduce
+     * the quantity, so the line has to still be there to reduce.
+     */
+    public function test_mua_qua_so_luong_ton_kho_thi_bi_cat_bot(): void
     {
         $product = $this->makeProduct(stock: 2, slug: 'giay-it-hang');
 
         $result = $this->service()->screen([$this->cartLine($product, 5)]);
 
+        $this->assertCount(1, $result['cart'], 'Dòng hàng phải còn lại để khách sửa');
+        $this->assertSame(2, $result['cart'][0]['quantity']);
+        $this->assertTrue($result['insufficient']);
+    }
+
+    /**
+     * Nothing left to trim to, so the line does go.
+     */
+    public function test_het_sach_hang_thi_dong_do_bi_loai(): void
+    {
+        $product = $this->makeProduct(stock: 0, slug: 'giay-het-sach');
+
+        $result = $this->service()->screen([$this->cartLine($product, 3)]);
+
         $this->assertSame([], $result['cart']);
         $this->assertTrue($result['insufficient']);
     }
 
-    public function test_moi_dong_hang_loi_deu_bi_loai_khong_dung_o_dong_dau_tien(): void
+    public function test_moi_dong_hang_loi_deu_duoc_xu_ly_khong_dung_o_dong_dau_tien(): void
     {
         $good = $this->makeProduct(stock: 10, slug: 'giay-ban-duoc');
         $hidden = $this->makeProduct(stock: 10, slug: 'giay-bi-an');
@@ -91,8 +109,10 @@ class CartScreeningTest extends TestCase
             $this->cartLine($short, 5),
         ]);
 
-        $this->assertCount(1, $result['cart'], 'Chỉ còn lại dòng hàng hợp lệ');
+        $this->assertCount(2, $result['cart'], 'Dòng bị ẩn thì loại, dòng thiếu hàng thì cắt bớt');
         $this->assertSame('giay-ban-duoc', $result['cart'][0]['proSlug']);
+        $this->assertSame('giay-sap-het', $result['cart'][1]['proSlug']);
+        $this->assertSame(1, $result['cart'][1]['quantity']);
         $this->assertTrue($result['removed']);
         $this->assertTrue($result['insufficient']);
     }

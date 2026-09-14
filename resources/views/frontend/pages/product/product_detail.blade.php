@@ -113,7 +113,7 @@
                                         <input type="radio" class="btn-check btn-radio" name="options-color"
                                             id="color{{ $i }}" value="{{ $color->color_id }}"
                                             autocomplete="off">
-                                        <label class="btn btn-style" id="color-style"
+                                        <label class="btn btn-style color-swatch"
                                             for="color{{ $i }}"style="border-radius:50%; background-color:{{ $color->color }} "></label>
                                         @php $i++; @endphp
                                     @endforeach
@@ -142,6 +142,7 @@
 
                         <div class="product-detail_quality mt-3">
                             <label class="fw-bold fs-6 mb-2">Số lượng:</label>
+                            <span id="stock-note" class="ms-2 text-muted"></span>
                             <div class="d-flex">
                                 <button type="button" class="minus rounded-start-2">
                                     <i class="fas fa-minus"></i>
@@ -460,13 +461,31 @@
             max-width: 100%;
             height: auto;
         }
+
+        /* Bootstrap only dims a disabled btn-check to .65, which on an already
+           pale outline reads as nothing at all. */
+        .btn-check:disabled + .btn-style:not(.color-swatch) {
+            opacity: 1;
+            color: #b6b6b6;
+            background-color: #f4f4f4;
+            border-color: #e4e4e4;
+            text-decoration: line-through;
+        }
+
+        /* A swatch carries its colour as an inline style, which outranks any
+           background this rule could set — so it is dimmed instead. */
+        .btn-check:disabled + .color-swatch {
+            opacity: 0.3;
+            filter: grayscale(0.7);
+        }
     </style>
 @endpush
 
 @push('script-access')
-    <script src="{{ asset('frontend/js/pro-detail.js') }}"></script>
+    <script src="{{ asset_v('frontend/js/pro-detail.js') }}"></script>
     <script>
         const variantPrices = @json($variantPrices);
+        const variantStock = @json($variantStock);
         const rangeSellingPrice = @json($detailProduct->displaySellingPrice());
         const rangeListPrice = @json($detailProduct->displayListPrice());
         const rangeIsOnSale = @json($detailProduct->isOnSale());
@@ -501,9 +520,102 @@
             $('.product-detail_price .price-old').text(list + ' VNĐ').prop('hidden', !onSale);
         }
 
+        // How many of the chosen pair are left, and the ceiling the quantity box
+        // may not pass. Without it the customer picks a number the cart then has
+        // to argue with.
+        const QUANTITY_CEILING = 20;
+
+        function refreshQuantity() {
+            const key = selectedVariantKey();
+            const inStock = key === null ? null : variantStock[key];
+            const box = $('.btn_quality');
+            const note = $('#stock-note');
+
+            if (inStock === null || inStock === undefined) {
+                box.attr('max', QUANTITY_CEILING);
+                note.text('');
+
+                return;
+            }
+
+            const max = Math.min(inStock, QUANTITY_CEILING);
+
+            note.text('Còn ' + inStock + ' sản phẩm');
+            box.attr('max', max);
+
+            if (parseInt(box.val(), 10) > max) {
+                // Dispatched so pro-detail.js re-reads the value it is holding.
+                box.val(max)[0].dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }
+
+        // The mirror of refreshSizes(): a size the customer has settled on rules out
+        // the colours that never came in it, or have sold out of it.
+        function refreshColors() {
+            const size = $("input[name='options-size']:checked").val();
+            let clearedColor = false;
+
+            $("input[name='options-color']").each(function () {
+                const available = !size || (variantStock[this.value + '-' + size] ?? 0) > 0;
+
+                this.disabled = !available;
+
+                if (!available && this.checked) {
+                    this.checked = false;
+                    clearedColor = true;
+                }
+            });
+
+            $('#color-error').text(
+                clearedColor ? 'Màu bạn chọn đã hết với size này, hãy chọn màu khác.' : ''
+            );
+        }
+
+        // Greys out the sizes the chosen colour has run out of, or never carried.
+        // Without it the only way to find out is to add to the cart and be turned
+        // away, and the price above stays on the product's whole range because the
+        // pair the customer picked has no variant behind it.
+        function refreshSizes() {
+            const color = $("input[name='options-color']:checked").val();
+            let clearedSize = false;
+
+            $("input[name='options-size']").each(function () {
+                const available = !color || (variantStock[color + '-' + this.value] ?? 0) > 0;
+
+                this.disabled = !available;
+
+                if (!available && this.checked) {
+                    this.checked = false;
+                    clearedSize = true;
+                }
+            });
+
+            // Cleared as well as set: the warning used to stay on screen after the
+            // customer had picked a size that was perfectly available.
+            $('#size-error').text(
+                clearedSize ? 'Size bạn chọn đã hết với màu này, hãy chọn size khác.' : ''
+            );
+        }
+
         $(document).ready(function() {
-            $("input[name='options-color'], input[name='options-size']").on('change', refreshPrice);
+            // Each side is narrowed by the other's current pick, so whichever the
+            // customer chooses first, the second list only offers pairs that exist.
+            $("input[name='options-color']").on('change', function () {
+                refreshSizes();
+                refreshColors();
+                refreshPrice();
+                refreshQuantity();
+            });
+            $("input[name='options-size']").on('change', function () {
+                refreshColors();
+                refreshSizes();
+                refreshPrice();
+                refreshQuantity();
+            });
+            refreshSizes();
+            refreshColors();
             refreshPrice();
+            refreshQuantity();
             $('#product-form').submit(function(event) {
                 let colorError = false;
                 let sizeError = false;
