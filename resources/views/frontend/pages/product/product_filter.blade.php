@@ -44,16 +44,16 @@
                     @endif
                 </div>
                 <div class="price d-flex gap-3 justify-content-center">
-                    @if ($pro->pro_price_sale != 0)
+                    @if ($pro->isOnSale())
                         <h6 class="price__product">
-                            {{ number_format($pro->pro_price_sale, 0, ',', '.') }} VNĐ
+                            {{ $pro->displaySellingPrice() }} VNĐ
                         </h6>
                         <h6 class="price__product l-through px-0">
-                            {{ number_format($pro->pro_price, 0, ',', '.') }} VNĐ
+                            {{ $pro->displayListPrice() }} VNĐ
                         </h6>
                     @else
                         <h6 class="price__product">
-                            {{ number_format($pro->pro_price, 0, ',', '.') }} VNĐ
+                            {{ $pro->displayListPrice() }} VNĐ
                         </h6>
                     @endif
                 </div>

@@ -27,6 +27,9 @@ trait ShopFixtures
         DB::table('color')->insertOrIgnore([
             'color_id' => 1, 'color' => 'black', 'color_vn' => 'Đen', 'color_hidden' => 1,
         ]);
+        DB::table('color')->insertOrIgnore([
+            'color_id' => 2, 'color' => 'red', 'color_vn' => 'Đỏ', 'color_hidden' => 1,
+        ]);
     }
 
     private function makeUser(string $email = 'khach@example.test', string $username = 'khachhang', int $role = 0): UserModel
@@ -63,7 +66,13 @@ trait ShopFixtures
         ]);
     }
 
-    private function makeProduct(int $price = 1_000_000, int $salePrice = 0, int $stock = 10, string $slug = 'nike-air'): ProductModel
+    private function makeProduct(
+        int $price = 1_000_000,
+        int $salePrice = 0,
+        int $stock = 10,
+        string $slug = 'nike-air',
+        bool $withVariant = true,
+    ): ProductModel
     {
         $product = ProductModel::create([
             // Stored already title-cased, the way ProductRequest normalises it.
@@ -83,8 +92,8 @@ trait ShopFixtures
             'quantity' => $stock,
             'quantity_date' => now()->toDateString(),
             'pro_id' => $product->pro_id,
-            'size_id' => 1,
-            'color_id' => 1,
+            'size_id' => $withVariant ? 1 : null,
+            'color_id' => $withVariant ? 1 : null,
         ]);
 
         return $product;
@@ -108,11 +117,53 @@ trait ShopFixtures
         ];
     }
 
-    private function stockOf(ProductModel $product): int
+    private function priceVariant(
+        ProductModel $product,
+        ?int $price = null,
+        ?int $salePrice = null,
+        ?int $capitalPrice = null,
+        ?int $colorId = 1,
+        ?int $sizeId = 1,
+    ): ProductQuantityModel {
+        $variant = ProductQuantityModel::where('pro_id', $product->pro_id)
+            ->where('color_id', $colorId)
+            ->where('size_id', $sizeId)
+            ->firstOrFail();
+
+        $variant->pro_price = $price;
+        $variant->pro_price_sale = $salePrice;
+        $variant->capital_price = $capitalPrice;
+        $variant->save();
+
+        return $variant;
+    }
+
+    private function addVariant(
+        ProductModel $product,
+        int $colorId,
+        int $sizeId = 1,
+        int $stock = 10,
+        ?int $price = null,
+        ?int $salePrice = null,
+        ?int $capitalPrice = null,
+    ): ProductQuantityModel {
+        return ProductQuantityModel::create([
+            'quantity' => $stock,
+            'quantity_date' => now()->toDateString(),
+            'pro_id' => $product->pro_id,
+            'size_id' => $sizeId,
+            'color_id' => $colorId,
+            'pro_price' => $price,
+            'pro_price_sale' => $salePrice,
+            'capital_price' => $capitalPrice,
+        ]);
+    }
+
+    private function stockOf(ProductModel $product, ?int $sizeId = 1, ?int $colorId = 1): int
     {
         return (int) ProductQuantityModel::where('pro_id', $product->pro_id)
-            ->where('size_id', 1)
-            ->where('color_id', 1)
+            ->where('size_id', $sizeId)
+            ->where('color_id', $colorId)
             ->value('quantity');
     }
 }

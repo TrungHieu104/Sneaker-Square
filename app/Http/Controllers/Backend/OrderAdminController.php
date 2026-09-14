@@ -183,9 +183,6 @@ class OrderAdminController extends Controller
     {
         try {
             $order_id = Crypt::decrypt($encryptedOrderId);
-            // The second array here used to be passed as with()'s $callback
-            // argument, where it is silently ignored — so `User` was never
-            // eager loaded despite being listed.
             $order = OrderModel::with(['orderDetail', 'Coupon', 'User'])->find($order_id);
     
             if ($order == null) {
@@ -194,7 +191,6 @@ class OrderAdminController extends Controller
                 return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
             }
     
-            // Each line prints its product, so load them in one query.
             $orderDetail = OrderDetailModel::with('product')->where('order_id', $order_id)->get();
     
             return view("backend.pages.order.order_detail", compact('order', 'orderDetail'));
@@ -246,40 +242,15 @@ class OrderAdminController extends Controller
             $order_product_id = $request->input('order_product_id', []);
             $cou_val = $request->input('cou_val');
             // dd($cou_val);
-            foreach ($order_product_id as $pro_id) {
-                $product = ProductModel::find($pro_id);
-                $product_sale = $product->pro_price_sale;
-                $product_price = $product->pro_price;
-                $capital = $product->capital_price;
-                if($product_sale==0){
-                    $capital_price = $product_price - $capital;
-                    $now = Carbon::now('Asia/Ho_Chi_Minh')->toDateString();
-                    
-                    $quantitys = OrderDetailModel::where('pro_id', $pro_id)->get();
-                    foreach ($quantitys as $detail) {
-                        $qty = $detail->quantity;
-                    }
-                    $profitplus += $capital_price * $qty;
-                    $salesplus += $product_price * $qty;
-                    $orderTotal++;
-                } else{
-                    $capital_price = $product_sale - $capital;
-                    $now = Carbon::now('Asia/Ho_Chi_Minh')->toDateString();
-                    
-                    $quantitys = OrderDetailModel::where('pro_id', $pro_id)->get();
-                    foreach ($quantitys as $detail) {
-                        $qty = $detail->quantity;
-                    }
-                    $profitplus += $capital_price * $qty;
-                    $salesplus += $product_sale * $qty;
-                    $orderTotal++;
-                }
-                $profit = $profitplus - $cou_val;
-                $sales = $salesplus - $cou_val;
-                if($profit < 0){
-                    $profit = 0;
-                }
-            }            
+            foreach ($this->soldLines($order, $order_product_id) as $line) {
+                $salesplus += (int) $line->price * (int) $line->quantity;
+                $profitplus += ((int) $line->price - (int) $line->capital_price) * (int) $line->quantity;
+                $orderTotal++;
+            }
+
+            $profit = max(0, $profitplus - $cou_val);
+            $sales = $salesplus - $cou_val;
+            
             if($statistic_count>0){
                 $statistic_update = StatisticModel::where('order_date',$order_date)->first();
                 $statistic_update->sales = $statistic_update->sales + $sales;
@@ -301,39 +272,15 @@ class OrderAdminController extends Controller
             $orderTotal = 0;
             $order_product_id = $request->input('order_product_id', []);
             $cou_val = $request->input('cou_val');
-            foreach ($order_product_id as $pro_id) {
-                $product = ProductModel::find($pro_id);
-                $product_sale = $product->pro_price_sale;
-                $product_price = $product->pro_price;
-                $capital = $product->capital_price;
-                if($product_sale==0){
-                    $capital_price = $product_price - $capital;
-                    $now = Carbon::now('Asia/Ho_Chi_Minh')->toDateString();
-                    $quantitys = OrderDetailModel::where('pro_id', $pro_id)->get();
-                    foreach ($quantitys as $detail) {
-                        $qty = $detail->quantity;
-                    }
-                    $profitplus -= $capital_price * $qty;
-                    $salesplus -= $product_price * $qty;
-                    $orderTotal--;
-                } else{
-                    $capital_price = $product_sale - $capital;
-                    $now = Carbon::now('Asia/Ho_Chi_Minh')->toDateString();
-                    
-                    $quantitys = OrderDetailModel::where('pro_id', $pro_id)->get();
-                    foreach ($quantitys as $detail) {
-                        $qty = $detail->quantity;
-                    }
-                    $profitplus -= $capital_price * $qty;
-                    $salesplus -= $product_sale * $qty;
-                    $orderTotal--;
-                }
-                $profit = $profitplus + $cou_val;
-                $sales = $salesplus + $cou_val;
-                if($profit >= 0){
-                    $profit = 0;
-                }
-            }            
+            foreach ($this->soldLines($order, $order_product_id) as $line) {
+                $salesplus -= (int) $line->price * (int) $line->quantity;
+                $profitplus -= ((int) $line->price - (int) $line->capital_price) * (int) $line->quantity;
+                $orderTotal--;
+            }
+
+            $profit = min(0, $profitplus + $cou_val);
+            $sales = $salesplus + $cou_val;
+            
             if($statistic_count>0){
                 $statistic_update = StatisticModel::where('order_date',$order_date)->first();
                 $statistic_update->sales = $statistic_update->sales + $sales;
@@ -421,4 +368,21 @@ class OrderAdminController extends Controller
     public function exportorder_scv(){
         return Excel::download(new ExportOrder() , 'Đơn hàng.xlsx');
     }
+
+    /**
+     * The lines of this order, priced as they were sold.
+     *
+     * Never recompute revenue or profit from the product's current price: that is
+     * neither what the customer paid nor what the variant cost.
+     *
+     * @param  array<int, mixed>  $productIds  the products the form submitted, if any
+     * @return \Illuminate\Support\Collection<int, OrderDetailModel>
+     */
+    private function soldLines($order, array $productIds)
+    {
+        return OrderDetailModel::where('order_id', $order->order_id)
+            ->when($productIds !== [], fn ($lines) => $lines->whereIn('pro_id', $productIds))
+            ->get();
+    }
+
 }

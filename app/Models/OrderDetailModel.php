@@ -18,6 +18,7 @@ class OrderDetailModel extends Model
         'color',
         'color_id',
         'price',
+        'capital_price',
         'quantity',
         'order_id',
         'pro_id'

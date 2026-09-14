@@ -135,19 +135,19 @@
                                                 <small class="text-muted" style="font-size: 11px;">(0)</small>
                                             @endif
                                         </div>
-                                        @if ($hotPro->pro_price_sale != 0 )
+                                        @if ($hotPro->isOnSale() )
                                             <div class="price d-flex gap-3 justify-content-center">
                                                 <h6 class="price__product">
-                                                    {{ number_format($hotPro->pro_price_sale, 0, ',', '.') }} VNĐ
+                                                    {{ $hotPro->displaySellingPrice() }} VNĐ
                                                 </h6>
                                                 <h6 class="price__product l-through px-0">
-                                                    {{ number_format($hotPro->pro_price, 0, ',', '.') }} VNĐ
+                                                    {{ $hotPro->displayListPrice() }} VNĐ
                                                 </h6>
                                             </div>
                                         @else
                                             <div class="price d-flex gap-3 justify-content-center">
                                                 <h6 class="price__product px-0">
-                                                    {{ number_format($hotPro->pro_price, 0, ',', '.') }} VNĐ
+                                                    {{ $hotPro->displayListPrice() }} VNĐ
                                                 </h6>
                                             </div>
                                         @endif
@@ -250,10 +250,10 @@
                                     <div class="product-details">
                                         <div class="price">
                                             <h6>
-                                                {{ number_format($salePro->pro_price_sale, 0, ',', '.') }} VNĐ
+                                                {{ $salePro->displaySellingPrice() }} VNĐ
                                             </h6>
                                             <h6 class="l-through">
-                                                {{ number_format($salePro->pro_price, 0, ',', '.') }} VNĐ
+                                                {{ $salePro->displayListPrice() }} VNĐ
                                             </h6>
                                         </div>
                                         <a href="{{ route('product.detail', $salePro->pro_slug) }}">
@@ -357,11 +357,11 @@
                                                 @endif
                                             </div>
                                             <div class="price">
-                                                @if ($mostViewPro->pro_price_sale != 0)
-                                                    <h6> {{ number_format($mostViewPro->pro_price_sale, 0, ',', '.') }} VNĐ </h6>
-                                                    <h6 class="l-through"> {{ number_format($mostViewPro->pro_price, 0, ',', '.') }} VNĐ </h6>
+                                                @if ($mostViewPro->isOnSale())
+                                                    <h6> {{ $mostViewPro->displaySellingPrice() }} VNĐ </h6>
+                                                    <h6 class="l-through"> {{ $mostViewPro->displayListPrice() }} VNĐ </h6>
                                                 @else
-                                                    <h6> {{ number_format($mostViewPro->pro_price, 0, ',', '.') }} VNĐ </h6>
+                                                    <h6> {{ $mostViewPro->displayListPrice() }} VNĐ </h6>
                                                 @endif
                                             </div>
                                         </div>

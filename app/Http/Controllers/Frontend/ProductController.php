@@ -95,22 +95,22 @@ class ProductController extends Controller
         $url = Route::getFacadeRoot()->current()->uri;
         $getAllCate = Category::withCount('getProductsInCate')
             ->where('cate_hidden', 1)->orderBy('cate_sort', 'asc')->get();
-        $getAllProduct = Product::withRatingSummary()->where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d"));
+        $getAllProduct = Product::withRatingSummary()->withPriceRange()->where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d"));
         $getAccessories = Category::with([
             // The accessories block on product_page.blade.php draws stars for
             // every product in these categories, so load the ratings with them.
-            'getProductsInCate' => fn ($products) => $products->withRatingSummary(),
+            'getProductsInCate' => fn ($products) => $products->withRatingSummary()->withPriceRange(),
         ])->where('cate_parent_id', 6)->where('cate_hidden', 1)->get();
         $getOneCate = Category::where(['cate_slug' => $request->route('cate_slug'), 'cate_hidden' => 1])->first();
-        $getHotProduct = Product::withRatingSummary()->where('pro_hot', 1)->where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d"))->get();
-        $getSaleProduct = Product::withRatingSummary()->where('pro_price_sale', '!=', 0)->where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d"))->get();
+        $getHotProduct = Product::withRatingSummary()->withPriceRange()->where('pro_hot', 1)->where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d"))->get();
+        $getSaleProduct = Product::withRatingSummary()->withPriceRange()->onSale()->where('pro_hidden', 1)->whereDate('pro_date', '<=', date("Y-m-d"))->get();
 
         if ($getOneCate) {
-            $getAllProduct = $getOneCate->getProductsInCate()->withRatingSummary()->where('pro_hidden', 1);
+            $getAllProduct = $getOneCate->getProductsInCate()->withRatingSummary()->withPriceRange()->where('pro_hidden', 1);
         } elseif (url()->current() == route('product.hot')) {
             $getAllProduct = $getAllProduct->where('pro_hot', 1);
         } elseif (url()->current() == route('product.sale')) {
-            $getAllProduct = $getAllProduct->where('pro_price_sale', '!=', 0);
+            $getAllProduct = $getAllProduct->onSale();
         } else {
             $getAllProduct = $getAllProduct;
         }
@@ -125,9 +125,9 @@ class ProductController extends Controller
 
         if (isset($request['sort']) && !empty($request['sort'])) {
             if ($request['sort'] == "gia-giam") {
-                $getAllProduct->where('pro_hidden', 1)->orderByDesc('pro_price_sale')->orderByDesc('pro_price');
+                $getAllProduct->where('pro_hidden', 1)->orderBySellingPrice('desc');
             } else if ($request['sort'] == "gia-tang") {
-                $getAllProduct->where('pro_hidden', 1)->orderBy('pro_price_sale', 'asc')->orderBy('pro_price', 'asc');
+                $getAllProduct->where('pro_hidden', 1)->orderBySellingPrice('asc');
             } else if ($request['sort'] == "moi-nhat") {
                 $getAllProduct->where('pro_hidden', 1)->orderBy('created_at', 'DESC');
             } else if ($request['sort'] == "cu-nhat") {
@@ -169,10 +169,11 @@ class ProductController extends Controller
 
         // The page prints the category, the gallery and every visible review with
         // its author. Loaded here in four queries rather than one per review.
-        $detailProduct = Product::withRatingSummary()
+        $detailProduct = Product::withRatingSummary()->withPriceRange()
             ->with([
                 'getCate',
                 'getImages',
+                'getQuantities',
                 'getComments' => fn ($comments) => $comments->where('comment_hidden', 1)->with('getUsers'),
             ])
             ->where('pro_id', $proId)
@@ -192,14 +193,14 @@ class ProductController extends Controller
             ->groupBy('pro_id', 'products_quantity.size_id', 'size')
             ->get();
 
-        $relatedProduct = Product::withRatingSummary()->where('cate_id', $detailProduct->cate_id)
+        $relatedProduct = Product::withRatingSummary()->withPriceRange()->where('cate_id', $detailProduct->cate_id)
             ->where('pro_id', '!=', $detailProduct->pro_id)
             ->where('pro_hidden', 1)
             ->orderBy('pro_views', 'desc')
             ->limit(5)
             ->get();
 
-        $hotProduct = Product::withRatingSummary()->where('pro_hot', 1)
+        $hotProduct = Product::withRatingSummary()->withPriceRange()->where('pro_hot', 1)
             ->where('pro_hidden', 1)
             ->orderBy('pro_date', 'desc')
             ->limit(5)
@@ -217,7 +218,16 @@ class ProductController extends Controller
 
         $likeStatus = LikeModel::where('pro_id', $proId)->where('user_id', Auth::id())->first();
 
-        return view('frontend.pages.product.product_detail', compact('detailProduct', 'getColor', 'getSize', 'relatedProduct', 'hotProduct', 'likeStatus', 'hasPurchased'));
+        // Keyed "colour-size", for the script that swaps the displayed price.
+        $variantPrices = [];
+        foreach ($detailProduct->getQuantities as $variant) {
+            $variantPrices[$variant->color_id . '-' . $variant->size_id] = [
+                'price' => $variant->sellingPrice($detailProduct),
+                'list' => $variant->listPrice($detailProduct),
+            ];
+        }
+
+        return view('frontend.pages.product.product_detail', compact('detailProduct', 'getColor', 'getSize', 'relatedProduct', 'hotProduct', 'likeStatus', 'hasPurchased', 'variantPrices'));
     }
 
     public function cart(Request $request)
@@ -263,7 +273,7 @@ class ProductController extends Controller
         // Name and price come from the database, never from the request. The cart
         // now holds only what the customer picked: product, size, colour, quantity.
         $pro_name = $pro_slug_db->pro_name;
-        $pro_price = app(CartPricingService::class)->unitPrice($pro_slug_db);
+        $pro_price = app(CartPricingService::class)->unitPrice($pro_slug_db, $color_id, $size_id);
         $check_pro_quantity = Quantity::where('pro_id', $pro_slug_db->pro_id)->get();
         $check_current_pro_quantity = Quantity::where('pro_id', $pro_slug_db->pro_id)->where('color_id', $color_id)->where('size_id', $size_id)->first();
         if (!$check_pro_quantity || !$check_current_pro_quantity)
@@ -310,8 +320,16 @@ class ProductController extends Controller
         $cart = $request->session()->get('cart');
         $coupon_data = $request->session()->get('coupon_data');
         $giatri_donhang = $request['giatri_donhang'];
-        $index = array_search($proSlug, array_column($cart, 'proSlug'));
-        if ($index != '') {
+        // Matched on the variant, not the product: the same shoe in two colours is
+        // two cart lines, and slug alone removes whichever comes first.
+        $colorId = $request->input('color_id');
+        $sizeId = $request->input('size_id');
+
+        $index = collect($cart)->search(fn ($item) => $item['proSlug'] === $proSlug
+            && (string) ($item['color_id'] ?? '') === (string) $colorId
+            && (string) ($item['size_id'] ?? '') === (string) $sizeId);
+
+        if ($index !== false) {
             array_splice($cart, $index, 1);
             $request->session()->put('cart', $cart);
         }

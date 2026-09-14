@@ -46,18 +46,18 @@
                                                     </a>
                                                 </div>
                                                 <div class="col-lg-4 p-3 d-flex align-items-center">
-                                                    @if ($item->products->pro_price_sale != 0)
+                                                    @if ($item->products->isOnSale())
                                                         <div class="d-flex align-items-center gap-4">
                                                             <h4 class="fw-bold price-text__wishlist mb-0">
-                                                                {{ number_format($item->products->pro_price_sale, 0, ',', '.') }} VNĐ
+                                                                {{ $item->products->displaySellingPrice() }} VNĐ
                                                             </h4>
                                                             <h5 class="text-decoration-line-through price-old__text mb-0">
-                                                                {{ number_format($item->products->pro_price, 0, ',', '.') }} VNĐ
+                                                                {{ $item->products->displayListPrice() }} VNĐ
                                                             </h5>
                                                         </div>
                                                     @else
                                                         <h4 class="fw-bold price-text__wishlist mb-0">
-                                                            {{ number_format($item->products->pro_price, 0, ',', '.') }} VNĐ
+                                                            {{ $item->products->displayListPrice() }} VNĐ
                                                         </h4>
                                                     @endif
                                                 </div>

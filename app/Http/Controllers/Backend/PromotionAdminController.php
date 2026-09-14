@@ -58,7 +58,10 @@ class PromotionAdminController extends Controller
 
     public function create()
     {
-        return view('backend.pages.slide.promotion.promotion_create');
+        // The datepicker on this form reads and writes dd-mm-yyyy.
+        $today = today()->format('d-m-Y');
+
+        return view('backend.pages.slide.promotion.promotion_create', compact('today'));
     }
 
     /**

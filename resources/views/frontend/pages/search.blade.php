@@ -58,19 +58,19 @@
                                             <small class="text-muted" style="font-size: 11px;">(0)</small>
                                         @endif
                                     </div>
-                                    @if ($item->pro_price_sale != 0 )
+                                    @if ($item->isOnSale() )
                                         <div class="price d-flex gap-3 justify-content-center">
                                             <h6 class="price__product">
-                                                {{ number_format($item->pro_price_sale, 0, ',', '.') }} VNĐ
+                                                {{ $item->displaySellingPrice() }} VNĐ
                                             </h6>
                                             <h6 class="price__product l-through px-0">
-                                                {{ number_format($item->pro_price, 0, ',', '.') }} VNĐ
+                                                {{ $item->displayListPrice() }} VNĐ
                                             </h6>
                                         </div>
                                     @else
                                         <div class="price d-flex gap-3 justify-content-center">
                                             <h6 class="price__product px-0">
-                                                {{ number_format($item->pro_price, 0, ',', '.') }} VNĐ
+                                                {{ $item->displayListPrice() }} VNĐ
                                             </h6>
                                         </div>
                                     @endif

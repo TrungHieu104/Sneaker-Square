@@ -41,7 +41,11 @@ class WishListController extends Controller
     
     public function index()
     {
-        $wishList = WishListModel::where('user_id', Auth::id())
+        // Every card prints a price range; without this each one queries for it.
+        $wishList = WishListModel::with([
+            'products' => fn ($products) => $products->withPriceRange(),
+        ])
+        ->where('user_id', Auth::id())
         ->join('products', 'like.pro_id', '=', 'products.pro_id')
         ->where('pro_hidden', 1)
         ->orderBy('like.created_at', 'DESC')->get();

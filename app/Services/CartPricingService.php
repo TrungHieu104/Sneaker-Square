@@ -11,37 +11,32 @@ use Illuminate\Support\Carbon;
 /**
  * Works out every amount on an order from the data in the database.
  *
- * Product prices, the discount and the order total all used to arrive in the
- * request from the browser, so editing the form was enough to buy at any price.
- * All of that arithmetic now lives here and reads from the database only.
- *
- * The shipping fee still comes from `delivery_info.info_delivery_fee` on the
- * chosen address — the existing scheme is deliberately unchanged and will be
- * replaced by a carrier API later. What changed is that the value is read from
- * the database instead of accepted from the request.
+ * Nothing here may read a price, a discount or a total out of the request: the
+ * form is the customer's to edit. Shipping comes from the chosen address row.
  */
 class CartPricingService
 {
     /**
-     * The price a product actually sells at: the sale price when one is set.
-     *
-     * This mirrors the rule product_detail.blade.php displays.
+     * The price a product actually sells at, mirroring what product_detail
+     * displays.
      */
-    public function unitPrice(ProductModel $product): int
+    public function unitPrice(ProductModel $product, $colorId = null, $sizeId = null): int
     {
-        return (int) ($product->pro_price_sale != 0
-            ? $product->pro_price_sale
-            : $product->pro_price);
+        $variant = $product->variantFor($colorId, $sizeId);
+
+        return $variant
+            ? $variant->sellingPrice($product)
+            : $product->sellingPrice();
     }
 
     /**
-     * Rebuilds each line from the session cart, taking price and name from the database.
+     * Rebuilds each line from the session cart, taking price and name from the
+     * database.
      *
-     * The session is now trusted for one thing only: what the customer picked —
-     * which product, which size, which colour, and how many.
+     * The session is trusted for one thing only: what the customer picked.
      *
      * @param  array<int, array<string, mixed>>  $cart
-     * @return array<int, array{product: ProductModel, size_id: int, color_id: int, size: ?string, color: ?string, quantity: int, unit_price: int, line_total: int}>
+     * @return array<int, array{product: ProductModel, size_id: ?int, color_id: ?int, size: ?string, color: ?string, quantity: int, unit_price: int, unit_capital_price: int, line_total: int}>
      */
     public function priceCart(array $cart): array
     {
@@ -54,22 +49,36 @@ class CartPricingService
                 continue;
             }
 
+            $colorId = $item['color_id'] ?? null;
+            $sizeId = $item['size_id'] ?? null;
             $quantity = max(1, (int) $item['quantity']);
-            $unitPrice = $this->unitPrice($product);
+
+            $variant = $product->variantFor($colorId, $sizeId);
+            $unitPrice = $variant ? $variant->sellingPrice($product) : $product->sellingPrice();
 
             $lines[] = [
                 'product' => $product,
-                'size_id' => (int) $item['size_id'],
-                'color_id' => (int) $item['color_id'],
-                'size' => SizeModel::where('size_id', $item['size_id'])->value('size'),
-                'color' => ColorModel::where('color_id', $item['color_id'])->value('color_vn'),
+                // Left null rather than cast: a product sold without colours and
+                // sizes would look for a variant with id 0 and never find its own.
+                'size_id' => $this->identifier($sizeId),
+                'color_id' => $this->identifier($colorId),
+                'size' => SizeModel::where('size_id', $sizeId)->value('size'),
+                'color' => ColorModel::where('color_id', $colorId)->value('color_vn'),
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
+                'unit_capital_price' => $variant
+                    ? $variant->capitalPrice($product)
+                    : (int) $product->capital_price,
                 'line_total' => $unitPrice * $quantity,
             ];
         }
 
         return $lines;
+    }
+
+    private function identifier($value): ?int
+    {
+        return $value === null || $value === '' ? null : (int) $value;
     }
 
     /**
@@ -83,9 +92,8 @@ class CartPricingService
     /**
      * The amount discounted.
      *
-     * `coupon_condition == 1` means a fixed amount off, anything else means a
-     * percentage — matching product_checkout.blade.php. The result is capped at
-     * the goods subtotal so the order total can never go negative.
+     * `coupon_condition == 1` is a fixed amount off, anything else a percentage.
+     * Capped at the subtotal so the total can never go negative.
      */
     public function discountFor(?CouponModel $coupon, int $subtotal): int
     {
@@ -101,10 +109,8 @@ class CartPricingService
     }
 
     /**
-     * Re-checks the coupon at the moment the order is placed.
-     *
-     * It was already checked when the customer applied it, but in between it may
-     * have run out of uses, expired, or been deleted by an administrator.
+     * Re-checks the coupon at the moment the order is placed: between applying it
+     * and paying, it may have run out, expired, or been deleted.
      */
     public function couponIsUsable(?CouponModel $coupon, int $subtotal): bool
     {

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('size',5)->nullable()->default(null);
             $table->string('color',20)->nullable()->default(null);
             $table->unsignedInteger('price');
+            $table->unsignedInteger('capital_price')->default(0);
             $table->unsignedInteger('quantity');
             $table->unsignedBigInteger('order_id');
             $table->foreign('order_id')->references('order_id')->on('order')->onDelete('cascade')->onUpdate('cascade');

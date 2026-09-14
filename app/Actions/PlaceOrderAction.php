@@ -16,13 +16,8 @@ use Illuminate\Support\Facades\DB;
 /**
  * Creates a complete order inside a single transaction.
  *
- * The four writes involved — the order, its line items, the stock decrement and
- * the coupon usage counter — used to run without a transaction, so a failure
- * halfway through left the data permanently inconsistent: an order with stock
- * that was never deducted, or stock deducted for an order that does not exist.
- *
- * Stock is now decremented with a conditional atomic statement rather than the
- * read-modify-write that let two customers buy the same last pair.
+ * Four writes have to stand or fall together: the order, its line items, the
+ * stock decrement and the coupon usage counter.
  */
 class PlaceOrderAction
 {
@@ -43,8 +38,7 @@ class PlaceOrderAction
         DeliveryInfoModel $address,
         array $meta,
     ): OrderModel {
-        // The shipping fee is read from the delivery address in the database,
-        // never taken from the request.
+        // Shipping comes from the address row, never from the request.
         $summary = $this->pricing->summary($cart, $coupon, (int) $address->info_delivery_fee);
 
         if (empty($summary['lines'])) {
@@ -86,6 +80,7 @@ class PlaceOrderAction
                     'color' => $line['color'],
                     'color_id' => $line['color_id'],
                     'price' => $line['unit_price'],
+                    'capital_price' => $line['unit_capital_price'],
                     'quantity' => $line['quantity'],
                 ]);
             }
@@ -101,11 +96,10 @@ class PlaceOrderAction
     /**
      * Decrements stock with a conditional UPDATE.
      *
-     * The `quantity >= n` guard lives inside the statement itself, so when two
-     * requests race for the last pair only one of them affects a row; the other
-     * gets zero back and is rejected.
+     * The `quantity >= n` guard lives inside the statement, so when two requests
+     * race for the last pair only one of them affects a row.
      *
-     * @param  array{product: \App\Models\ProductModel, size_id: int, color_id: int, size: ?string, color: ?string, quantity: int}  $line
+     * @param  array{product: \App\Models\ProductModel, size_id: ?int, color_id: ?int, size: ?string, color: ?string, quantity: int}  $line
      *
      * @throws InsufficientStockException
      */
@@ -129,11 +123,8 @@ class PlaceOrderAction
     /**
      * A fresh order code, in the ddmmyyyy + four digits format the shop uses.
      *
-     * This was generated in the Blade template and posted as a hidden field,
-     * which meant the customer chose their own order code — they could send one
-     * that already existed and crash the insert, or a code shaped however they
-     * liked. The uniqueness check was in the template too, and only retried
-     * once before giving up.
+     * Generated here rather than posted from the form, or the customer picks
+     * their own.
      */
     private function generateOrderCode(): string
     {
@@ -154,9 +145,8 @@ class PlaceOrderAction
     /**
      * Consumes one use of a coupon, again atomically.
      *
-     * A coupon running out mid-checkout does not fail the order: the customer
-     * still gets the discount they were shown, the counter simply stops at zero
-     * instead of going negative.
+     * Running out mid-checkout does not fail the order: the customer keeps the
+     * discount they were shown, the counter simply stops at zero.
      */
     private function consumeCoupon(CouponModel $coupon): void
     {

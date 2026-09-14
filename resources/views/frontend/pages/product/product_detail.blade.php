@@ -93,22 +93,15 @@
                             <h6 class="fw-bold">SKU: <span class="fw-normal">{{ $detailProduct->pro_code }}</span></h6>
                         </div>
                         <div class="product-detail_price mt-4">
-                            @if ($detailProduct->pro_price_sale != 0)
-                                <div class="d-flex align-items-center gap-4">
-                                    <h3 class="fw-bold price-new">
-                                        {{ number_format($detailProduct->pro_price_sale, 0, ',', '.') }} VNĐ
-                                    </h3>
-                                    <h4 class="text-decoration-line-through price-old">
-                                        {{ number_format($detailProduct->pro_price, 0, ',', '.') }} VNĐ
-                                    </h4>
-                                </div>
-                                <input type="text" name="pro_price" value="{{ $detailProduct->pro_price_sale }}" hidden>
-                            @else
-                                <h3 class="fw-bold price-new">
-                                    {{ number_format($detailProduct->pro_price, 0, ',', '.') }} VNĐ
+                            <div class="d-flex align-items-center gap-4">
+                                <h3 class="fw-bold price-new mb-0">
+                                    {{ $detailProduct->displaySellingPrice() }} VNĐ
                                 </h3>
-                                <input type="text" name="pro_price" value="{{ $detailProduct->pro_price }}" hidden>
-                            @endif
+                                <h4 class="text-decoration-line-through price-old mb-0"
+                                    @unless ($detailProduct->isOnSale()) hidden @endunless>
+                                    {{ $detailProduct->displayListPrice() }} VNĐ
+                                </h4>
+                            </div>
                         </div>
                         {{-- Display color --}}
                         @if ($getColor->isNotEmpty())
@@ -376,18 +369,18 @@
                                         <div>
                                             <h6 class="text__truncate fw-bold">{{ $hotPro->pro_name }}</h6>
                                             <div class="d-flex mt-2">
-                                                @if ($hotPro->pro_price_sale != 0)
+                                                @if ($hotPro->isOnSale())
                                                     <div class="d-flex gap-3 align-items-center flex-wrap">
                                                         <h5 class="fw-bold mb-0 color__price">
-                                                            {{ number_format($hotPro->pro_price_sale, 0, ',', '.') }} VNĐ
+                                                            {{ $hotPro->displaySellingPrice() }} VNĐ
                                                         </h5>
                                                         <del class="text-decoration-line-through price-old">
-                                                            {{ number_format($hotPro->pro_price, 0, ',', '.') }} VNĐ
+                                                            {{ $hotPro->displayListPrice() }} VNĐ
                                                         </del>
                                                     </div>
                                                 @else
                                                     <h5 class="fw-bold mb-0 color__price">
-                                                        {{ number_format($hotPro->pro_price, 0, ',', '.') }} VNĐ
+                                                        {{ $hotPro->displayListPrice() }} VNĐ
                                                     </h5>
                                                 @endif
                                             </div>
@@ -431,16 +424,16 @@
                                     </h6>
                                 </a>
                                 <div class="price d-flex gap-3 justify-content-center mb-3">
-                                    @if ($relatedPro->pro_price_sale != 0)
+                                    @if ($relatedPro->isOnSale())
                                         <h6 class="price__product">
-                                            {{ number_format($relatedPro->pro_price_sale, 0, ',', '.') }} VNĐ
+                                            {{ $relatedPro->displaySellingPrice() }} VNĐ
                                         </h6>
                                         <h6 class="price__product l-through px-0">
-                                            {{ number_format($relatedPro->pro_price, 0, ',', '.') }} VNĐ
+                                            {{ $relatedPro->displayListPrice() }} VNĐ
                                         </h6>
                                     @else
                                         <h6 class="price__product">
-                                            {{ number_format($relatedPro->pro_price, 0, ',', '.') }} VNĐ
+                                            {{ $relatedPro->displayListPrice() }} VNĐ
                                         </h6>
                                     @endif
                                 </div>
@@ -473,7 +466,44 @@
 @push('script-access')
     <script src="{{ asset('frontend/js/pro-detail.js') }}"></script>
     <script>
+        const variantPrices = @json($variantPrices);
+        const rangeSellingPrice = @json($detailProduct->displaySellingPrice());
+        const rangeListPrice = @json($detailProduct->displayListPrice());
+        const rangeIsOnSale = @json($detailProduct->isOnSale());
+
+        function formatPrice(value) {
+            return new Intl.NumberFormat('vi-VN').format(value);
+        }
+
+        function selectedVariantKey() {
+            const color = $("input[name='options-color']:checked").val();
+            const size = $("input[name='options-size']:checked").val();
+            const hasColor = $("input[name='options-color']").length > 0;
+            const hasSize = $("input[name='options-size']").length > 0;
+
+            if ((hasColor && !color) || (hasSize && !size)) {
+                return null;
+            }
+
+            return (color ?? '') + '-' + (size ?? '');
+        }
+
+        function refreshPrice() {
+            const key = selectedVariantKey();
+            const variant = key === null ? null : variantPrices[key];
+
+            // Not picked yet, or never stocked: back to the product's range.
+            const selling = variant ? formatPrice(variant.price) : rangeSellingPrice;
+            const list = variant ? formatPrice(variant.list) : rangeListPrice;
+            const onSale = variant ? variant.price < variant.list : rangeIsOnSale;
+
+            $('.product-detail_price .price-new').text(selling + ' VNĐ');
+            $('.product-detail_price .price-old').text(list + ' VNĐ').prop('hidden', !onSale);
+        }
+
         $(document).ready(function() {
+            $("input[name='options-color'], input[name='options-size']").on('change', refreshPrice);
+            refreshPrice();
             $('#product-form').submit(function(event) {
                 let colorError = false;
                 let sizeError = false;

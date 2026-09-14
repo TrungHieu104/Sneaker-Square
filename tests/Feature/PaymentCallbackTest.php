@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Actions\PlaceOrderAction;
 use App\Enums\OrderStatus;
+use App\Mail\ConfirmOrder;
 use App\Models\CouponModel;
 use App\Models\OrderModel;
 use App\Models\ProductModel;
@@ -250,6 +251,42 @@ class PaymentCallbackTest extends TestCase
     }
 
     // ------------------------------------------- cancelling and stock
+
+    /**
+     * The redirect and the IPN both arrive for every gateway payment, so anything
+     * the callback does has to survive being told twice — the email included.
+     */
+    public function test_callback_lap_lai_chi_gui_mot_mail_xac_nhan(): void
+    {
+        $order = $this->placeOrder();
+        $params = $this->vnpayCallback($order);
+
+        $this->get(route('process.checkout', $params));
+        $this->post(route('payment.ipn'), $params);
+
+        Mail::assertQueued(ConfirmOrder::class, 1);
+    }
+
+    public function test_tien_ve_sau_khi_don_da_huy_thi_ghi_nhan_nhung_khong_mo_lai_don(): void
+    {
+        $order = $this->placeOrder(price: 1_000_000, quantity: 2, stock: 10);
+
+        $this->get(route('process.checkout', $this->vnpayCallback($order, '24')));
+
+        $cancelled = OrderModel::find($order->order_id);
+        $this->assertSame(OrderStatus::Cancelled->value, (int) $cancelled->order_status);
+        $this->assertSame(10, $this->stockOf(ProductModel::firstOrFail()), 'Hàng đã trả về kho khi hủy');
+
+        Mail::fake();
+        $this->get(route('process.checkout', $this->vnpayCallback($order, '00')));
+
+        $paid = OrderModel::find($order->order_id);
+
+        $this->assertSame(1, (int) $paid->order_payment_status, 'Tiền đã về thì phải ghi nhận để còn hoàn lại');
+        $this->assertSame(OrderStatus::Cancelled->value, (int) $paid->order_status, 'Đơn vẫn là đã hủy');
+        $this->assertSame(10, $this->stockOf(ProductModel::firstOrFail()), 'Không được trừ kho lần nữa');
+        Mail::assertNothingQueued();
+    }
 
     public function test_huy_thanh_toan_hoan_lai_ton_kho_va_luot_ma_giam_gia(): void
     {

@@ -105,7 +105,7 @@
                     <div class="col-lg-3 mb-3">
                         <label for="title" class="form-label">Ngày bắt đầu</label>
                         <div class="col-md-12">
-                            <input class="form-control datepicker" id="start_coupon" autocomplete="off" type="text" name="start_pro" value="{{old('start_pro')}}"/>
+                            <input class="form-control datepicker" id="start_coupon" autocomplete="off" type="text" name="start_pro" value="{{ old('start_pro', $today) }}"/>
                             @if ($errors->has("start_pro")) 
                                 @foreach ($errors->get("start_pro") as $error) 
                                     <small class="text-danger fst-italic">

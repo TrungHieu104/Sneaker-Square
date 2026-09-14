@@ -110,7 +110,10 @@
                             </div>   
         
                             <div class="col-lg-6 mb-3">
-                                <label for="title" class="form-label">Giá bán</label>
+                                <div class="d-flex align-items-center gap-1 mb-2">
+                                    <label for="title" class="form-label mb-0">Giá bán</label>
+                                    @include('backend.components.field_hint', ['text' => 'Giá mặc định của sản phẩm. Biến thể nào cần bán khác giá thì đặt riêng ở màn hình kho.'])
+                                </div>
                                 <div class="input-group">
                                     <input type="number" class="form-control" name="pro_price" value="{{ old('pro_price') }}"
                                         min="1" step="1">

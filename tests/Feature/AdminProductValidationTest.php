@@ -173,7 +173,7 @@ class AdminProductValidationTest extends TestCase
 
     public function test_nhap_kho_so_luong_khong_duong_bi_chan(): void
     {
-        $product = $this->makeProduct(stock: 10, slug: 'giay-nhap-kho');
+        $product = $this->makeProduct(stock: 10, slug: 'giay-nhap-kho', withVariant: false);
 
         $this->actingAs($this->admin)
             ->post(route('stock.store'), [
@@ -184,12 +184,12 @@ class AdminProductValidationTest extends TestCase
             ])
             ->assertSessionHasErrors('quantityOthers');
 
-        $this->assertSame(10, $this->stockOf($product), 'Tồn kho không được đổi khi nhập hàng thất bại');
+        $this->assertSame(10, $this->stockOf($product, null, null), 'Tồn kho không được đổi khi nhập hàng thất bại');
     }
 
     public function test_nhap_kho_hop_le_cong_them_vao_ton(): void
     {
-        $product = $this->makeProduct(stock: 10, slug: 'giay-nhap-them');
+        $product = $this->makeProduct(stock: 10, slug: 'giay-nhap-them', withVariant: false);
 
         $this->actingAs($this->admin)
             ->post(route('stock.store'), [
@@ -200,12 +200,12 @@ class AdminProductValidationTest extends TestCase
             ])
             ->assertSessionHasNoErrors();
 
-        $this->assertSame(15, $this->stockOf($product));
+        $this->assertSame(15, $this->stockOf($product, null, null));
     }
 
     public function test_nhap_kho_thieu_ngay_nhap_bi_chan(): void
     {
-        $product = $this->makeProduct(stock: 10, slug: 'giay-thieu-ngay');
+        $product = $this->makeProduct(stock: 10, slug: 'giay-thieu-ngay', withVariant: false);
 
         $this->actingAs($this->admin)
             ->post(route('stock.store'), [
@@ -215,7 +215,7 @@ class AdminProductValidationTest extends TestCase
             ])
             ->assertSessionHasErrors('quantity_date');
 
-        $this->assertSame(10, $this->stockOf($product));
+        $this->assertSame(10, $this->stockOf($product, null, null));
     }
 
     public function test_ten_mau_tieng_viet_duoc_chuan_hoa_truoc_khi_kiem_tra(): void

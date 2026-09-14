@@ -501,27 +501,20 @@
                                     $color_id = $c['color_id'];
                                     $size_id = $c['size_id'];
                                     $ten_sp = $c['pro_name'];
-                                    $gia = DB::table('products')
-                                        ->where('pro_slug', '=', $proSlug)
-                                        ->value('pro_price');
+                                    // Priced off the variant, as on the cart page, so this matches
+                                    // what the server charges.
+                                    $sanpham = \App\Models\ProductModel::where('pro_slug', $proSlug)->first();
+                                    $bienthe = $sanpham?->variantFor($color_id, $size_id);
+                                    $gia = $bienthe ? $bienthe->listPrice($sanpham) : (int) $sanpham?->pro_price;
+                                    $gia_sale = $bienthe ? $bienthe->salePrice($sanpham) : (int) $sanpham?->pro_price_sale;
                                     $size = DB::table('size')
                                         ->where('size_id', '=', $size_id)
                                         ->value('size');
                                     $color = DB::table('color')
                                         ->where('color_id', '=', $color_id)
                                         ->value('color_vn');
-                                    $gia_sale = DB::table('products')
-                                        ->where('pro_slug', '=', $proSlug)
-                                        ->value('pro_price_sale');
-                                    $img = DB::table('products')
-                                        ->where('pro_slug', '=', $proSlug)
-                                        ->value('pro_img');
-                                    $cate_id = DB::table('products')
-                                        ->where('pro_slug', '=', $proSlug)
-                                        ->value('cate_id');
-                                    $cate_name = DB::table('category')
-                                        ->where('cate_id', '=', $cate_id)
-                                        ->value('cate_name');
+                                    $img = $sanpham?->pro_img;
+                                    $cate_name = $sanpham?->getCate?->cate_name;
                                 @endphp
 
                                 @if ($gia_sale != 0)

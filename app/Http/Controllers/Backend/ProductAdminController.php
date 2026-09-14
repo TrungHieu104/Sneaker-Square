@@ -77,7 +77,9 @@ class ProductAdminController extends Controller
                 'price',
                 DB::raw('SUM(quantity) AS total_quantity'),
                 'order_details.pro_id',
-                'products.capital_price',
+                // Not products.capital_price: that is the cost today, of whichever
+                // variant, rather than what the colour on this line cost when sold.
+                'order_details.capital_price',
             )
             ->join('order', 'order_details.order_id', '=', 'order.order_id')
             ->join('products', 'order_details.pro_id', '=', 'products.pro_id')
@@ -88,7 +90,7 @@ class ProductAdminController extends Controller
                 'order_details.color', 
                 'order_details.price', 
                 'order_details.pro_id',
-                'products.capital_price',
+                'order_details.capital_price',
             )
             ->orderBy('total_quantity', 'desc')
             ->limit(10)

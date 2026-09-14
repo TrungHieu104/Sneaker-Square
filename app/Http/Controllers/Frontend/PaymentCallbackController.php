@@ -94,8 +94,11 @@ class PaymentCallbackController extends Controller
     {
         switch ($callback->outcome) {
             case PaymentOutcome::Paid:
-                $order = $this->confirmPayment->execute($callback);
-                $this->mailer->sendConfirmation($order);
+                // Only the call that settled the payment gets an order back, so the
+                // confirmation goes out once however often the gateway tells us.
+                if ($order = $this->confirmPayment->execute($callback)) {
+                    $this->mailer->sendConfirmation($order);
+                }
                 break;
 
             case PaymentOutcome::Cancelled:

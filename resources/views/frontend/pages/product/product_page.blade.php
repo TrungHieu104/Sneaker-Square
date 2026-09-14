@@ -280,16 +280,16 @@
                                             @endif
                                         </div>
                                         <div class="price d-flex gap-3 justify-content-center mb-3">
-                                            @if ($accessories->pro_price_sale != 0)
+                                            @if ($accessories->isOnSale())
                                                 <h6 class="price__product">
-                                                    {{ number_format($accessories->pro_price_sale, 0, ',', '.') }} VNĐ
+                                                    {{ $accessories->displaySellingPrice() }} VNĐ
                                                 </h6>
                                                 <h6 class="price__product l-through px-0">
-                                                    {{ number_format($accessories->pro_price, 0, ',', '.') }} VNĐ
+                                                    {{ $accessories->displayListPrice() }} VNĐ
                                                 </h6>
                                             @else
                                                 <h6 class="price__product">
-                                                    {{ number_format($accessories->pro_price, 0, ',', '.') }} VNĐ
+                                                    {{ $accessories->displayListPrice() }} VNĐ
                                                 </h6>
                                             @endif
                                         </div>

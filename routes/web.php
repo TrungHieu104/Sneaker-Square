@@ -244,6 +244,9 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     Route::post('/store-new-color', [ProductQuantityController::class, 'storeNewColor'])->name('stock.new.color')->middleware('permission:Quản trị Sản phẩm (Kho)');
     Route::put('/update-color/{color_id}', [ProductQuantityController::class, 'updateColor'])->name('stock.update.color')->middleware('permission:Quản trị Sản phẩm (Kho)');
     Route::delete('/delete-color/{color_id}', [ProductQuantityController::class, 'deleteColor'])->name('stock.delete.color')->middleware('permission:Quản trị Sản phẩm (Kho)');
+    Route::put('/update-variant-price/{quantity_id}', [ProductQuantityController::class, 'updatePrice'])->name('stock.update.price')->middleware('permission:Quản trị Sản phẩm (Kho)');
+    Route::post('/stock/{pro_slug}/variant', [ProductQuantityController::class, 'storeVariant'])->name('stock.variant.store')->middleware('permission:Quản trị Sản phẩm (Kho)');
+    Route::put('/stock/restock/{quantity_id}', [ProductQuantityController::class, 'restock'])->name('stock.restock')->middleware('permission:Quản trị Sản phẩm (Kho)');
 
     // Danh mục sản phẩm
     Route::resource('product-category', (ProductCateController::class))->middleware('permission:Quản trị Sản phẩm');
