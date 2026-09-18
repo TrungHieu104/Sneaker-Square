@@ -60,6 +60,45 @@ return [
         'after_failed_attempts' => env('CAPTCHA_AFTER_FAILED_ATTEMPTS', 3),
     ],
 
+    'ghn' => [
+        'host' => env('GHN_HOST', 'https://online-gateway.ghn.vn'),
+        'token' => env('GHN_TOKEN'),
+        'shop_id' => env('GHN_SHOP_ID'),
+
+        // Where the parcels are picked up. GHN reads it from the shop, but the
+        // fee and leadtime endpoints want it spelled out on every call.
+        'from_district_id' => env('GHN_FROM_DISTRICT_ID'),
+        'from_ward_code' => env('GHN_FROM_WARD_CODE'),
+
+        // One box for every parcel. Shoe boxes barely vary, and GHN bills on
+        // whichever is larger, the real weight or length*width*height/5000.
+        'box' => [
+            'length' => (int) env('GHN_BOX_LENGTH', 32),
+            'width' => (int) env('GHN_BOX_WIDTH', 22),
+            'height' => (int) env('GHN_BOX_HEIGHT', 13),
+        ],
+
+        // What to charge when GHN cannot be reached. Losing the carrier must
+        // not lose the order.
+
+        'timeout' => (int) env('GHN_TIMEOUT', 8),
+
+        // The pickup address printed on the label. GHN keeps one on the shop
+        // too, but the create call wants it spelled out.
+        'from_name' => env('GHN_FROM_NAME'),
+        'from_phone' => env('GHN_FROM_PHONE'),
+        'from_address' => env('GHN_FROM_ADDRESS'),
+
+        // Off unless someone turns it on. A create call books a courier, and
+        // against the production host that courier is real.
+        'create_orders' => filter_var(env('GHN_CREATE_ORDERS', false), FILTER_VALIDATE_BOOL),
+        // GHN signs no callback, so the secret is the URL itself. Empty means
+        // the webhook answers 404 to everyone.
+        'webhook_token' => env('GHN_WEBHOOK_TOKEN'),
+        // How long one admin page holds its event stream open before the browser
+        // reconnects. Each open stream occupies a PHP worker for that long.
+        'stream_seconds' => (int) env('GHN_STREAM_SECONDS', 60),
+    ],
     'vnpay' => [
         'url' => env('VNPAY_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'),
         'tmn_code' => env('VNPAY_TMN_CODE'),

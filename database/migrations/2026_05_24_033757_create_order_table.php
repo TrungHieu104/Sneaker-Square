@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('order_email', 255);
             $table->string('order_address', 255);
             $table->string('order_local', 300);
+            $table->unsignedInteger('order_district_id')->nullable();
+            $table->string('order_ward_code', 20)->nullable();
             $table->string('order_phone', 15);
             $table->unsignedInteger('order_delivery_fee');
             $table->unsignedInteger('order_coupon_value')->default(0);
@@ -27,6 +29,9 @@ return new class extends Migration
             $table->dateTime('order_payment_time')->nullable();
             $table->longText('order_payment_url')->nullable();
             $table->boolean('order_delivery_status')->default(0);
+            $table->date('order_expected_delivery')->nullable();
+            $table->string('order_shipping_code', 50)->nullable()->unique();
+            $table->string('order_shipping_status', 50)->nullable();
             $table->date('order_date');
             $table->boolean('order_status')->default(0);
             $table->longText('note_customer')->nullable();

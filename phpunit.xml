@@ -28,5 +28,9 @@
         <env name="REDIS_CLIENT" value="phpredis"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <!-- No token means AppServiceProvider binds FakeCarrier: a test run must
+             never reach GHN, whatever .env happens to hold. -->
+        <env name="GHN_TOKEN" value=""/>
+        <env name="GHN_STREAM_SECONDS" value="0"/>
     </php>
 </phpunit>

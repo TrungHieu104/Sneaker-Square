@@ -69,8 +69,8 @@ class PlaceOrderTest extends TestCase
 
         $order = OrderModel::where('user_id', $user->user_id)->firstOrFail();
 
-        $this->assertSame(2_030_000, (int) $order->order_total, 'Tổng tiền phải do server tính: 2×1.000.000 + 30.000 ship');
-        $this->assertSame(self::SHIPPING_FEE, (int) $order->order_delivery_fee, 'Phí ship phải lấy từ địa chỉ nhận hàng');
+        $this->assertSame(2_032_000, (int) $order->order_total, 'Tổng tiền phải do server tính: 2×1.000.000 + 32.000 ship');
+        $this->assertSame(32_000, (int) $order->order_delivery_fee, 'Phí ship phải do hãng vận chuyển báo cho đúng kiện hàng này');
         $this->assertSame(0, (int) $order->order_coupon_value, 'Không có mã giảm giá thì không được giảm đồng nào');
         $this->assertNotSame('TAMPER01', $order->order_code, 'Mã đơn hàng phải do server sinh, không lấy từ request');
     }
@@ -88,7 +88,7 @@ class PlaceOrderTest extends TestCase
         $detail = OrderDetailModel::where('order_id', $order->order_id)->firstOrFail();
 
         $this->assertSame(2_000_000, (int) $detail->price);
-        $this->assertSame(2_030_000, (int) $order->order_total);
+        $this->assertSame(2_027_000, (int) $order->order_total);
     }
 
     public function test_uu_tien_gia_khuyen_mai_khi_san_pham_dang_sale(): void
@@ -101,7 +101,7 @@ class PlaceOrderTest extends TestCase
         $detail = OrderDetailModel::where('order_id', $order->order_id)->firstOrFail();
 
         $this->assertSame(1_500_000, (int) $detail->price);
-        $this->assertSame(3_030_000, (int) $order->order_total);
+        $this->assertSame(3_032_000, (int) $order->order_total);
     }
 
     // ----------------------------------------------------------- coupons
@@ -121,7 +121,7 @@ class PlaceOrderTest extends TestCase
         $order = $this->placeOrder($user, [$this->cartLine($product, 1)], $coupon);
 
         $this->assertSame(100_000, (int) $order->order_coupon_value);
-        $this->assertSame(930_000, (int) $order->order_total, '1.000.000 − 100.000 + 30.000');
+        $this->assertSame(927_000, (int) $order->order_total, '1.000.000 − 100.000 + 27.000 ship');
         $this->assertSame(2, (int) $coupon->fresh()->coupon_quantity, 'Phải trừ đúng một lượt');
         $this->assertSame(1, (int) $coupon->fresh()->coupon_used);
     }
@@ -142,7 +142,7 @@ class PlaceOrderTest extends TestCase
 
         $this->assertSame(0, (int) $order->order_coupon_value);
         $this->assertNull($order->coupon_id);
-        $this->assertSame(1_030_000, (int) $order->order_total);
+        $this->assertSame(1_027_000, (int) $order->order_total);
     }
 
     // ---------------------------------------------------------- B2: stock
@@ -233,7 +233,7 @@ class PlaceOrderTest extends TestCase
         $this->assertSame(2, OrderDetailModel::where('order_id', $order->order_id)->count());
         $this->assertSame(8, $this->stockOf($a));
         $this->assertSame(1, $this->stockOf($b));
-        $this->assertSame(3_530_000, (int) $order->order_total, '2.000.000 + 1.500.000 + 30.000');
+        $this->assertSame(3_547_000, (int) $order->order_total, '2.000.000 + 1.500.000 + 47.000 ship');
 
         // The delivery address is copied onto the order.
         $this->assertSame('Nguyễn Văn A', $order->order_name);

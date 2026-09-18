@@ -15,7 +15,12 @@ use Illuminate\Support\Facades\Hash;
  */
 trait ShopFixtures
 {
-    private const SHIPPING_FEE = 30000;
+    /**
+     * What FakeCarrier answers for a one-kilo parcel: its base fee plus a kilo.
+     * The stored number on an address is reference only; the order is charged
+     * what the carrier quotes for the cart being sent.
+     */
+    private const SHIPPING_FEE = 27000;
 
     private function seedLookupTables(): void
     {
@@ -50,8 +55,17 @@ trait ShopFixtures
         return $user;
     }
 
-    private function makeAddress(UserModel $user, int $shippingFee = self::SHIPPING_FEE): DeliveryInfoModel
-    {
+    /**
+     * Carrier ids are on by default: an order cannot be placed without a quote,
+     * and a quote needs somewhere GHN recognises. Pass nulls to build the kind
+     * of address saved before the carrier was wired up.
+     */
+    private function makeAddress(
+        UserModel $user,
+        int $shippingFee = self::SHIPPING_FEE,
+        ?int $districtId = 1442,
+        ?string $wardCode = '20110',
+    ): DeliveryInfoModel {
         return DeliveryInfoModel::create([
             'info_name' => 'Nguyễn Văn A',
             'info_phone' => '0912345678',
@@ -61,6 +75,8 @@ trait ShopFixtures
             'info_district' => 'Thủ Đức',
             'info_province' => 'TP.HCM',
             'info_delivery_fee' => (string) $shippingFee,
+            'info_district_id' => $districtId,
+            'info_ward_code' => $wardCode,
             'info_default' => 1,
             'user_id' => $user->user_id,
         ]);

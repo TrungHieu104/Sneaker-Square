@@ -7,9 +7,12 @@ use App\Models\CouponModel;
 use App\Models\DeliveryInfoModel;
 use App\Models\OrderDetailModel;
 use App\Models\OrderModel;
+use App\Models\ProductModel;
 use App\Models\ProductQuantityModel;
 use App\Models\UserModel;
 use App\Services\CartPricingService;
+use App\Services\Shipping\ShippingUnavailable;
+use App\Services\ShippingService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -21,9 +24,10 @@ use Illuminate\Support\Facades\DB;
  */
 class PlaceOrderAction
 {
-    public function __construct(private readonly CartPricingService $pricing)
-    {
-    }
+    public function __construct(
+        private readonly CartPricingService $pricing,
+        private readonly ShippingService $shipping,
+    ) {}
 
     /**
      * @param  array<int, array<string, mixed>>  $cart  the cart held in the session
@@ -38,15 +42,22 @@ class PlaceOrderAction
         DeliveryInfoModel $address,
         array $meta,
     ): OrderModel {
-        // Shipping comes from the address row, never from the request.
-        $summary = $this->pricing->summary($cart, $coupon, (int) $address->info_delivery_fee);
+        // Quoted here, from the cart and the address, because the parcel is
+        // only final at this point and because a fee posted by the form is a
+        // fee the customer chose.
+        $quote = $this->shipping->quoteForAddress($cart, $address);
+
+        if (! $quote) {
+            throw new ShippingUnavailable('No carrier quote for address '.$address->info_id);
+        }
+        $summary = $this->pricing->summary($cart, $coupon, $quote->fee);
 
         if (empty($summary['lines'])) {
             throw new InsufficientStockException('Giỏ hàng');
         }
 
-        return DB::transaction(function () use ($user, $address, $meta, $summary) {
-            $order = new OrderModel();
+        return DB::transaction(function () use ($user, $address, $meta, $summary, $quote) {
+            $order = new OrderModel;
             $order->order_code = $this->generateOrderCode();
             $order->order_name = $address->info_name;
             $order->order_phone = $address->info_phone;
@@ -57,7 +68,12 @@ class PlaceOrderAction
                 $address->info_district,
                 $address->info_province,
             ]);
+            // Copied onto the order, not read back through the address: the
+            // customer may edit or delete that address tomorrow.
+            $order->order_district_id = $address->info_district_id;
+            $order->order_ward_code = $address->info_ward_code;
             $order->order_delivery_fee = $summary['shipping'];
+            $order->order_expected_delivery = $quote->estimated?->toDateString();
             $order->order_coupon_value = $summary['discount'];
             $order->order_total = $summary['total'];
             $order->order_payment = $meta['payment'];
@@ -99,7 +115,7 @@ class PlaceOrderAction
      * The `quantity >= n` guard lives inside the statement, so when two requests
      * race for the last pair only one of them affects a row.
      *
-     * @param  array{product: \App\Models\ProductModel, size_id: ?int, color_id: ?int, size: ?string, color: ?string, quantity: int}  $line
+     * @param  array{product: ProductModel, size_id: ?int, color_id: ?int, size: ?string, color: ?string, quantity: int}  $line
      *
      * @throws InsufficientStockException
      */
@@ -131,7 +147,7 @@ class PlaceOrderAction
         $date = Carbon::now('Asia/Ho_Chi_Minh')->format('dmY');
 
         for ($attempt = 0; $attempt < 20; $attempt++) {
-            $code = $date . str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+            $code = $date.str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
 
             if (! OrderModel::where('order_code', $code)->exists()) {
                 return $code;
@@ -139,7 +155,7 @@ class PlaceOrderAction
         }
 
         // Falls back to a form that cannot collide rather than failing the sale.
-        return $date . substr((string) microtime(true), -6);
+        return $date.substr((string) microtime(true), -6);
     }
 
     /**

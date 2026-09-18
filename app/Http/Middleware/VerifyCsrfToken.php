@@ -17,5 +17,8 @@ class VerifyCsrfToken extends Middleware
         // no session and no token. Authenticity is proved by the HMAC on the
         // payload instead, which PaymentCallbackController checks.
         'ipn-thanh-toan',
+        // GHN posts here from its own servers. The secret in the path is what
+        // stands in for a token.
+        'webhook/ghn/*',
     ];
 }

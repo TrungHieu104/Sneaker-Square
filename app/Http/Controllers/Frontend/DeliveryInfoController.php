@@ -9,9 +9,35 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use App\Models\DeliveryInfoModel as Info;
+use App\Services\Shipping\Shipment;
+use App\Services\Shipping\ShippingCarrier;
+use App\Services\Shipping\ShippingUnavailable;
 
 class DeliveryInfoController extends Controller
 {
+    public function __construct(private ShippingCarrier $carrier) {}
+
+    /**
+     * What one parcel to this address costs today.
+     *
+     * Stored so a listing can show a number without calling GHN once per row.
+     * It is an indication only: the fee charged is quoted again at checkout,
+     * against the cart that is actually being sent.
+     */
+    private function indicativeFee(int $districtId, string $wardCode): int
+    {
+        try {
+            return $this->carrier->quote(new Shipment(
+                toDistrictId: $districtId,
+                toWardCode: $wardCode,
+                weight: 1200,
+                insuranceValue: 0,
+            ))->fee;
+        } catch (ShippingUnavailable $e) {
+            return 0;
+        }
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -48,7 +74,9 @@ class DeliveryInfoController extends Controller
         $Info->info_province = $request->info_province;
         $Info->info_district = $request->info_district;
         $Info->info_ward = $request->info_ward;
-        $Info->info_delivery_fee = $request->infoFeeForm;
+        $Info->info_district_id = (int) $request->info_district_id;
+        $Info->info_ward_code = (string) $request->info_ward_code;
+        $Info->info_delivery_fee = $this->indicativeFee((int) $request->info_district_id, (string) $request->info_ward_code);
         $Info->user_id = $user_id;
         if (!$found) {
             $Info->info_default = 1;
@@ -112,7 +140,9 @@ class DeliveryInfoController extends Controller
         $Info->info_province = $request->info_province;
         $Info->info_district = $request->info_district;
         $Info->info_ward = $request->info_ward;
-        $Info->info_delivery_fee = $request->infoFeeFormUp;
+        $Info->info_district_id = (int) $request->info_district_id;
+        $Info->info_ward_code = (string) $request->info_ward_code;
+        $Info->info_delivery_fee = $this->indicativeFee((int) $request->info_district_id, (string) $request->info_ward_code);
         $Info->save();
         Session::flash('iconMessage', 'success');
         return redirect()->back()->with('message', 'Cập nhật địa chỉ nhận hàng thành công!');

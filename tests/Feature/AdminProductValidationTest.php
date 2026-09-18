@@ -59,6 +59,7 @@ class AdminProductValidationTest extends TestCase
             'pro_price' => 1_000_000,
             'capital_price' => 600_000,
             'pro_price_sale' => 0,
+            'pro_weight' => 1200,
             'pro_date' => now()->toDateString(),
             'cate_id' => 1,
         ], $overrides);

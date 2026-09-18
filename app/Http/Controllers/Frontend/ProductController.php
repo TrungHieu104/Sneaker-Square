@@ -11,6 +11,8 @@ use App\Services\CartService;
 use App\Services\OrderMailer;
 use App\Services\Payment\InvalidPaymentCallbackException;
 use App\Services\Payment\PaymentGatewayManager;
+use App\Services\Shipping\ShippingUnavailable;
+use App\Services\ShippingService;
 use Illuminate\Http\RedirectResponse;
 use Throwable;
 use Carbon\Traits\Timestamp;
@@ -466,7 +468,11 @@ class ProductController extends Controller
         //     Session::flash('iconMessage', 'warning');
         //     return redirect()->route('product.page')->with('message', 'Hãy mua hàng trước nhé.');
         // }
-        return view('frontend.pages.product.product_checkout', compact('cart', 'coupon_data', 'InfoDeli'));
+        // The fee depends on the cart, so it is quoted now rather than read
+        // back from whatever the address was quoted when it was saved.
+        $shippingQuote = app(ShippingService::class)->quoteForAddress($cart, $InfoDeli->firstWhere('info_default', 1));
+
+        return view('frontend.pages.product.product_checkout', compact('cart', 'coupon_data', 'InfoDeli', 'shippingQuote'));
 
     }
 
@@ -521,6 +527,10 @@ class ProductController extends Controller
             Session::flash('iconMessage', 'error');
 
             return redirect()->back()->with('message', $e->userMessage());
+        } catch (ShippingUnavailable $e) {
+            Session::flash('iconMessage', 'error');
+
+            return redirect()->back()->with('message', 'Chưa tính được phí vận chuyển cho địa chỉ này, vui lòng kiểm tra lại địa chỉ nhận hàng!');
         }
 
         session()->forget('cart');
@@ -693,12 +703,4 @@ class ProductController extends Controller
         ]);
     }
 
-    public function getToken()
-    {
-        $dataToken = [
-            'tokenAPI' => '54ac66e2-52c7-11ee-96dc-de6f804954c9',
-            'shopID' => 4541647,
-        ];
-        return response()->json($dataToken);
-    }
 }

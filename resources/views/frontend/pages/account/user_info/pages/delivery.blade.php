@@ -98,7 +98,7 @@
                                                 @endif
                                                 <small class="text-danger text-error-data fst-italic">a</small>
                                                 <input type="hidden" id="info_district" name="info_district">
-                                                <input type="hidden" id="districtFee">
+                                                <input type="hidden" class="district-id-field" name="info_district_id">
                                             </div>
                                             <div class="col-lg-6 col-md-6 my-data-ward" id="my-ward">
                                                 <label for="ward" class="form-label">Phường / Xã</label>
@@ -114,9 +114,7 @@
                                                 @endif
                                                 <small class="text-danger text-error-data fst-italic">a</small>
                                                 <input type="hidden" id="info_ward" name="info_ward">
-                                                <input type="hidden" id="wardFee">
-                                                <input type="hidden" id="priceFeeForm" name="infoFeeForm"
-                                                    value="25000">
+                                                <input type="hidden" class="ward-code-field" name="info_ward_code">
                                             </div>
                                             <div class="col-12">
                                                 <label class="form-label" for="">Địa chỉ cụ thể</label>
@@ -131,19 +129,14 @@
                                                 <small class="text-danger text-error fst-italic">a</small>
                                             </div>
                                             <div class="col-12">
-                                                <label for="service" class="form-label">Chuyển phát</label>
-                                                <select name="infoService" id="service"
-                                                    class="form-select service-data service-select">
-                                                    <option selected value="">Chuyển phát</option>
-                                                </select>
-                                                @if ($errors->has('infoService'))
-                                                    @foreach ($errors->get('infoService') as $error)
-                                                        <small class="text-danger fst-italic">
-                                                            {{ $error }}
-                                                        </small>
-                                                    @endforeach
-                                                @endif
-                                                <small class="text-danger text-error-data fst-italic">a</small>
+                                                <label class="form-label">Đơn vị vận chuyển</label>
+                                                <div class="border rounded p-2 shipping-quote">
+                                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                                        <b>Giao Hàng Nhanh</b>
+                                                        <span class="shipping-quote-fee text-muted">Chọn phường / xã để xem phí</span>
+                                                    </div>
+                                                    <small class="d-block text-muted shipping-quote-eta"></small>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -295,7 +288,7 @@
                                             @endif
                                             <small class="text-danger text-error-data fst-italic">a</small>
                                             <input type="hidden" id="info_district" name="info_district">
-                                            <input type="hidden" id="districtFee">
+                                            <input type="hidden" class="district-id-field" name="info_district_id">
                                         </div>
                                         <div class="col-lg-6 col-md-6 my-data-ward" id="my-ward">
                                             <label for="ward" class="form-label">Phường / Xã</label>
@@ -311,8 +304,7 @@
                                             @endif
                                             <small class="text-danger text-error-data fst-italic">a</small>
                                             <input type="hidden" id="info_ward" name="info_ward">
-                                            <input type="hidden" id="wardFee">
-                                            <input type="hidden" id="priceFeeForm" name="infoFeeFormUp" value="25000">
+                                            <input type="hidden" class="ward-code-field" name="info_ward_code">
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label" for="">Địa chỉ cụ thể</label>
@@ -327,19 +319,14 @@
                                             <small class="text-danger text-error fst-italic">a</small>
                                         </div>
                                         <div class="col-12">
-                                            <label for="service" class="form-label">Chuyển phát</label>
-                                            <select name="infoService" id="service"
-                                                class="form-select service-data service-select">
-                                                <option selected value="">Chuyển phát</option>
-                                            </select>
-                                            @if ($errors->has('infoService'))
-                                                @foreach ($errors->get('infoService') as $error)
-                                                    <small class="text-danger fst-italic">
-                                                        {{ $error }}
-                                                    </small>
-                                                @endforeach
-                                            @endif
-                                            <small class="text-danger text-error-data fst-italic">a</small>
+                                            <label class="form-label">Đơn vị vận chuyển</label>
+                                            <div class="border rounded p-2 shipping-quote">
+                                                <div class="d-flex justify-content-between align-items-center gap-2">
+                                                    <b>Giao Hàng Nhanh</b>
+                                                    <span class="shipping-quote-fee text-muted">Chọn phường / xã để xem phí</span>
+                                                </div>
+                                                <small class="d-block text-muted shipping-quote-eta"></small>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -442,7 +429,7 @@
                 setErrorFor(fullName, 'Họ tên không được để trống');
                 fullName.focus();
                 return false;
-            } else if (isValidName(fullnameValue)) {
+            } else if (!isValidName(fullnameValue)) {
                 fullName.classList.add("input-error");
                 setErrorFor(fullName, 'Trường này phải là chữ');
                 fullName.focus();
@@ -471,9 +458,16 @@
             return str;
         }
 
+        /**
+         * A name is letters and spaces. removeAscent() has already folded the
+         * Vietnamese letters down to a-z, so the class stays ascii.
+         *
+         * No /g flag here: test() on a global regex carries lastIndex between
+         * calls, so the second look at the same name answers differently from
+         * the first.
+         */
         function isValidName(string) {
-            var re = /^[a-zA-Z!@#\$%\^\&*\)\(+=._-]{3,}$/g // regex here
-            return re.test(removeAscent(string))
+            return /^[a-z ]+$/.test(removeAscent(string).trim());
         }
 
         function checkPhone() {

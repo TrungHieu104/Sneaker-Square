@@ -142,6 +142,10 @@
                                     @endforeach               
                                 @endif
                             </div>
+
+                            <div class="col-lg-6 mb-3">
+                                @include('backend.components.weight_field', ['value' => 1200, 'uid' => 'create'])
+                            </div>
                             
                             <div class="col-lg-6 mb-3">
                                 <div class="row">

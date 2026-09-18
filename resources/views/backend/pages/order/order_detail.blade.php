@@ -118,6 +118,28 @@
                     </div>
                 </div>
                 <div class="row">
+                    @php
+                        $batTaoVanDon = config('services.ghn.create_orders');
+                    @endphp
+                    <div class="col-lg-6 mb-3">
+                        <label for="shipping-code" class="form-label">Vận đơn GHN:</label>
+                        <div id="khoi-van-don">
+                            @include('backend.pages.order.partials.shipping_actions', ['order' => $order])
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label class="form-label">Hành trình vận đơn:</label>
+                        <div class="border rounded p-3" id="hanh-trinh-van-don"
+                             data-stream="{{ route('order.shipment_stream', $order->order_id) }}">
+                            @include('components.shipment_timeline', [
+                                'order' => $order,
+                                'formHuy' => $batTaoVanDon ? 'form-huy-van-don' : null,
+                                'hienVanDonCu' => true,
+                            ])
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
                     <div class="mb-3">
                         <label for="content" class="form-label mt-1">Ghi chú của khách hàng: </label>
                         <textarea class="form-control" name="" id="" cols="30" rows="5" readonly>{{$order->note_customer}}</textarea>
@@ -248,4 +270,64 @@
             @endif
         </div>
     </form>
+
+    {{-- Declared out here on purpose. A <form> inside another <form> is dropped
+         by the browser: its fields join the outer form and its submit button
+         posts that one instead. --}}
+    @if ($order->isConfirmed())
+        <form id="form-ma-van-don" action="{{ route('order.shipping_code', $order->order_id) }}" method="POST">
+            @csrf {{ method_field('PATCH') }}
+        </form>
+
+        @if (! $order->order_shipping_code && $batTaoVanDon)
+            <form id="form-tao-van-don" action="{{ route('order.book_shipment', $order->order_id) }}" method="POST">
+                @csrf
+            </form>
+        @endif
+    @endif
+
+    @if ($order->order_shipping_code && $batTaoVanDon)
+        <form id="form-huy-van-don" action="{{ route('order.cancel_shipment', $order->order_id) }}" method="POST">
+            @csrf
+        </form>
+    @endif
 @endsection
+
+@push('script-backend')
+    <script>
+        (function () {
+            const khoi = document.getElementById('hanh-trinh-van-don');
+            const khoiVanDon = document.getElementById('khoi-van-don');
+
+            if (!khoi || !khoiVanDon || typeof EventSource === 'undefined') {
+                return;
+            }
+
+            // EventSource reconnects on its own when the stream reaches its time
+            // limit, so there is nothing here to schedule or retry.
+            const nguon = new EventSource(khoi.dataset.stream);
+
+            nguon.addEventListener('hanhtrinh', function (su) {
+                const moi = JSON.parse(su.data);
+                const dangMo = khoi.querySelector('.ship-past')?.open;
+
+                khoi.innerHTML = moi.hanhtrinh;
+
+                const cu = khoi.querySelector('.ship-past');
+                if (cu && dangMo) {
+                    cu.open = true;
+                }
+
+                // Never yank the field out from under someone typing a code
+                // into it; the next event repaints it once they move away.
+                if (!khoiVanDon.contains(document.activeElement)) {
+                    khoiVanDon.innerHTML = moi.vandon;
+                }
+            });
+
+            window.addEventListener('beforeunload', function () {
+                nguon.close();
+            });
+        })();
+    </script>
+@endpush

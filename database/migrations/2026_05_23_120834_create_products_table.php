@@ -19,6 +19,7 @@ return new class extends Migration
             $table->unsignedInteger('pro_price');
             $table->unsignedInteger('pro_price_sale')->default(0);
             $table->unsignedInteger('capital_price');
+            $table->unsignedSmallInteger('pro_weight')->default(1000);
             $table->string('pro_img', 255)->unique();
             $table->text('pro_description')->nullable();
             $table->string('pro_SEO_title', 255)->nullable();

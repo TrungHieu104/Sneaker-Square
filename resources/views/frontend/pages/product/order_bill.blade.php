@@ -291,7 +291,10 @@
                                                     @else
                                                         Đang chuẩn bị<br>
                                                     @endif
-
+                                                    <sub>
+                                                        <a href="#" data-bs-toggle="modal"
+                                                           data-bs-target="#HanhTrinhModal">Xem hành trình</a>
+                                                    </sub>
                                                 </div>
                                             </div>
                                         </div>
@@ -369,7 +372,13 @@
                                                 <label for="" class="form-label fw-bold">Đơn vị vận chuyển</label>
                                                 <div class="bg-light p-3 h-100 rounded bd_hr d-flex flex-column">
                                                     <span class="text-dvvc fw-bold">Giao hàng nhanh</span>
-                                                    <small>Nhận hàng vào 22 Th10 - 22 Th10</small>
+                                                    <small>
+                                                        @if ($order->order_expected_delivery)
+                                                            Dự kiến nhận hàng: {{ \Carbon\Carbon::parse($order->order_expected_delivery)->format('d/m/Y') }}
+                                                        @else
+                                                            Đang cập nhật thời gian giao
+                                                        @endif
+                                                    </small>
                                                 </div>
                                             </div>
                                             <div class="col-lg-12">
@@ -642,4 +651,20 @@
             }
         }
     </script>
+    <div class="modal fade" id="HanhTrinhModal" tabindex="-1" aria-labelledby="HanhTrinhModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="HanhTrinhModalLabel">Hành trình đơn hàng</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    @include('components.shipment_timeline', ['order' => $order])
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection

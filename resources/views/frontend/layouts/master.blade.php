@@ -113,11 +113,11 @@
 	<script src="{{asset('frontend/js/jquery.sticky.js')}}"></script>
 	<script src="{{asset('frontend/js/nouislider.min.js')}}"></script>
 	<script src="{{asset('frontend/ajax/wishlist.js')}}"></script>
-	<script src="{{asset('frontend/ajax/delivery.js')}}"></script>
+	<script src="{{ asset_v('frontend/ajax/delivery.js') }}"></script>
 	<script src="{{asset('frontend/ajax/filter_product.js')}}"></script>
 	<script src="{{asset('frontend/ajax/remove_verified_email.js')}}"></script>
 	<script src="{{asset('frontend/js/jquery.magnific-popup.min.js')}}"></script>
-	<script src="{{asset('frontend/js/validate_product_checkout.js')}}"></script>
+	<script src="{{ asset_v('frontend/js/validate_product_checkout.js') }}"></script>
 	<script src="{{ asset('backend/js/sweetalert.min.js') }}"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/noty/3.1.4/noty.min.js" integrity="sha512-lOrm9FgT1LKOJRUXF3tp6QaMorJftUjowOWiDcG5GFZ/q7ukof19V0HKx/GWzXCdt9zYju3/KhBNdCLzK8b90Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 	

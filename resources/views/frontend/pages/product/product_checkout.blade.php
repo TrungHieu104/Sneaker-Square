@@ -155,7 +155,7 @@
                                     @endif
                                     <small class="text-danger text-error-data fst-italic">a</small>
                                     <input type="hidden" id="info_district" name="info_district">
-                                    <input type="hidden" id="districtFee">
+                                    <input type="hidden" class="district-id-field" name="info_district_id">
                                 </div>
                                 <div class="col-lg-6 col-md-6 my-data-ward" id="my-ward">
                                     <label for="ward" class="form-label">Phường / Xã</label>
@@ -171,8 +171,7 @@
                                     @endif
                                     <small class="text-danger text-error-data fst-italic">a</small>
                                     <input type="hidden" id="info_ward" name="info_ward">
-                                    <input type="hidden" id="wardFee">
-                                    <input type="hidden" id="priceFeeForm" name="infoFeeFormUp" value="25000">
+                                    <input type="hidden" class="ward-code-field" name="info_ward_code">
                                 </div>
                                 <div class="col-lg-6 col-md-6">
                                     <label for="address" class="form-label">Địa chỉ</label>
@@ -188,18 +187,14 @@
                                     <small class="text-danger text-error fst-italic">a</small>
                                 </div>
                                 <div class="col-lg-12 col-md-12">
-                                    <label for="service" class="form-label">Chuyển phát</label>
-                                    <select name="infoService" id="service" class="form-select service-data service-select">
-                                        <option selected value ="">Chuyển phát</option>
-                                    </select>
-                                    @if ($errors->has('infoService'))
-                                        @foreach ($errors->get('infoService') as $error)
-                                            <small class="text-danger fst-italic">
-                                                {{ $error }}
-                                            </small>
-                                        @endforeach
-                                    @endif
-                                    <small class="text-danger text-error-data fst-italic">a</small>
+                                    <label class="form-label">Đơn vị vận chuyển</label>
+                                    <div class="border rounded p-2 shipping-quote">
+                                        <div class="d-flex justify-content-between align-items-center gap-2">
+                                            <b>Giao Hàng Nhanh</b>
+                                            <span class="shipping-quote-fee text-muted">Chọn phường / xã để xem phí</span>
+                                        </div>
+                                        <small class="d-block text-muted shipping-quote-eta"></small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -294,7 +289,7 @@
                                 @endif
                                 <small class="text-danger text-error-data fst-italic">a</small>
                                 <input type="hidden" id="info_district" name="info_district">
-                                <input type="hidden" id="districtFee">
+                                <input type="hidden" class="district-id-field" name="info_district_id">
                             </div>
                             <div class="col-lg-6 col-md-6 my-data-ward" id="my-ward">
                                 <label for="ward" class="form-label">Phường / Xã</label>
@@ -310,8 +305,7 @@
                                 @endif
                                 <small class="text-danger text-error-data fst-italic">a</small>
                                 <input type="hidden" id="info_ward" name="info_ward">
-                                <input type="hidden" id="wardFee">
-                                <input type="hidden" id="priceFeeForm" name="infoFeeForm" value="25000">
+                                <input type="hidden" class="ward-code-field" name="info_ward_code">
                             </div>
                             <div class="col-lg-6 col-md-6">
                                 <label for="address" class="form-label">Địa chỉ</label>
@@ -327,18 +321,14 @@
                                 <small class="text-danger text-error fst-italic">a</small>
                             </div>
                             <div class="col-12">
-                                <label for="service" class="form-label">Chuyển phát</label>
-                                <select name="infoService" id="service" class="form-select service-data service-select">
-                                    <option selected value = "">Chuyển phát</option>
-                                </select>
-                                @if ($errors->has('infoService'))
-                                    @foreach ($errors->get('infoService') as $error)
-                                        <small class="text-danger fst-italic">
-                                            {{ $error }}
-                                        </small>
-                                    @endforeach
-                                @endif
-                                <small class="text-danger text-error-data fst-italic">a</small>
+                                <label class="form-label">Đơn vị vận chuyển</label>
+                                <div class="border rounded p-2 shipping-quote">
+                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                        <b>Giao Hàng Nhanh</b>
+                                        <span class="shipping-quote-fee text-muted">Chọn phường / xã để xem phí</span>
+                                    </div>
+                                    <small class="d-block text-muted shipping-quote-eta"></small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -439,7 +429,15 @@
                                         <label for="" class="form-label fw-bold">Đơn vị vận chuyển</label>
                                         <div class="bg-light p-3 h-100 rounded bd_hr d-flex flex-column">
                                             <span class="text-dvvc fw-bold">Giao hàng nhanh</span>
-                                            <small>Nhận hàng vào 22 Th10 - 22 Th10</small>
+                                            <small>
+                                                @if (!$shippingQuote)
+                                                    Chọn địa chỉ nhận hàng để tính phí và thời gian giao
+                                                @elseif ($shippingQuote->estimatedText())
+                                                    Dự kiến nhận hàng: {{ $shippingQuote->estimatedText() }}
+                                                @else
+                                                    Thời gian giao sẽ được cập nhật sau khi đặt hàng
+                                                @endif
+                                            </small>
                                         </div>
                                     </div>
                                 </div>
@@ -485,9 +483,9 @@
                             <br>
                             <h4 class="fw-bold mb-3 text-center text-uppercase" style="margin-top: 3px;">Sản phẩm đã mua</h4>
                             @php
-                                $phivanchuyen = DB::table('delivery_info')->where('user_id', Auth::id())
-                                ->where('info_default', 1)
-                                ->value('info_delivery_fee');
+                                // Quoted by the controller against this cart, not read back
+                                // from whatever the address was quoted when it was saved.
+                                $phivanchuyen = $shippingQuote?->fee ?? 0;
                                 $giatri_donhang = 0;
                                 $thanhtien = 0;
 
@@ -645,19 +643,14 @@
                                     <label class="font__size">{{ number_format($giatri_donhang, 0, ',', '.') }} VNĐ</label>
                                 </div>
             
-                                @isset($phivanchuyen)
+                                @if ($shippingQuote)
                                     <div class="d-flex justify-content-between align-items-center gap-1">
                                         <h6 class="fw-bold text-uppercase">Phí vận chuyển:</h6>
                                         <label class="font__size" id="totalFee">
-                                            @foreach ($InfoDeli as $item)
-                                                @if ($item->info_default == 1)
-                                                    {{ number_format($item->info_delivery_fee, 0, ',', '.') . ' VNĐ' }}
-                                                @endif
-                                            @endforeach
+                                            {{ number_format($shippingQuote->fee, 0, ',', '.') }} VNĐ
                                         </label>
-                                        <input type="hidden" name="totalFee" id="hiddenFee">
                                     </div>
-                                @endisset
+                                @endif
             
                                 @isset($coupon_data)
                                     <div class="d-flex justify-content-between align-items-center gap-1">
@@ -705,6 +698,14 @@
                                     </h4>
                                 </div>
                             </div>
+                            @php
+                                $diaChiNhanHang = $InfoDeli->firstWhere('info_default', 1);
+                                $lyDoChuaDatDuoc = match (true) {
+                                    ! $diaChiNhanHang => 'Vui lòng thêm địa chỉ nhận hàng trước khi đặt hàng.',
+                                    ! $shippingQuote => 'Chưa tính được phí vận chuyển cho địa chỉ này, vui lòng kiểm tra lại địa chỉ nhận hàng.',
+                                    default => null,
+                                };
+                            @endphp
                             <form action="{{ route('product.checkoutPOST') }}" method="post" id="checkoutForm">
                                 @csrf
                                 {{-- The order code, the shipping fee, the discount and the total
@@ -714,8 +715,13 @@
                                      database, and the fields are gone rather than merely ignored. --}}
                                 <input type="hidden" name="note_customer" value="" id="note_customer">
                                 <input type="hidden" name="payment" value="cod">
-                                <button type="submit" name="cod"
+                                {{-- The server refuses these orders anyway; disabling the button is
+                                     what tells the customer why before they click. --}}
+                                <button type="submit" name="cod" id="btn-dat-hang" @disabled($lyDoChuaDatDuoc)
                                     class="btn btn-primary border-0 w-100 btn-checkout text-white font__size">Đặt Hàng</button>
+                                @if ($lyDoChuaDatDuoc)
+                                    <small class="d-block mt-2 text-danger fst-italic">{{ $lyDoChuaDatDuoc }}</small>
+                                @endif
             
                             </form>
                             <div class="my-3">
@@ -734,14 +740,27 @@
     <script>
         const radioButtons = document.querySelectorAll('.btn-check');
         const checkoutForm = document.getElementById('checkoutForm');
+        const orderButton = document.getElementById('btn-dat-hang');
+        // Blade disables the button when the address or the fee is missing, and
+        // nothing on this page can fix either without a reload.
+        const blockedOnServer = orderButton.disabled;
+
+        function refreshOrderButton() {
+            const chosen = document.querySelector('input[name="btnradio"]:checked');
+
+            orderButton.disabled = blockedOnServer || !chosen;
+
+            if (chosen) {
+                checkoutForm.querySelector('input[name="payment"]').value = chosen.value;
+                orderButton.name = chosen.value;
+            }
+        }
 
         radioButtons.forEach(radioButton => {
-            radioButton.addEventListener('change', function() {
-                const selectedValue = document.querySelector('input[name="btnradio"]:checked').value;
-                checkoutForm.querySelector('input[name="payment"]').value = selectedValue;
-                checkoutForm.querySelector('button[type="submit"]').name = selectedValue;
-            });
+            radioButton.addEventListener('change', refreshOrderButton);
         });
+
+        refreshOrderButton();
 
         function updateNote() {
             var noteValue = document.getElementById("floatingTextarea2").value;

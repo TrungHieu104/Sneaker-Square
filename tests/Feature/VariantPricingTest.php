@@ -98,7 +98,7 @@ class VariantPricingTest extends TestCase
 
         $this->assertSame(120_000, (int) $line->price, 'Dòng đơn hàng phải ghi giá của màu đỏ');
         $this->assertSame(72_000, (int) $line->capital_price, 'Giá vốn của đúng biến thể phải được chốt lại');
-        $this->assertSame(270_000, (int) $order->order_total, '2 × 120.000 + 30.000 ship');
+        $this->assertSame(272_000, (int) $order->order_total, '2 × 120.000 + 32.000 ship');
     }
 
     public function test_gia_von_chot_tren_don_hang_khong_doi_khi_nhap_lai_hang(): void

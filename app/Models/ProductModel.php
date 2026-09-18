@@ -30,6 +30,7 @@ class ProductModel extends Model
         'pro_price',
         'pro_price_sale',
         'capital_price',
+        'pro_weight',
         'pro_img',
         'pro_description',
         'pro_SEO_title',

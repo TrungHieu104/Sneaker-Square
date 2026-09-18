@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\Shipping\FakeCarrier;
+use App\Services\Shipping\GhnCarrier;
+use App\Services\Shipping\ShippingCarrier;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +14,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // No token means no GHN account, which is the state of a fresh clone
+        // and of the test suite. Falling back keeps the checkout working
+        // instead of failing on a credential nobody has yet set.
+        $this->app->bind(ShippingCarrier::class, fn () => config('services.ghn.token')
+            ? new GhnCarrier
+            : new FakeCarrier);
     }
 
     /**

@@ -70,6 +70,12 @@
                                 </div>
                             </div>
 
+                            <div class="row mb-3">
+                                <div class="col">
+                                    @include('backend.components.weight_field', ['value' => $product->pro_weight, 'uid' => $product->pro_id, 'showErrors' => false])
+                                </div>
+                            </div>
+
                             <div class="row">
                                 <div class="col">
                                     <label for="cate-product" class="form-label">Danh mục</label>

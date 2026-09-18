@@ -137,6 +137,7 @@ class ProductAdminController extends Controller
         $pro_price = ($request->has('pro_price'))? (int)$input['pro_price']:"";
         $pro_price_sale = ($request->has('pro_price_sale'))? (int)$input['pro_price_sale']:0;
         $capital_price = ($request->has('capital_price'))? (int)$input['capital_price']:"";
+        $pro_weight = ($request->has('pro_weight'))? (int)$input['pro_weight']:"";
         $pro_description = ($request->has('pro_description'))? $input['pro_description']:"";
         $pro_SEO_title = ($request->has('pro_SEO_title'))? $input['pro_SEO_title']:"";
         $pro_meta_keywords = ($request->has('pro_meta_keywords'))? $input['pro_meta_keywords']:"";
@@ -153,6 +154,7 @@ class ProductAdminController extends Controller
         $product->pro_price = $pro_price;
         $product->pro_price_sale = $pro_price_sale;
         $product->capital_price = $capital_price;
+        $product->pro_weight = $pro_weight;
         $product->pro_description = $pro_description;
         $product->pro_SEO_title = $pro_SEO_title;
         $product->pro_meta_keywords = $pro_meta_keywords;
@@ -214,6 +216,7 @@ class ProductAdminController extends Controller
         $pro_price = ($request->has('pro_price'))? (int)$input['pro_price']:"";
         $pro_price_sale = ($request->has('pro_price_sale'))? (int)$input['pro_price_sale']:0;
         $capital_price = ($request->has('capital_price'))? (int)$input['capital_price']:"";
+        $pro_weight = ($request->has('pro_weight'))? (int)$input['pro_weight']:"";
         $pro_description = ($request->has('pro_description'))? $input['pro_description']:"";
         $pro_SEO_title = ($request->has('pro_SEO_title'))? $input['pro_SEO_title']:"";
         $pro_meta_keywords = ($request->has('pro_meta_keywords'))? $input['pro_meta_keywords']:"";
@@ -227,6 +230,7 @@ class ProductAdminController extends Controller
         $product->pro_price = $pro_price;
         $product->pro_price_sale = $pro_price_sale;
         $product->capital_price = $capital_price;
+        $product->pro_weight = $pro_weight;
         $product->pro_description = $pro_description;
         $product->pro_SEO_title = $pro_SEO_title;
         $product->pro_meta_keywords = $pro_meta_keywords;

@@ -127,7 +127,7 @@ class VariantPricingDebtTest extends TestCase
         $order = OrderModel::where('user_id', $user->user_id)->first();
 
         $this->assertNotNull($order, 'Sản phẩm không màu/size phải đặt hàng được');
-        $this->assertSame(230_000, (int) $order->order_total, '2 × 100.000 + 30.000 ship');
+        $this->assertSame(232_000, (int) $order->order_total, '2 × 100.000 + 32.000 ship');
         $this->assertSame(8, $this->stockOf($product, null, null), 'Tồn kho phải bị trừ');
     }
 

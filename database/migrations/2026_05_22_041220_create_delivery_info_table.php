@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('info_district', 255);
             $table->string('info_province', 255);
             $table->string('info_delivery_fee', 255);
+            $table->unsignedInteger('info_district_id')->nullable();
+            $table->string('info_ward_code', 20)->nullable();
             $table->boolean('info_default')->default(0);
             $table->unsignedBigInteger('user_id');
             $table->foreign('user_id')->references('user_id')->on('users')->onDelete('cascade')->onUpdate('cascade');

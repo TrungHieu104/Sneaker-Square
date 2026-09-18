@@ -20,6 +20,8 @@ use App\Http\Controllers\Backend\AboutAdminController;
 use App\Http\Controllers\Backend\ContactFormController;
 
 use App\Http\Controllers\Frontend\AuthUserController;
+use App\Http\Controllers\Frontend\ShippingController;
+use App\Http\Controllers\Frontend\ShippingWebhookController;
 use App\Http\Controllers\Frontend\BlogController;
 use App\Http\Controllers\Frontend\CommentController;
 use App\Http\Controllers\Frontend\HomeController;
@@ -57,6 +59,10 @@ Route::fallback(function() {
 // account — and the payment callbacks are marked doNotCacheResponse, because a
 // cached copy of those is either somebody else's data or a callback that never
 // reaches the controller.
+// Where GHN reports a parcel moving. Outside the web group: a carrier
+// callback has no session and needs none.
+Route::post('/webhook/ghn/{token}', [ShippingWebhookController::class, 'ghn'])->name('webhook.ghn');
+
 Route::group(['middleware' => 'web'], function () {
 
     Route::get('/', [HomeController::class, 'index'])->name('home.page');
@@ -91,7 +97,14 @@ Route::group(['middleware' => 'web'], function () {
     // Route Payment
     Route::get('/thanh-toan', [ProductController::class, 'checkout'])->name('product.checkout')->middleware('doNotCacheResponse');
     Route::post('/thanh-toan', [ProductController::class, 'checkoutPOST'])->name('product.checkoutPOST');
-    Route::post('/token-delivery', [ProductController::class, 'getToken']);
+    // The carrier, proxied. GHN's token stays on the server: it can create
+    // real shipments and read every order on the account.
+    Route::get('/van-chuyen/tinh-thanh', [ShippingController::class, 'provinces'])->name('shipping.provinces');
+    Route::get('/van-chuyen/quan-huyen', [ShippingController::class, 'districts'])->name('shipping.districts');
+    Route::get('/van-chuyen/phuong-xa', [ShippingController::class, 'wards'])->name('shipping.wards');
+    // The only one that costs a call to GHN per request, so it is kept to
+    // signed-in customers; the address lists are public reference data.
+    Route::post('/van-chuyen/bao-gia', [ShippingController::class, 'quote'])->name('shipping.quote')->middleware('auth');
     Route::resource('dia-chi', (DeliveryInfoController::class))->middleware('doNotCacheResponse')->names([
         'index' => 'diachi.index',
         'create' => 'diachi.create',
@@ -351,6 +364,12 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     Route::post('/update-order-qty', [OrderAdminController::class, 'update_order_qty'])->name('update.order')->middleware('permission:Quản trị Đơn hàng');
     Route::get('/order-print/{encryptedOrderId}',[OrderAdminController::class,'printOrder'])->name('order.print')->middleware('permission:Quản trị Đơn hàng');
     Route::post('/exportorder-csv', [OrderAdminController::class,'exportorder_scv'])->name('exportorder.scv');
+    Route::patch('/order/{order_id}/ma-van-don', [OrderAdminController::class, 'updateShippingCode'])->name('order.shipping_code')->middleware('permission:Quản trị Đơn hàng');
+    Route::post('/order/{order_id}/tao-van-don', [OrderAdminController::class, 'bookShipment'])->name('order.book_shipment')->middleware('permission:Quản trị Đơn hàng');
+    Route::post('/order/{order_id}/huy-van-don', [OrderAdminController::class, 'cancelShipment'])->name('order.cancel_shipment')->middleware('permission:Quản trị Đơn hàng');
+    // Server-sent events: the page is written to when GHN's callback lands, so
+    // nothing on the client polls.
+    Route::get('/order/{order_id}/hanh-trinh-stream', [OrderAdminController::class, 'shipmentStream'])->name('order.shipment_stream')->middleware('permission:Quản trị Đơn hàng');
 
     // Hình ảnh Slide
     Route::resource('promotion', (PromotionAdminController::class))->middleware('permission:Quản trị Slide');

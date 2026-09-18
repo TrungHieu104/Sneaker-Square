@@ -48,6 +48,7 @@ class ProductRequest extends FormRequest
             'capital_price' => ['required', 'numeric', 'min: 1', 'max: 9999999999', 'integer'],
             'pro_price' => ['required', 'numeric', 'min: 1', 'max: 9999999999', 'integer', 'gt:capital_price'],
             'pro_price_sale' => ['nullable', 'numeric', 'min: 0', 'max: 9999999999', 'integer', 'lt:pro_price'],
+            'pro_weight' => ['required', 'numeric', 'integer', 'min: 1', 'max: 50000'],
             'pro_img' => ['required', 'image'],
             'pro_SEO_title' => ['nullable', 'max: 255'],
             'pro_meta_keywords' => ['nullable', 'max: 2000'],
@@ -102,6 +103,12 @@ class ProductRequest extends FormRequest
             'pro_price_sale.max' => 'Giá giảm bán không dài hơn 10 kí tự!',
             'pro_price_sale.integer' => 'Giá giảm phải là số nguyên!',
             'pro_price_sale.lt' => 'Giá giảm phải thấp hơn giá bán!',
+
+            'pro_weight.required' => 'Vui lòng nhập cân nặng sản phẩm!',
+            'pro_weight.numeric' => 'Cân nặng không được nhập chữ!',
+            'pro_weight.integer' => 'Cân nặng phải là số nguyên!',
+            'pro_weight.min' => 'Cân nặng phải lớn hơn 0!',
+            'pro_weight.max' => 'Cân nặng không vượt quá 50000 gram!',
 
             'pro_img.required' => 'Vui lòng thêm hình ảnh cho sản phẩm!',
             'pro_img.image' => 'File không được hỗ trợ!',

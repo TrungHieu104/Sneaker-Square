@@ -29,7 +29,8 @@ class DeliveryInfoRequest extends FormRequest
             'info_province' => 'required',
             'info_district' => 'required',
             'info_ward' => 'required',
-            'info_delivery_fee' => 'required'
+            'info_district_id' => 'required|integer|min:1',
+            'info_ward_code' => 'required|string|max:20',
         ];
     }
     public function messages()
@@ -51,7 +52,8 @@ class DeliveryInfoRequest extends FormRequest
             'info_province.required' => 'Vui lòng chọn Tỉnh, Thành phố',
             'info_district.required' => 'Vui lòng chọn Quận, Huyện',
             'info_ward.required' => 'Vui lòng chọn Phường, Xã',
-            'info_delivery_fee.required' => 'Vui lòng chọn đơn vị vận chuyển'
+            'info_district_id.required' => 'Vui lòng chọn lại Quận, Huyện',
+            'info_ward_code.required' => 'Vui lòng chọn lại Phường, Xã',
         ];
     }
 }

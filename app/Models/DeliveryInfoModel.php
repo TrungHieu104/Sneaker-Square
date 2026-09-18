@@ -19,6 +19,8 @@ class DeliveryInfoModel extends Model
         'info_district',
         'info_ward',
         'info_delivery_fee',
+        'info_district_id',
+        'info_ward_code',
         'info_address',
         'info_default',
         'user_id',

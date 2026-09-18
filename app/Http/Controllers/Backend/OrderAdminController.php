@@ -3,8 +3,14 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Backend\ShippingCodeRequest;
+use App\Services\Shipping\ShipmentPulse;
+use App\Services\Shipping\ShippingUnavailable;
+use App\Services\ShippingService;
 use App\Models\OrderDetailModel;
 use App\Models\OrderModel;
+use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Crypt;
@@ -202,6 +208,196 @@ class OrderAdminController extends Controller
         }
     }
     
+
+    /**
+     * Hands the parcel to GHN.
+     *
+     * Behind a config flag rather than a permission: against the production
+     * host this books a courier who turns up at the shop, and that is not a
+     * mistake anyone should be one click away from.
+     */
+    /**
+     * A parcel leaves the warehouse for a confirmed order and nothing else. A
+     * cancelled one has already put its stock back and released its coupon,
+     * and a returned one is travelling the other way.
+     */
+    private function refuseUnlessConfirmed(OrderModel $order): ?RedirectResponse
+    {
+        if ($order->isConfirmed()) {
+            return null;
+        }
+
+        Session::flash('iconMessage', 'error');
+
+        return back()->with('message', 'Chỉ đơn hàng đã xác nhận mới gắn được vận đơn!');
+    }
+
+    public function bookShipment(string $order_id, ShippingService $shipping)
+    {
+        $order = OrderModel::with('orderDetail.product')->find($order_id);
+
+        if ($order == null) {
+            Session::flash('iconMessage', 'info');
+
+            return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
+        }
+
+        if ($refusal = $this->refuseUnlessConfirmed($order)) {
+            return $refusal;
+        }
+
+        try {
+            $booking = $shipping->book($order);
+        } catch (ShippingUnavailable $e) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', $e->getMessage());
+        }
+
+        Session::flash('iconMessage', 'success');
+
+        return back()->with('message', 'Đã tạo vận đơn '.$booking->code.'!');
+    }
+
+    public function cancelShipment(string $order_id, ShippingService $shipping)
+    {
+        $order = OrderModel::find($order_id);
+
+        if ($order == null) {
+            Session::flash('iconMessage', 'info');
+
+            return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
+        }
+
+        try {
+            $shipping->cancelBooking($order);
+        } catch (ShippingUnavailable $e) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', $e->getMessage());
+        }
+
+        Session::flash('iconMessage', 'success');
+
+        return back()->with('message', 'Đã huỷ vận đơn!');
+    }
+
+    /**
+     * Ties an order to the parcel the shop created on GHN.
+     *
+     * Until this is filled in a status callback has nothing to match on, so
+     * the timeline on the customer's order page stays empty.
+     */
+    public function updateShippingCode(ShippingCodeRequest $request, string $order_id)
+    {
+        $order = OrderModel::find($order_id);
+
+        if ($order == null) {
+            Session::flash('iconMessage', 'info');
+
+            return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
+        }
+
+        if ($refusal = $this->refuseUnlessConfirmed($order)) {
+            return $refusal;
+        }
+
+        $code = trim((string) $request->input('order_shipping_code'));
+        $order->order_shipping_code = $code === '' ? null : $code;
+        $order->save();
+
+        Session::flash('iconMessage', 'success');
+
+        return back()->with('message', 'Cập nhật mã vận đơn thành công!');
+    }
+
+    /**
+     * Streams this order's shipment history to an open admin page.
+     *
+     * The browser never asks again: it opens one EventSource and is written to
+     * when GHN's callback moves the marker. The watching happens here, against
+     * the cache, so a page left open costs no database work.
+     */
+    public function shipmentStream(string $order_id, ShipmentPulse $pulse): StreamedResponse
+    {
+        $order = OrderModel::find($order_id);
+
+        if ($order == null) {
+            abort(404);
+        }
+
+        $giay = (int) config('services.ghn.stream_seconds', 60);
+
+        return response()->stream(function () use ($order_id, $pulse, $giay) {
+            $moc = $pulse->current((int) $order_id);
+
+            $this->sendShipmentEvent($order_id, $moc);
+
+            for ($i = 0; $i < $giay; $i++) {
+                if (connection_aborted()) {
+                    return;
+                }
+
+                sleep(1);
+                $moiNhat = $pulse->current((int) $order_id);
+
+                if ($moiNhat !== $moc) {
+                    $moc = $moiNhat;
+                    $this->sendShipmentEvent($order_id, $moc);
+
+                    continue;
+                }
+
+                // A comment line keeps proxies from closing an idle stream and
+                // is how a disconnected browser gets noticed.
+                echo ": .\n\n";
+                $this->flushStream();
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache, private',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    private function sendShipmentEvent(string $order_id, string $moc): void
+    {
+        // Re-read rather than reuse: the callback that moved the marker wrote
+        // the rows this render has to pick up.
+        $order = OrderModel::with('shipmentEvents')->find($order_id);
+
+        if ($order == null) {
+            return;
+        }
+
+        // Both halves, because a parcel cancelled on GHN's dashboard has to take
+        // its buttons away too, not merely gain a line of history.
+        $khoi = [
+            'vandon' => view('backend.pages.order.partials.shipping_actions', [
+                'order' => $order,
+            ])->render(),
+            'hanhtrinh' => view('components.shipment_timeline', [
+                'order' => $order,
+                'formHuy' => config('services.ghn.create_orders') ? 'form-huy-van-don' : null,
+                'hienVanDonCu' => true,
+            ])->render(),
+        ];
+
+        echo 'event: hanhtrinh'."\n";
+        echo 'id: '.$moc."\n";
+        echo 'data: '.json_encode($khoi, JSON_UNESCAPED_UNICODE)."\n\n";
+        $this->flushStream();
+    }
+
+    private function flushStream(): void
+    {
+        if (ob_get_level() > 0) {
+            ob_flush();
+        }
+
+        flush();
+    }
 
     /**
      * Update the specified resource in storage.

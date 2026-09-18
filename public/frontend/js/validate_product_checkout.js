@@ -6,7 +6,6 @@ const address = document.querySelector(".address");
 const province = document.querySelector(".province-select");
 const district = document.querySelector(".district-select");
 const ward = document.querySelector(".ward-select");
-const service = document.querySelector(".service-select");
 let lnameValid = false;
 let phoneValid = false;
 let emailValid = false;
@@ -14,7 +13,6 @@ let addressValid = false;
 let provinceValid = false;
 let districtValid = false;
 let wardValid = false;
-let serviceValid = false;
 
 if(form) {
     form.addEventListener("submit", (e) => {
@@ -27,7 +25,6 @@ if(form) {
         let provinceValid = checkProvince();
         let districtValid = checkDistrict();
         let wardValid = checkWard();
-        let serviceValid = checkService();
     
         lname.addEventListener("keyup", () => {
             lnameValid = checkName();
@@ -57,32 +54,42 @@ if(form) {
             wardValid = checkWard(); 
         });
     
-        service.addEventListener("change", () => {
-            serviceValid = checkService(); 
-        });
-    
-        if(lnameValid && phoneValid && emailValid && addressValid && provinceValid && districtValid && wardValid && serviceValid) {
+        if(lnameValid && phoneValid && emailValid && addressValid && provinceValid && districtValid && wardValid) {
             form.submit();
         }
     });
 }
 
+/**
+ * The address pickers hide their <select> behind a search box. Validation reads
+ * the select, but the class that reddens a field and the element worth focusing
+ * are the box the customer can actually see.
+ */
+function controlFor(input) {
+    const wrap = input.closest(".addr-pick");
+
+    return wrap ? wrap.querySelector(".addr-pick__input") : input;
+}
+
+function fieldOf(input) {
+    const wrap = input.closest(".addr-pick");
+
+    return wrap ? wrap.parentElement : input.parentElement;
+}
+
 function checkName() {
     const lnameValue = lname.value.trim();
     if(lnameValue === '') {
-        lname.classList.add("input-error");
         setErrorFor(lname, 'Vui lòng nhập trường này');
-        lname.focus();
+        controlFor(lname).focus();
         return false;
-    } else if(isValidName(lnameValue)) {
-        lname.classList.add("input-error");
+    } else if(!isValidName(lnameValue)) {
         setErrorFor(lname, 'Trường này phải là chữ');
-        lname.focus();
+        controlFor(lname).focus();
         return false;
     } else if(lnameValue.length < 3) {
-        lname.classList.add("input-error");
         setErrorFor(lname, 'Họ tên quá ngắn');
-        lname.focus();
+        controlFor(lname).focus();
         return false;
     }else{
         setSuccessFor(lname);
@@ -103,33 +110,35 @@ function removeAscent(str) {
     return str;
 }
 
+/**
+ * A name is letters and spaces. removeAscent() has already folded the
+ * Vietnamese letters down to a-z, so the class stays ascii.
+ *
+ * No /g flag here: test() on a global regex carries lastIndex between calls,
+ * so the second look at the same name answers differently from the first.
+ */
 function isValidName(string) {
-    var re = /^[a-zA-Z!@#\$%\^\&*\)\(+=._-]{3,}$/g // regex here
-    return re.test(removeAscent(string))
+    return /^[a-z ]+$/.test(removeAscent(string).trim());
 }
 
 function checkPhone() {
     const phoneValue = phone.value.trim();
 
     if(phoneValue === '') {
-        phone.classList.add("input-error");
         setErrorFor(phone, 'Vui lòng nhập trường này');
-        phone.focus();
+        controlFor(phone).focus();
         return false;
     }else if(!Number(phoneValue)) {
-        phone.classList.add("input-error");
         setErrorFor(phone, 'Trường này phải là số');
-        phone.focus();
+        controlFor(phone).focus();
         return false;
     }else if(phoneValue.length < 10 || phoneValue.length > 10) {
-        phone.classList.add("input-error");
         setErrorFor(phone, 'Phải đủ 10 chữ số');
-        phone.focus();
+        controlFor(phone).focus();
         return false;
     }else if(!phoneRegex(phoneValue)) {
-        phone.classList.add("input-error");
         setErrorFor(phone, 'Số điện thoại không hợp lệ');
-        phone.focus();
+        controlFor(phone).focus();
         return false;
     }else {
         setSuccessFor(phone);
@@ -144,19 +153,16 @@ function phoneRegex(phone) {
 function checkEmail() {
     const emailValue = email.value.trim();
     if(emailValue === '') {
-        email.classList.add("input-error");
         setErrorFor(email, 'Vui lòng nhập trường này');
-        email.focus();
+        controlFor(email).focus();
         return false;
     } else if(emailValue.length < 5) {
-        email.classList.add("input-error");
         setErrorFor(email, 'Email quá ngắn');
-        email.focus();
+        controlFor(email).focus();
         return false;
     }else if(!(checkEmailRegex(emailValue))) {
-        email.classList.add("input-error");
         setErrorFor(email, 'Email sai định dạng');
-        email.focus();
+        controlFor(email).focus();
         return false;
     }else{
         setSuccessFor(email);
@@ -172,14 +178,12 @@ function checkEmailRegex(email) {
 function checkAddress () {
     const addressValue = address.value.trim();
     if(addressValue === '') {
-        address.classList.add("input-error");
         setErrorFor(address, 'Vui lòng nhập trường này');
-        address.focus();
+        controlFor(address).focus();
         return false;
     } else if(addressValue.length < 5) {
-        address.classList.add("input-error");
         setErrorFor(address, 'Địa chỉ quá ngắn');
-        address.focus();
+        controlFor(address).focus();
         return false;
     }else{
         setSuccessFor(address);
@@ -189,9 +193,8 @@ function checkAddress () {
 
 function checkProvince() {
     if(province.selectedIndex == 0) {
-        province.classList.add("input-error");
         setErrorFor(province, 'Vui lòng chọn trường này');
-        province.focus();
+        controlFor(province).focus();
         return false;
     }else {
         setSuccessFor(province);
@@ -201,9 +204,8 @@ function checkProvince() {
 
 function checkDistrict() {
     if(district.selectedIndex == 0) {
-        district.classList.add("input-error");
         setErrorFor(district, 'Vui lòng chọn trường này');
-        district.focus();
+        controlFor(district).focus();
         return false;
     }else {
         setSuccessFor(district);
@@ -213,9 +215,8 @@ function checkDistrict() {
 
 function checkWard() {
     if(ward.selectedIndex == 0) {
-        ward.classList.add("input-error");
         setErrorFor(ward, 'Vui lòng chọn trường này');
-        ward.focus();
+        controlFor(ward).focus();
         return false;
     }else {
         setSuccessFor(ward);
@@ -223,34 +224,22 @@ function checkWard() {
     }
 }
 
-function checkService() {
-    if(service.selectedIndex == 0) {
-        service.classList.add("input-error");
-        setErrorFor(service, 'Vui lòng chọn trường này');
-        service.focus();
-        return false;
-    }else {
-        setSuccessFor(service);
-        return true;
-    }
-}
-
 function setErrorFor(input, message) {
-    const formControl = input.parentElement;
-    const small = formControl.querySelectorAll('small');
-    small.forEach(element => {
+    const control = controlFor(input);
+    control.classList.remove("input-success");
+    control.classList.add("input-error");
+    fieldOf(input).querySelectorAll('small').forEach(element => {
         element.innerText = message;
     });
 }
 
 function setSuccessFor(input) {
-    const formControl = input.parentElement;
-    const formChild = formControl.querySelector(".form-control");
-    const formChildSelect = formControl.querySelector(".form-select");
-    if (formChild) {
-        formChild.className = "form-control input-success";
-    }
-    if (formChildSelect) {
-        formChildSelect.className = "form-select input-success";
-    }
+    // Toggle, never reassign className: the address pickers keep the class that
+    // hides their native select on the very element being marked.
+    const control = controlFor(input);
+    control.classList.remove("input-error");
+    control.classList.add("input-success");
+    fieldOf(input).querySelectorAll('small').forEach(element => {
+        element.innerText = '';
+    });
 }

@@ -20,7 +20,12 @@ class OrderModel extends Model
         'order_email', 
         'order_address', 
         'order_local',
+        'order_district_id',
+        'order_ward_code',
         'order_delivery_fee',
+        'order_expected_delivery',
+        'order_shipping_code',
+        'order_shipping_status',
         'order_coupon_value', 
         'order_total', 
         'order_payment', 
@@ -68,5 +73,52 @@ class OrderModel extends Model
     public function Product()
     {
         return $this->hasMany(ProductModel::class, 'pro_id');
+    }
+
+    /**
+     * Oldest first, by the time the carrier stamped rather than the time the
+     * callback arrived: GHN retries and reorders.
+     */
+    /**
+     * The shop has checked this order and it is waiting to be sent. Nothing
+     * else may be handed to a carrier: a cancelled order has already put its
+     * stock back, and a returned one is travelling the other way.
+     */
+    public function isConfirmed(): bool
+    {
+        return (int) $this->order_status === 1;
+    }
+
+    public function shipmentEvents()
+    {
+        return $this->hasMany(ShipmentEventModel::class, 'order_id', 'order_id')->orderBy('happened_at');
+    }
+
+    /**
+     * The history of the parcel currently on this order. An order handed over
+     * twice keeps the cancelled attempt's rows, and showing them under the new
+     * code reads as if the new parcel were the one that failed.
+     */
+    public function currentShipmentEvents()
+    {
+        return $this->shipmentEvents->filter(
+            fn ($event) => $event->shipping_code === null
+                || $event->shipping_code === $this->order_shipping_code
+        )->values();
+    }
+
+    /**
+     * The attempts before this one, newest parcel first.
+     *
+     * @return \Illuminate\Support\Collection<string, \Illuminate\Support\Collection>
+     */
+    public function previousShipments()
+    {
+        return $this->shipmentEvents
+            ->filter(fn ($event) => $event->shipping_code !== null
+                && $event->shipping_code !== $this->order_shipping_code)
+            ->groupBy('shipping_code')
+            ->map(fn ($events) => $events->sortByDesc('happened_at')->values())
+            ->sortByDesc(fn ($events) => $events->first()->happened_at);
     }
 }
