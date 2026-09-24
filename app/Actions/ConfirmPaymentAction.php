@@ -50,7 +50,7 @@ class ConfirmPaymentAction
                 return null;
             }
 
-            if ((int) $order->order_status === OrderStatus::Cancelled->value) {
+            if ($order->hasStatus(OrderStatus::Cancelled)) {
                 $this->recordPayment($order);
 
                 Log::warning('Payment arrived for an order that was already cancelled', [

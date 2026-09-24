@@ -2,7 +2,6 @@
 
 namespace App\Services\Payment;
 
-use App\Models\OrderModel;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -34,7 +33,7 @@ class MoMoGateway implements PaymentGateway
         return isset($params['orderId']) && isset($params['signature']);
     }
 
-    public function checkoutUrl(OrderModel $order): string
+    public function checkoutUrl(GatewayCharge $charge): string
     {
         $accessKey = (string) config('services.momo.access_key');
         $secretKey = (string) config('services.momo.secret_key');
@@ -44,10 +43,10 @@ class MoMoGateway implements PaymentGateway
             'partnerCode' => $partnerCode,
             'partnerName' => 'Sneaker Square',
             'storeId' => 'SneakerSquare',
-            'requestId' => (string) $order->order_code . '-' . time(),
-            'amount' => (int) $order->order_total,
-            'orderId' => (string) $order->order_code,
-            'orderInfo' => 'Thanh toán hóa đơn ' . $order->order_code . ' qua MoMo',
+            'requestId' => $charge->code . '-' . time(),
+            'amount' => $charge->amount,
+            'orderId' => $charge->code,
+            'orderInfo' => $charge->description . ' qua MoMo',
             'redirectUrl' => route('process.checkout'),
             'ipnUrl' => route('payment.ipn'),
             'lang' => 'vi',

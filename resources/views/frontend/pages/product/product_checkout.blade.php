@@ -476,6 +476,18 @@
                                             <img src="/frontend/img/momo.png" alt="" width="13%" height="100%">
                                         </label>
                                     </div>
+                                    <div class="col-lg-4 mb-3">
+                                        <input type="radio" class="btn-check btn-tst" value="wallet" name="btnradio"
+                                            id="btnradio4" autocomplete="off" data-balance="{{ $walletBalance }}">
+                                        <label class="btn border p-2 d-flex justify-content-center gap-3 align-items-center"
+                                            for="btnradio4">
+                                            <span>
+                                                Ví Sneaker Square
+                                                <small class="d-block text-muted">Số dư {{ number_format($walletBalance, 0, ',', '.') }}đ</small>
+                                            </span>
+                                            <i class='bx bx-wallet fs-3'></i>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -697,6 +709,7 @@
                                         VNĐ
                                     </h4>
                                 </div>
+                                <input type="hidden" id="order-total" value="{{ (int) $thanhtien }}">
                             </div>
                             @php
                                 $diaChiNhanHang = $InfoDeli->firstWhere('info_default', 1);
@@ -722,6 +735,12 @@
                                 @if ($lyDoChuaDatDuoc)
                                     <small class="d-block mt-2 text-danger fst-italic">{{ $lyDoChuaDatDuoc }}</small>
                                 @endif
+                                {{-- Toggled by class, not by `hidden`: Bootstrap's d-block carries
+                                     !important and would show it again regardless. --}}
+                                <small class="d-none mt-2 text-danger fst-italic" id="wallet-warning">
+                                    Số dư ví không đủ cho đơn này. Hãy nạp thêm ở mục
+                                    <a href="{{ route('user.wallet') }}">Ví của tôi</a> hoặc chọn hình thức khác.
+                                </small>
             
                             </form>
                             <div class="my-3">
@@ -745,10 +764,19 @@
         // nothing on this page can fix either without a reload.
         const blockedOnServer = orderButton.disabled;
 
+        const walletWarning = document.getElementById('wallet-warning');
+        const orderTotal = Number(document.getElementById('order-total').value);
+
         function refreshOrderButton() {
             const chosen = document.querySelector('input[name="btnradio"]:checked');
+            // The server refuses a wallet order it cannot cover anyway; this
+            // says so before the customer fills the rest of the form in.
+            const shortOfFunds = chosen
+                && chosen.value === 'wallet'
+                && Number(chosen.dataset.balance) < orderTotal;
 
-            orderButton.disabled = blockedOnServer || !chosen;
+            orderButton.disabled = blockedOnServer || !chosen || shortOfFunds;
+            walletWarning.classList.toggle('d-none', ! shortOfFunds);
 
             if (chosen) {
                 checkoutForm.querySelector('input[name="payment"]').value = chosen.value;

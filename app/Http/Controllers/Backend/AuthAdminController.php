@@ -238,14 +238,7 @@ class AuthAdminController extends Controller
         try{
             $id = Crypt::decrypt($encryptedUserId);
             $accountUser = UserModel::find($id);
-            $Order = OrderModel::where('user_id',$id)->orderBy('order_id','desc')->where(function ($query) {
-                $query->where('order_payment', 'cod')
-                    ->where('order_payment_status', 0)
-                    ->orWhere(function ($query) {
-                        $query->whereIn('order_payment', ['payUrl', 'redirect'])
-                            ->where('order_payment_status', 1);
-                    });
-            })->paginate(20)
+            $Order = OrderModel::where('user_id',$id)->orderBy('order_id','desc')->confirmedSale()->paginate(20)
             ->withQueryString();
             if ($accountUser==null) {
                 $request->session();

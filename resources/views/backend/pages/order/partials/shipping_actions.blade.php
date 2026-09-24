@@ -11,11 +11,42 @@
     $moSuaMa = $errors->has('order_shipping_code');
 @endphp
 
-@if (! $order->isConfirmed())
-    <input type="text" class="form-control" readonly
-           value="{{ $order->order_shipping_code ?: 'Chưa có' }}" />
+@if ($order->isBeingReturned())
+    <div class="alert alert-warning py-2 px-3 mb-2" role="alert">
+        @if ($order->order_shipping_status === 'return_fail')
+            GHN báo hoàn hàng không thành công. Liên hệ GHN để xử lý kiện hàng này.
+        @else
+            GHN báo: <b>{{ \App\Services\Shipping\GhnStatus::label($order->order_shipping_status) }}</b>.
+            Gọi cho khách ({{ $order->order_phone }}) trước khi hàng bị hoàn về.
+        @endif
+    </div>
+@elseif ($order->hasStatus(\App\Enums\OrderStatus::Returned))
+    <div class="alert alert-secondary py-2 px-3 mb-2" role="alert">
+        Hàng đã hoàn về kho, tồn kho đã được cộng lại.
+    </div>
+@elseif ($order->order_delivered_at && $order->isAwaitingReceipt())
+    <div class="alert alert-info py-2 px-3 mb-2" role="alert">
+        Đã giao hàng, chờ khách xác nhận. Tự hoàn thành vào
+        {{ $order->order_delivered_at->copy()->addDays(app(\App\Services\ShopSettings::class)->autoCompleteDays())->format('H:i d/m/Y') }}
+        nếu khách không bấm.
+    </div>
+@endif
+
+{{-- An order with a parcel keeps its panel whatever happened afterwards: the
+     code is how the shop finds the kiện hàng again. --}}
+@if (! $order->isConfirmed() && ! $order->order_shipping_code && ! $order->isHandedOverManually())
+    <input type="text" class="form-control" readonly value="Chưa có" />
     <small class="text-muted fst-italic d-block mt-1">
         Chỉ đơn hàng đã xác nhận mới gắn được vận đơn.
+    </small>
+@elseif ($order->isHandedOverManually())
+    <input type="text" class="form-control" readonly value="Đã bàn giao cho đơn vị vận chuyển của shop" />
+    <small class="text-muted fst-italic d-block mt-1">
+        Đơn này giao thủ công nên không tạo vận đơn GHN. Đơn hoàn thành khi khách bấm đã nhận được hàng.
+    </small>
+    <button class="btn btn-outline-warning btn-sm mt-2" type="submit" form="form-huy-ban-giao">Huỷ bàn giao</button>
+    <small class="text-muted fst-italic d-block mt-1">
+        Bỏ đánh dấu đã bàn giao, để chọn lại cách giao cho đơn này.
     </small>
 @elseif (! $order->order_shipping_code)
     @if ($batTaoVanDon)

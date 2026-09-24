@@ -83,7 +83,7 @@ class ProductAdminController extends Controller
             )
             ->join('order', 'order_details.order_id', '=', 'order.order_id')
             ->join('products', 'order_details.pro_id', '=', 'products.pro_id')
-            ->where('order.order_status', 10)
+            ->where('order.order_status', \App\Enums\OrderStatus::Completed)
             ->whereBetween('order.order_date',[$thismonth,$now])
             ->groupBy(
                 'products.pro_name',

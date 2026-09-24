@@ -129,26 +129,51 @@
                 <div class="container-xxl box__shadow p-3 rounded">
                     <div class="row">
                         <div class="container-fluid mt-3 d-flex justify-content-center">
-                            @if ($order->order_status == 2)
+                            @if ($order->hasStatus(\App\Enums\OrderStatus::Cancelled))
                                 <h4 class="fw-bold mb-3">Đã hủy đơn</h4>
                             @else
-                                @if ($order->order_status == 3)
+                                @if ($order->order_status->isComingBack() && $order->orderReturn)
+                                    <div class="text-center mb-3">
+                                        <h4 class="fw-bold mb-1">Yêu cầu trả hàng: {{ $order->orderReturn->statusLabel() }}</h4>
+                                        <div class="text-muted small">
+                                            @switch($order->orderReturn->status)
+                                                @case(\App\Models\OrderReturnModel::REQUESTED)
+                                                    Cửa hàng đang xem xét yêu cầu của bạn.
+                                                    @break
+                                                @case(\App\Models\OrderReturnModel::APPROVED)
+                                                    Vui lòng đóng gói sản phẩm, nhân viên GHN sẽ đến lấy hàng tại địa chỉ nhận hàng của đơn.
+                                                    @if ($order->orderReturn->return_shipping_code)
+                                                        Mã vận đơn trả hàng: <b>{{ $order->orderReturn->return_shipping_code }}</b>.
+                                                    @endif
+                                                    @break
+                                                @case(\App\Models\OrderReturnModel::RECEIVED)
+                                                    Cửa hàng đã nhận được hàng trả và sẽ hoàn tiền cho bạn.
+                                                    @break
+                                                @case(\App\Models\OrderReturnModel::REFUNDED)
+                                                    Đã hoàn {{ number_format((int) $order->orderReturn->refund_amount, 0, ',', '.') }} VNĐ.
+                                                    @break
+                                            @endswitch
+                                        </div>
+                                    </div>
+                                @elseif ($order->hasStatus(\App\Enums\OrderStatus::Returned))
+                                    <h4 class="fw-bold mb-3">Giao hàng không thành công, đơn đã được hoàn về cửa hàng</h4>
+                                @elseif ($order->order_status->isComingBack())
                                     <h4 class="fw-bold mb-3">Đã gửi yêu cầu trả hàng</h4>
                                 @else
                                     <div class="position-relative w-progress-bar">
                                         <div class="progress" role="progressbar" aria-label="Progress"
-                                            aria-valuenow="@if ($order->order_status == 10) 100
+                                            aria-valuenow="@if ($order->hasStatus(\App\Enums\OrderStatus::Completed)) 100
                                 @else
-                                    @if ($order->order_delivery_status == 1 || $order->order_status == 1)
+                                    @if ($order->order_status->isAccepted())
                                         50
                                     @else
                                         25 @endif
                                 @endif"
                                             aria-valuemin="0" aria-valuemax="100" style="height: 2px;">
                                             <div class="progress-bar"
-                                                style="width: @if ($order->order_status == 10) 100%
+                                                style="width: @if ($order->hasStatus(\App\Enums\OrderStatus::Completed)) 100%
                                     @else
-                                        @if ($order->order_delivery_status == 1 || $order->order_status == 1)
+                                        @if ($order->order_status->isAccepted())
                                             65%
                                         @else
                                             30% @endif
@@ -174,26 +199,26 @@
                                         </div>
                                         <div class="position-absolute top-0 translate-middle w-h-2rem rounded-pill
                                     @if (
-                                        ($order->order_payment == 'cod' && $order->order_status == 1) ||
-                                            ($order->order_payment == 'cod' && $order->order_status == 10)) bg-success 
+                                        ($order->order_payment == 'cod' && $order->order_status->isAccepted())) bg-success 
                                     @else
-                                        @if ($order->order_payment == 'cod' && $order->order_status == 0)
+                                        @if ($order->order_payment == 'cod' && $order->hasStatus(\App\Enums\OrderStatus::New))
                                             bg-secondary @endif
                                     @endif
                                     @if (
                                         ($order->order_payment == 'payUrl' && $order->order_payment_status == 1) ||
-                                            ($order->order_payment == 'payUrl' && $order->order_status == 10)) bg-success 
+                                            ($order->order_payment == 'payUrl' && $order->hasStatus(\App\Enums\OrderStatus::Completed))) bg-success 
                                     @else
                                         @if ($order->order_payment == 'payUrl' && $order->order_payment_status == 0)
                                             bg-secondary @endif
                                     @endif
                                     @if (
                                         ($order->order_payment == 'redirect' && $order->order_payment_status == 1) ||
-                                            ($order->order_payment == 'redirect' && $order->order_status == 10)) bg-success 
+                                            ($order->order_payment == 'redirect' && $order->hasStatus(\App\Enums\OrderStatus::Completed))) bg-success 
                                     @else
                                         @if ($order->order_payment == 'redirect' && $order->order_payment_status == 0)
                                             bg-secondary @endif
                                     @endif
+                                    @if ($order->order_payment == 'wallet') bg-success @endif
                                     "
                                             style="left:30%">
                                             <div
@@ -206,22 +231,21 @@
                                                     style="margin-top:10px; left: -15px;">
                                                     {{-- check status paymen COD --}}
                                                     @if (
-                                                        ($order->order_payment == 'cod' && $order->order_status == 1) ||
-                                                            ($order->order_payment == 'cod' && $order->order_status == 10))
+                                                        ($order->order_payment == 'cod' && $order->order_status->isAccepted()))
                                                         Đã xác nhận thông tin thanh toán
                                                         <br>
                                                         <sub>
                                                             {{ date('H:i d/m/Y', strtotime($order->order_payment_time)) }}
                                                         </sub>
                                                     @else
-                                                        @if ($order->order_payment == 'cod' && $order->order_status == 0)
+                                                        @if ($order->order_payment == 'cod' && $order->hasStatus(\App\Enums\OrderStatus::New))
                                                             Đang chờ xác nhận từ Sneaker Square
                                                         @endif
                                                     @endif
                                                     {{-- check status payment MOMO --}}
                                                     @if (
                                                         ($order->order_payment == 'payUrl' && $order->order_payment_status == 1) ||
-                                                            ($order->order_payment == 'payUrl' && $order->order_status == 10))
+                                                            ($order->order_payment == 'payUrl' && $order->hasStatus(\App\Enums\OrderStatus::Completed)))
                                                         Đã thanh toán Momo
                                                         <br>
                                                         <sub>
@@ -247,7 +271,7 @@
                                                     {{-- check status paymen VNP --}}
                                                     @if (
                                                         ($order->order_payment == 'redirect' && $order->order_payment_status == 1) ||
-                                                            ($order->order_payment == 'redirect' && $order->order_status == 10))
+                                                            ($order->order_payment == 'redirect' && $order->hasStatus(\App\Enums\OrderStatus::Completed)))
 
                                                         Đã thanh toán VNPay
                                                         <br>
@@ -271,6 +295,15 @@
                                                         @endif
                                                     @endif
 
+                                                    {{-- check status payment wallet --}}
+                                                    @if ($order->order_payment == 'wallet')
+                                                        Đã trừ từ ví Sneaker Square
+                                                        <br>
+                                                        <sub>
+                                                            {{ date('H:i d/m/Y', strtotime($order->order_payment_time)) }}
+                                                        </sub>
+                                                    @endif
+
                                                 </div>
                                             </div>
                                         </div>
@@ -286,7 +319,11 @@
 
                                                 <div class="position-absolute text-dark text-capitalize l-progress-bar-3 w-text-130px"
                                                     style="margin-top:10px; left: -10px;">
-                                                    @if ($order->order_delivery_status == 1)
+                                                    @if ($order->isBeingReturned())
+                                                        Đang hoàn hàng<br>
+                                                    @elseif ($order->order_shipping_status === 'delivered')
+                                                        Đã giao hàng<br>
+                                                    @elseif ($order->order_delivery_status == 1)
                                                         Đang vận chuyển<br>
                                                     @else
                                                         Đang chuẩn bị<br>
@@ -301,7 +338,7 @@
 
                                         <div
                                             class="position-absolute top-0 start-100 translate-middle rounded-pill w-h-2rem
-                                    @if ($order->order_status == 10) bg-success
+                                    @if ($order->hasStatus(\App\Enums\OrderStatus::Completed)) bg-success
                                     @else
                                         bg-secondary @endif">
                                             <div
@@ -312,7 +349,7 @@
 
                                                 <div class="position-absolute text-dark text-capitalize w-text-130px"
                                                     style="margin-top:10px; left: -90%;">
-                                                    @if ($order->order_status == 10)
+                                                    @if ($order->hasStatus(\App\Enums\OrderStatus::Completed))
                                                         Đã nhận hàng<br>
                                                     @else
                                                         Đợi nhận hàng<br>
@@ -475,23 +512,22 @@
                                 <h6 class="fw-bold text-uppercase mb-2">HÌNH THỨC THANH TOÁN</h6>
                                 <div class="bg-light p-3 rounded" style="border: 1px dashed rgba(0, 0, 0, .09);">
                                     <span class="fw-bold">
-                                        @if ($order->order_payment == 'cod')
-                                            Thanh toán khi nhận hàng
-                                        @else
-                                            @if ($order->order_payment == 'payUrl')
-                                                Thanh toán qua MoMo
-                                            @else
-                                                Thanh toán qua VNPay
-                                            @endif
-                                        @endif
+                                        {{ $order->paymentLabel() }}
                                     </span>
                                 </div>
                             </div>
                             {{--  --}}
                             <div class="row">
-                                @if ($order->order_status != 2 && $order->order_status != 3)
+                                @if ($order->orderReturn?->status === \App\Models\OrderReturnModel::REJECTED)
                                     <div class="col-lg-12 mb-3">
-                                        @if ($order->order_delivery_status == 0 || $order->order_status == 10)
+                                        <div class="alert alert-warning mb-0 small">
+                                            Yêu cầu trả hàng đã bị từ chối: {{ $order->orderReturn->reject_reason }}
+                                        </div>
+                                    </div>
+                                @endif
+                                @if (! $order->hasStatus(\App\Enums\OrderStatus::Cancelled) && ! $order->order_status->isComingBack())
+                                    <div class="col-lg-12 mb-3">
+                                        @if (! $order->isAwaitingReceipt())
                                             <button disabled
                                                 class="w-100 custom-btn bgc-o text-white bgc-o-disabled p-2 rounded btn-order">Đã nhận
                                                 hàng</button>
@@ -504,14 +540,14 @@
                                             </form>
                                         @endif
                                     </div>
-                                    @if ($order->order_status == 0)
+                                    @if ($order->hasStatus(\App\Enums\OrderStatus::New) || $order->canRequestCancel())
                                         <div class="col-lg-12 mb-3">
                                             <button class="w-100 border grey-hover border-1 p-2 custom-btn text-dark rounded btn-order"
                                                 data-bs-toggle="modal" data-bs-target="#cancelOrder">Hủy đơn / Hoàn
                                                 tiền</button>
                                         </div>
                                     @else
-                                        @if ($order->order_status == 10)
+                                        @if ($order->canRequestReturn())
                                             <div class="col-lg-12 mb-3">
                                                 <button class="w-100 border grey-hover border-1 p-2 custom-btn text-dark rounded btn-order"
                                                     data-bs-toggle="modal" data-bs-target="#returnOrder">Yêu cầu trả hàng / Hoàn
@@ -536,64 +572,103 @@
         </div>
     </section>
     {{-- return Order --}}
+    @if ($order->canRequestReturn() || $errors->hasAny(['reason', 'items', 'description', 'refund_info', 'images', 'images.*']))
     <div class="modal fade" id="returnOrder" tabindex="-1" aria-labelledby="returnOrderLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="returnOrderLabel">Trả hàng / Hoàn tiền</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div>
-                        <div class="d-flex justify-content-center my-3">
-                            <img src="/frontend/img/giphyno.gif" class="rounded-circle" alt="" width="150px" height="150px">
+                <form action="{{ route('return.order', $order->order_code) }}" method="post" enctype="multipart/form-data">
+                    @csrf @method('PATCH')
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="returnOrderLabel">Yêu cầu trả hàng / Hoàn tiền</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small mb-3">
+                            Bạn có thể gửi yêu cầu đến hết
+                            {{ optional($order->returnDeadline())->format('H:i d/m/Y') }}.
+                            Mỗi đơn hàng chỉ gửi được một yêu cầu. Sau khi cửa hàng duyệt, nhân viên GHN sẽ đến
+                            địa chỉ nhận hàng của đơn để lấy hàng trả.
+                        </p>
+                        <div class="mb-3">
+                            <label class="form-label">Sản phẩm muốn trả <span class="text-danger">*</span></label>
+                            <div class="border rounded p-2">
+                                @foreach ($orderDetail as $dong)
+                                    <div class="d-flex justify-content-between align-items-center gap-3 py-2 {{ ! $loop->last ? 'border-bottom' : '' }}">
+                                        <div>
+                                            <div>{{ $dong->pro_name }}</div>
+                                            <div class="text-muted small">
+                                                Size {{ $dong->size }} &middot; {{ $dong->color }} &middot;
+                                                đã mua {{ $dong->quantity }} &middot;
+                                                {{ number_format((int) $dong->price, 0, ',', '.') }}đ / sản phẩm
+                                            </div>
+                                        </div>
+                                        <div style="width: 150px;">
+                                            <select class="form-select form-select-sm" name="items[{{ $dong->order_details_id }}]">
+                                                @for ($sl = 0; $sl <= (int) $dong->quantity; $sl++)
+                                                    <option value="{{ $sl }}" @selected((int) old('items.'.$dong->order_details_id, 0) === $sl)>
+                                                        {{ $sl === 0 ? 'Không trả' : 'Trả '.$sl }}
+                                                    </option>
+                                                @endfor
+                                            </select>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <div class="form-text">
+                                Chỉ chọn số lượng bạn thực sự gửi trả. Phần giữ lại vẫn tính là đã mua, và phí vận chuyển
+                                không được hoàn khi bạn chỉ trả một phần đơn.
+                            </div>
+                            @error('items') <small class="text-danger">{{ $message }}</small> @enderror
                         </div>
-                        <div>
-                            <div class="mb-3">
-                                <label for="reasonReturnOrder" class="form-label">Hãy cho chúng tôi biết lí do bạn muốn trả hàng?</label>
-                                <textarea class="form-control" placeholder="Nhập nội dung tại đây..." id="reasonReturnOrder" rows="4"
-                                    onkeyup="updateNoteReturn()"></textarea>
-                                <i id="errorSpanReturn" class="error" style="color:red;display: none;">Vui lòng nhập lý
-                                    do trả
-                                    đơn hàng.</i>
+                        <div class="mb-3">
+                            <label for="return-reason" class="form-label">Lý do trả hàng <span class="text-danger">*</span></label>
+                            <select class="form-select" id="return-reason" name="reason">
+                                <option value="">Chọn lý do</option>
+                                @foreach (\App\Models\OrderReturnModel::REASONS as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('reason') === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('reason') <small class="text-danger">{{ $message }}</small> @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label for="return-description" class="form-label">Mô tả thêm</label>
+                            <textarea class="form-control" id="return-description" name="description" rows="3"
+                                placeholder="Ví dụ: giày size 42 bị chật, muốn trả lại">{{ old('description') }}</textarea>
+                            @error('description') <small class="text-danger">{{ $message }}</small> @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label for="return-images" class="form-label">Ảnh sản phẩm (tối đa {{ \App\Http\Requests\Frontend\ReturnOrderRequest::MAX_IMAGES }} ảnh)</label>
+                            <input class="form-control" type="file" id="return-images" name="images[]" accept="image/*" multiple>
+                            @error('images') <small class="text-danger">{{ $message }}</small> @enderror
+                            @error('images.*') <small class="text-danger">{{ $message }}</small> @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label for="return-refund" class="form-label">Thông tin nhận tiền hoàn <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="return-refund" name="refund_info" rows="2"
+                                placeholder="Ngân hàng, số tài khoản, tên chủ tài khoản">{{ old('refund_info') }}</textarea>
+                            <div class="form-text">
+                                Tiền hoàn được cộng vào <a href="{{ route('user.wallet') }}">ví Sneaker Square</a> của bạn ngay khi
+                                cửa hàng nhận và kiểm tra hàng trả; từ ví bạn có thể mua đơn khác hoặc rút về tài khoản này.
                             </div>
-                            <div class="d-flex justify-content-center m-auto my-3">
-                                <form action="{{ route('return.order', $order->order_code) }}" method="post">
-                                    @csrf @method('PATCH')
-                                    <input type="hidden" name="inputReturnOrder" value="" id="inputReturnOrder">
-                                    <button type="submit" class="custom-btn bgc-o text-white"
-                                        onclick="validateFormReturn(event)">Xác nhận trả hàng</button>
-                                </form>
-                                <button type="button" class="border grey-hover border-1 mx-2 custom-btn text-dark "
-                                    data-bs-toggle="modal">Không trả hàng</button>
-                            </div>
-
+                            @error('refund_info') <small class="text-danger">{{ $message }}</small> @enderror
                         </div>
                     </div>
-                </div>
-
+                    <div class="modal-footer">
+                        <button type="button" class="border grey-hover border-1 custom-btn text-dark" data-bs-dismiss="modal">Không trả hàng</button>
+                        <button type="submit" class="custom-btn bgc-o text-white">Gửi yêu cầu</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-    <script>
-        function updateNoteReturn() {
-            var noteValue = document.getElementById("reasonReturnOrder").value;
-            document.getElementById("inputReturnOrder").value = noteValue;
-        }
-
-        function validateFormReturn(event) {
-            var noteValue = document.getElementById("reasonReturnOrder").value;
-            var errorSpanReturn = document.getElementById("errorSpanReturn");
-
-            if (noteValue.trim() === "") {
-                errorSpanReturn.style.display = "block";
-                event.preventDefault(); // Ngăn chặn việc submit form
-            } else {
-                errorSpanReturn.style.display = "none";
-                // Form được submit tự động nếu đã nhập lý do
-            }
-        }
-    </script>
+    @if ($errors->hasAny(['reason', 'items', 'description', 'refund_info', 'images', 'images.*']))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                new bootstrap.Modal(document.getElementById('returnOrder')).show();
+            });
+        </script>
+    @endif
+    @endif
     {{-- cancel Order --}}
     <div class="modal fade" id="cancelOrder" tabindex="-1" aria-labelledby="cancelOrderLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">

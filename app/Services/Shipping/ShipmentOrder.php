@@ -4,7 +4,8 @@ namespace App\Services\Shipping;
 
 /**
  * A parcel the shop is handing over: where it goes, who receives it, what is
- * inside and how much to collect on delivery.
+ * inside and how much to collect on delivery. `from` is left null for the
+ * usual case, a parcel leaving the shop's own warehouse.
  */
 final class ShipmentOrder
 {
@@ -23,5 +24,6 @@ final class ShipmentOrder
         public readonly int $codAmount,
         public readonly array $items,
         public readonly ?string $note = null,
+        public readonly ?ShipmentSender $from = null,
     ) {}
 }

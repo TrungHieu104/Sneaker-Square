@@ -111,21 +111,7 @@
                                             {{date('d-m-Y', strtotime($data->order_date))}}
                                         </td>
                                         <td class="text-center">
-                                            @if($data->order_status==0)
-                                                <span style="color:darkblue">Đơn hàng mới</span>
-                                            @elseif($data->order_status==1)
-                                                @if ($data->order_delivery_status == 1)
-                                                    <span>Vận chuyển</span>
-                                                @else
-                                                    <span style="color: green">Đã xác nhận</span>
-                                                @endif
-                                            @elseif($data->order_status==2)
-                                                <span style="color: red">Đã hủy</span>
-                                            @elseif($data->order_status==3)
-                                                <span style="color: orange">Hoàn hàng</span>
-                                            @elseif($data->order_status==10)
-                                                <span style="color:chocolate">Thành công</span>
-                                            @endif
+                                            <span style="color: {{ $data->order_status->color() }}">{{ $data->order_status->label() }}</span>
                                         </td>
                                         
                                         <td class="text-center">

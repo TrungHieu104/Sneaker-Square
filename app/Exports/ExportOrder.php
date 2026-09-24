@@ -90,11 +90,7 @@ class OrdersSheet implements FromCollection, WithHeadings, WithMapping, WithEven
             
             number_format($row->order_total, 0, ',', '.') . 'đ',
             
-            ($row->order_status == 0) ? "Đơn hàng mới" : 
-            (($row->order_delivery_status == 1 && $row->order_status == 1) ? "Vận chuyển" :
-            (($row->order_status == 1) ? "Đã xác nhận" :
-            (($row->order_status == 2) ? "Đã hủy" :
-            (($row->order_status == 3) ? "Hoàn hàng" :"Thành công")))),
+            $row->order_status->label(),
         ];
 
 
@@ -174,11 +170,7 @@ class OrderDaySheet implements FromCollection, WithHeadings, WithMapping, WithEv
             
             number_format($row->order_total, 0, ',', '.') . 'đ',
             
-            ($row->order_status == 0) ? "Đơn hàng mới" : 
-            (($row->order_delivery_status == 1 && $row->order_status == 1) ? "Vận chuyển" :
-            (($row->order_status == 1) ? "Đã xác nhận" :
-            (($row->order_status == 2) ? "Đã hủy" :
-            (($row->order_status == 3) ? "Hoàn hàng" :"Thành công")))),
+            $row->order_status->label(),
         ];
 
 
@@ -258,11 +250,7 @@ class OrderWeekSheet implements FromCollection, WithHeadings, WithMapping, WithE
             $row->order_local,
             Carbon::parse($row->order_date)->format('d-m-Y'),
             number_format($row->order_total, 0, ',', '.') . 'đ',
-            ($row->order_status == 0) ? "Đơn hàng mới" : 
-            (($row->order_delivery_status == 1 && $row->order_status == 1) ? "Vận chuyển" :
-            (($row->order_status == 1) ? "Đã xác nhận" :
-            (($row->order_status == 2) ? "Đã hủy" :
-            (($row->order_status == 3) ? "Hoàn hàng" :"Thành công")))),
+            $row->order_status->label(),
         ];
 
 
@@ -345,11 +333,7 @@ class OrderPrevMonthSheet implements FromCollection, WithHeadings, WithMapping, 
             
             number_format($row->order_total, 0, ',', '.') . 'đ',
             
-            ($row->order_status == 0) ? "Đơn hàng mới" : 
-            (($row->order_delivery_status == 1 && $row->order_status == 1) ? "Vận chuyển" :
-            (($row->order_status == 1) ? "Đã xác nhận" :
-            (($row->order_status == 2) ? "Đã hủy" :
-            (($row->order_status == 3) ? "Hoàn hàng" :"Thành công")))),
+            $row->order_status->label(),
         ];
 
 
@@ -431,11 +415,7 @@ class OrderMonthSheet implements FromCollection, WithHeadings, WithMapping, With
             
             number_format($row->order_total, 0, ',', '.') . 'đ',
             
-            ($row->order_status == 0) ? "Đơn hàng mới" : 
-            (($row->order_delivery_status == 1 && $row->order_status == 1) ? "Vận chuyển" :
-            (($row->order_status == 1) ? "Đã xác nhận" :
-            (($row->order_status == 2) ? "Đã hủy" :
-            (($row->order_status == 3) ? "Hoàn hàng" :"Thành công")))),
+            $row->order_status->label(),
         ];
 
 
@@ -516,11 +496,7 @@ class OrderYearSheet implements FromCollection, WithHeadings, WithMapping, WithE
             
             number_format($row->order_total, 0, ',', '.') . 'đ',
             
-            ($row->order_status == 0) ? "Đơn hàng mới" : 
-            (($row->order_delivery_status == 1 && $row->order_status == 1) ? "Vận chuyển" :
-            (($row->order_status == 1) ? "Đã xác nhận" :
-            (($row->order_status == 2) ? "Đã hủy" :
-            (($row->order_status == 3) ? "Hoàn hàng" :"Thành công")))),
+            $row->order_status->label(),
         ];
 
 

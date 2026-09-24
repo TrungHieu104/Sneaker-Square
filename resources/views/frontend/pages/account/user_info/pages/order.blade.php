@@ -86,41 +86,13 @@
                                         </svg> *Trạng thái đơn hàng*</span> |
                                     <span class="text-co fw-bold text-uppercase">
                                         @php
-                                            if ($all_order_data->order_status == 0) {
-                                                //chờ thanh toán && chờ xác nhận
-                                                if ($all_order_data->order_payment == 'payUrl') {
-                                                    if ($all_order_data->order_payment_status == 0) {
-                                                        echo 'Chờ thanh toán';
-                                                    } else {
-                                                        echo 'Chờ xác nhận';
-                                                    }
-                                                } elseif ($all_order_data->order_payment == 'redirect') {
-                                                    if ($all_order_data->order_payment_status == 0) {
-                                                        echo 'Chờ thanh toán';
-                                                    } else {
-                                                        echo 'Chờ xác nhận';
-                                                    }
-                                                } elseif ($all_order_data->order_payment == 'cod') {
-                                                    echo 'Chờ xác nhận';
-                                                }
-                                            } elseif ($all_order_data->order_status == 1) {
-                                                // đã xác nhận
-                                                echo 'Đang giao';
-                                                // if ($all_order_data->order_delivery_status == 1) {
-                                                //     echo 'Đang giao';
-                                                // } else {
-                                                //     echo 'Chờ xác nhận';
-                                                // }
-                                            } elseif ($all_order_data->order_status == 2) {
-                                                //đã hủy
-                                                echo 'Đã hủy';
-                                            } elseif ($all_order_data->order_status == 3) {
-                                                //trả hàng / hoàn tiền
-                                                echo ' Trả hàng / Hoàn tiền';
-                                            } elseif ($all_order_data->order_status == 10) {
-                                                //hoàn thành
-                                                echo 'Hoàn thành';
-                                            }
+                                            // A gateway order nobody has paid for yet is waiting on the
+                                            // customer, not on the shop, and says so.
+                                            echo $all_order_data->hasStatus(\App\Enums\OrderStatus::New)
+                                                && in_array($all_order_data->order_payment, ['payUrl', 'redirect'], true)
+                                                && (int) $all_order_data->order_payment_status === 0
+                                                    ? 'Chờ thanh toán'
+                                                    : $all_order_data->order_status->label();
                                         @endphp
                                     </span>
                                 </div>
@@ -151,7 +123,7 @@
                                                 </div>
                                             @endif
                                             <p>x {{ $all_order_detail_data->quantity }}</p>
-                                            @if ($all_order_data->order_status == 10 && $pro)
+                                            @if ($all_order_data->hasStatus(\App\Enums\OrderStatus::Completed) && $pro)
                                                 <div class="mt-2">
                                                     <a href="{{ route('product.detail', $pro->pro_slug) }}#review-section" class="btn btn-sm btn-outline-warning text-warning fw-bold px-3 py-1" style="font-size: 13px; border-color: #ffc107;">
                                                         <i class="fas fa-star"></i> Đánh giá sản phẩm
@@ -170,34 +142,19 @@
                             @endforeach
                             <div class="row p-1 d-flex justify-content-between">
                                 <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3">
-                                    @if ($all_order_data->order_status == 0)
-                                        @if ($all_order_data->order_payment == 'redirect' || $all_order_data->order_payment == 'payUrl')
-                                            @if ($all_order_data->order_payment_status == 0)
-                                            <div class="mt-md-0 mt-2 col-md-4 col-12">
-                                                <a class="border grey-hover border-1 mx-2 custom-btn text-dark btn w-100"
-                                                href="{{route('orderBill.checkout', $all_order_data->order_code) }}">Chi tiết
-                                                đơn hàng</a>
-                                            </div>
-                                            @else
+                                    @if ($all_order_data->hasStatus(\App\Enums\OrderStatus::New))
+                                        {{-- An order the customer left at the gateway has no bill to print yet. --}}
+                                        @unless ($all_order_data->isAwaitingPayment())
                                             <div class="mt-md-0 mt-2 col-md-4 col-12">
                                                 <a class="border grey-hover border-1 mx-2 custom-btn text-dark btn w-100" target="_blank" href="{{url('/in-don-hang/' . $all_order_data->order_code) }}">In đơn hàng</a>
                                             </div>
-                                            <div class="mt-md-0 mt-2 col-md-4 col-12">
-                                                <a class="border grey-hover border-1 mx-2 custom-btn text-dark btn w-100" href="{{ route('orderBill.checkout', $all_order_data->order_code) }}">Chi tiết đơn hàng</a>
-                                            </div>
-                                            @endif
-                                        @endif
-                                        @if ($all_order_data->order_payment == 'cod')
-                                        <div class="mt-md-0 mt-2 col-md-4 col-12">
-                                            <a class="border grey-hover border-1 mx-2 custom-btn text-dark btn w-100" target="_blank" href="{{url('/in-don-hang/' . $all_order_data->order_code) }}">In đơn hàng</a>
-                                        </div>
+                                        @endunless
                                         <div class="mt-md-0 mt-2 col-md-4 col-12">
                                             <a class="border grey-hover border-1 mx-2 custom-btn text-dark btn w-100" href="{{route('orderBill.checkout', $all_order_data->order_code) }}">Chi tiết đơn hàng</a>
                                         </div>
-                                        @endif
                                     @endif
-                                    @if ($all_order_data->order_status == 1)
-                                        @if ($all_order_data->order_delivery_status == 1)
+                                    @if ($all_order_data->hasStatus(\App\Enums\OrderStatus::Confirmed, \App\Enums\OrderStatus::ReadyToShip, \App\Enums\OrderStatus::Delivering, \App\Enums\OrderStatus::Delivered, \App\Enums\OrderStatus::CancelRequested))
+                                        @if ($all_order_data->isAwaitingReceipt())
                                             {{-- <button class="custom-btn bgc-o text-white">Đã nhận hàng</button> --}}
                                             <form class="ms-md-0 ms-2 col-md-4 col-12" action="{{ route('success.order') }}" method="post">
                                                 @csrf
@@ -214,18 +171,18 @@
                                             đơn hàng</a>
                                         </div>
                                     @endif
-                                    @if ($all_order_data->order_status == 2)
+                                    @if ($all_order_data->hasStatus(\App\Enums\OrderStatus::Cancelled))
                                     <div class="mt-md-0 mt-2 col-md-4 col-12">
                                         <a class="border grey-hover border-1 mx-2 custom-btn text-dark btn w-100" target="_blank"
                                         href="{{route('orderBill.checkout', $all_order_data->order_code)}}">Chi tiết hủy đơn</a>
                                     </div>
                                     @endif
-                                    @if ($all_order_data->order_status == 3)
+                                    @if ($all_order_data->order_status->isComingBack())
                                     <div class="mt-md-0 mt-2 col-md-4 col-12">
                                         <a class="border grey-hover border-1 mx-2 custom-btn text-dark btn w-100" href="{{route('orderBill.checkout', $all_order_data->order_code)}}">Chi tiết đơn hàng</a>
                                     </div>
                                     @endif
-                                    @if ($all_order_data->order_status == 10)
+                                    @if ($all_order_data->hasStatus(\App\Enums\OrderStatus::Completed))
                                         {{-- <button disabled class="custom-btn bgc-o text-white bgc-o-disabled">Đã nhận hàng</button> --}}
                                         <form class="ms-md-0 ms-2 col-md-4 col-12" action="{{ route('success.order') }}" method="post">
                                             @csrf
@@ -291,40 +248,13 @@
                                         </svg> *Trạng thái đơn hàng*</span> |
                                     <span class="text-co fw-bold text-uppercase">
                                         @php
-                                            if ($wait_payment_data->order_status == 0) {
-                                                //chờ thanh toán && chờ xác nhận
-                                                if ($wait_payment_data->order_payment == 'payUrl') {
-                                                    if ($wait_payment_data->order_payment_status == 0) {
-                                                        echo 'Chờ thanh toán';
-                                                    } else {
-                                                        echo 'Chờ xác nhận';
-                                                    }
-                                                } elseif ($wait_payment_data->order_payment == 'redirect') {
-                                                    if ($wait_payment_data->order_payment_status == 0) {
-                                                        echo 'Chờ thanh toán';
-                                                    } else {
-                                                        echo 'Chờ xác nhận';
-                                                    }
-                                                } elseif ($wait_payment_data->order_payment == 'cod') {
-                                                    echo 'Chờ xác nhận';
-                                                }
-                                            } elseif ($wait_payment_data->order_status == 1) {
-                                                // đã xác nhận
-                                                if ($wait_payment_data->order_delivery_status == 1) {
-                                                    echo 'Đang giao';
-                                                } else {
-                                                    echo 'Chờ xác nhận';
-                                                }
-                                            } elseif ($wait_payment_data->order_status == 2) {
-                                                //đã hủy
-                                                echo 'Đã hủy';
-                                            } elseif ($wait_payment_data->order_status == 3) {
-                                                //trả hàng / hoàn tiền
-                                                echo ' Trả hàng / Hoàn tiền';
-                                            } elseif ($wait_payment_data->order_status == 10) {
-                                                //hoàn thành
-                                                echo 'Hoàn thành';
-                                            }
+                                            // A gateway order nobody has paid for yet is waiting on the
+                                            // customer, not on the shop, and says so.
+                                            echo $wait_payment_data->hasStatus(\App\Enums\OrderStatus::New)
+                                                && in_array($wait_payment_data->order_payment, ['payUrl', 'redirect'], true)
+                                                && (int) $wait_payment_data->order_payment_status === 0
+                                                    ? 'Chờ thanh toán'
+                                                    : $wait_payment_data->order_status->label();
                                         @endphp
                                     </span>
                                 </div>
@@ -418,40 +348,13 @@
                                         </svg> *Trạng thái đơn hàng*</span> |
                                     <span class="text-co fw-bold text-uppercase">
                                         @php
-                                            if ($wait_confirm_data->order_status == 0) {
-                                                //chờ thanh toán && chờ xác nhận
-                                                if ($wait_confirm_data->order_payment == 'payUrl') {
-                                                    if ($wait_confirm_data->order_payment_status == 0) {
-                                                        echo 'Chờ thanh toán';
-                                                    } else {
-                                                        echo 'Chờ xác nhận';
-                                                    }
-                                                } elseif ($wait_confirm_data->order_payment == 'redirect') {
-                                                    if ($wait_confirm_data->order_payment_status == 0) {
-                                                        echo 'Chờ thanh toán';
-                                                    } else {
-                                                        echo 'Chờ xác nhận';
-                                                    }
-                                                } elseif ($wait_confirm_data->order_payment == 'cod') {
-                                                    echo 'Chờ xác nhận';
-                                                }
-                                            } elseif ($wait_confirm_data->order_status == 1) {
-                                                // đã xác nhận
-                                                if ($wait_confirm_data->order_delivery_status == 1) {
-                                                    echo 'Đang giao';
-                                                } else {
-                                                    echo 'Chờ xác nhận';
-                                                }
-                                            } elseif ($wait_confirm_data->order_status == 2) {
-                                                //đã hủy
-                                                echo 'Đã hủy';
-                                            } elseif ($wait_confirm_data->order_status == 3) {
-                                                //trả hàng / hoàn tiền
-                                                echo ' Trả hàng / Hoàn tiền';
-                                            } elseif ($wait_confirm_data->order_status == 10) {
-                                                //hoàn thành
-                                                echo 'Hoàn thành';
-                                            }
+                                            // A gateway order nobody has paid for yet is waiting on the
+                                            // customer, not on the shop, and says so.
+                                            echo $wait_confirm_data->hasStatus(\App\Enums\OrderStatus::New)
+                                                && in_array($wait_confirm_data->order_payment, ['payUrl', 'redirect'], true)
+                                                && (int) $wait_confirm_data->order_payment_status === 0
+                                                    ? 'Chờ thanh toán'
+                                                    : $wait_confirm_data->order_status->label();
                                         @endphp
                                     </span>
                                 </div>
@@ -593,7 +496,7 @@
                             @endforeach
                             <div class="row p-1 d-flex justify-content-between">
                                 <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3">
-                                    @if ($delivery_order_data->order_delivery_status == 0 || $delivery_order_data->order_status == 10)
+                                    @if (! $delivery_order_data->isAwaitingReceipt())
                                     <div class="mt-md-0 mt-2 col-md-4 col-12">
                                         <button disabled
                                             class="custom-btn bgc-o text-white bgc-o-disabled w-100 btn">Đã nhận
@@ -695,7 +598,7 @@
                                                 </div>
                                             @endif
                                             <p>x {{ $all_order_detail_data->quantity }}</p>
-                                            @if ($success_order_data->order_status == 10 && $pro)
+                                            @if ($success_order_data->hasStatus(\App\Enums\OrderStatus::Completed) && $pro)
                                                 <div class="mt-2">
                                                     <a href="{{ route('product.detail', $pro->pro_slug) }}#review-section" class="btn btn-sm btn-outline-warning text-warning fw-bold px-3 py-1" style="font-size: 13px; border-color: #ffc107;">
                                                         <i class="fas fa-star"></i> Đánh giá sản phẩm

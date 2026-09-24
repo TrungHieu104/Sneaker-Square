@@ -228,6 +228,32 @@
                 <div data-i18n="Form Layouts">Đơn hàng</div>
             </a>
         </li>
+        <li class="menu-item {{(url()->current() == route('wallet_admin.index')) ? 'active' : ''}}">
+            <a href="{{route('wallet_admin.index')}}" class="menu-link">
+                <i class='bx bx-wallet menu-icon'></i>
+                <div data-i18n="Form Layouts">Ví khách hàng</div>
+            </a>
+        </li>
+        <li class="menu-item {{(url()->current() == route('ghn_simulator.index')) ? 'active open' : ''}}">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class='bx bx-package menu-icon'></i>
+                <div data-i18n="Form Elements">Giao hàng</div>
+            </a>
+            <ul class="menu-sub">
+                <li class="menu-item">
+                    <a href="{{config('services.ghn.dashboard')}}" class="menu-link" target="_blank" rel="noopener">
+                        <div data-i18n="Basic Inputs">Giao hàng nhanh</div>
+                    </a>
+                </li>
+                @if (\App\Http\Controllers\Backend\GhnSimulatorController::enabled())
+                <li class="menu-item {{(url()->current() == route('ghn_simulator.index')) ? 'active' : ''}}">
+                    <a href="{{route('ghn_simulator.index')}}" class="menu-link">
+                        <div data-i18n="Basic Inputs">Giả lập GHN (local)</div>
+                    </a>
+                </li>
+                @endif
+            </ul>
+        </li>
         @endcan
         @can('Thanh toán')
         <li class="menu-item">
@@ -290,7 +316,8 @@
                             auth()->user()->can('Quản trị Slide') ||
                             auth()->user()->can('Quản trị Thông tin') ||
                             auth()->user()->can('Giới thiệu') ||
-                            auth()->user()->can('Quản trị FAQ');
+                            auth()->user()->can('Quản trị FAQ') ||
+                            auth()->user()->can('Quản trị Đơn hàng');
         @endphp
         @if($canAccessSet)
         <li class="menu-header small text-uppercase"><span class="menu-header-text">Cấu hình chung</span></li>
@@ -348,6 +375,14 @@
             <a href="{{route('about.index')}}" class="menu-link">
                 <i class='bx bx-book-alt menu-icon'></i>
                 <div data-i18n="Extended UI">Giới thiệu</div>
+            </a>
+        </li>
+        @endcan
+        @can('Quản trị Đơn hàng')
+        <li class="menu-item {{(url()->current() == route('setting.edit')) ? 'active' : ''}}">
+            <a href="{{route('setting.edit')}}" class="menu-link">
+                <i class='bx bx-cog menu-icon'></i>
+                <div data-i18n="Extended UI">Cấu hình hệ thống</div>
             </a>
         </li>
         @endcan

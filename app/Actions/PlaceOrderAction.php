@@ -10,9 +10,12 @@ use App\Models\OrderModel;
 use App\Models\ProductModel;
 use App\Models\ProductQuantityModel;
 use App\Models\UserModel;
+use App\Models\WalletTransactionModel;
 use App\Services\CartPricingService;
 use App\Services\Shipping\ShippingUnavailable;
 use App\Services\ShippingService;
+use App\Services\Wallet\InsufficientBalance;
+use App\Services\Wallet\WalletService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -24,9 +27,12 @@ use Illuminate\Support\Facades\DB;
  */
 class PlaceOrderAction
 {
+    public const PAY_FROM_WALLET = 'wallet';
+
     public function __construct(
         private readonly CartPricingService $pricing,
         private readonly ShippingService $shipping,
+        private readonly WalletService $wallets,
     ) {}
 
     /**
@@ -34,6 +40,7 @@ class PlaceOrderAction
      * @param  array{payment: string, note_customer: ?string}  $meta
      *
      * @throws InsufficientStockException when a variant no longer has enough stock
+     * @throws InsufficientBalance when paying from a wallet that cannot cover it
      */
     public function execute(
         UserModel $user,
@@ -105,8 +112,38 @@ class PlaceOrderAction
                 $this->consumeCoupon($summary['coupon']);
             }
 
+            if ($order->order_payment === self::PAY_FROM_WALLET) {
+                $this->payFromWallet($user, $order);
+            }
+
             return $order;
         });
+    }
+
+    /**
+     * Takes the total out of the customer's wallet.
+     *
+     * Inside the order's transaction on purpose: if the balance will not cover
+     * it the stock decrement and the coupon go back with it, and the customer
+     * is told before anything exists. There is no gateway to wait for, so the
+     * order is paid the moment it is placed.
+     *
+     * @throws InsufficientBalance
+     */
+    private function payFromWallet(UserModel $user, OrderModel $order): void
+    {
+        $this->wallets->debit(
+            $this->wallets->for($user),
+            (int) $order->order_total,
+            WalletTransactionModel::TYPE_PAYMENT,
+            'Thanh toán đơn hàng '.$order->order_code,
+            WalletService::REF_ORDER,
+            (int) $order->order_id,
+        );
+
+        $order->order_payment_status = 1;
+        $order->order_payment_time = Carbon::now('Asia/Ho_Chi_Minh');
+        $order->save();
     }
 
     /**

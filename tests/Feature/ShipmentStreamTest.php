@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\PlaceOrderAction;
+use App\Enums\OrderStatus;
 use App\Models\OrderModel;
 use App\Models\UserModel;
 use App\Services\Shipping\FakeCarrier;
@@ -27,7 +28,7 @@ class ShipmentStreamTest extends TestCase
     use RefreshDatabase;
     use ShopFixtures;
 
-    private const DA_XAC_NHAN = 1;
+    private const DA_XAC_NHAN = OrderStatus::Confirmed;
 
     private FakeCarrier $carrier;
 

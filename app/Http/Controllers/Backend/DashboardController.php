@@ -23,6 +23,7 @@ use App\Exports\ExportStatisticWeek;
 use App\Exports\ExportStatisticMonth;
 use App\Exports\ExportStatisticMonthPrev;
 use Illuminate\Support\Facades\DB;
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\View;
 use Maatwebsite\Excel\Facades\Excel;
@@ -274,40 +275,19 @@ class DashboardController extends Controller
 
                 $today = Carbon::today();
                 $prevday = Carbon::today()->subDay();
-                $newOrderCount = OrderModel::where('order_status', 0)
-                    ->where(function ($query) {
-                        $query->where('order_payment', 'cod')
-                            ->where('order_payment_status', 0)
-                            ->orWhere(function ($query) {
-                                $query->whereIn('order_payment', ['payUrl', 'redirect'])
-                                    ->where('order_payment_status', 1);
-                            });
-                        })->count();
-                $returnOrderCount = OrderModel::where('order_status', 3)
-                    ->where(function ($query) {
-                        $query->where('order_payment', 'cod')
-                            ->where('order_payment_status', 0)
-                            ->orWhere(function ($query) {
-                                $query->whereIn('order_payment', ['payUrl', 'redirect'])
-                                    ->where('order_payment_status', 1);
-                        });
-                    })->count();
-                $sucessOrderCount = OrderModel::where('order_status', 10)->whereDate('updated_at', $today)
-                    ->where(function ($query) {
-                        $query->where('order_payment', 'cod')
-                            ->where('order_payment_status', 0)
-                            ->orWhere(function ($query) {
-                                $query->whereIn('order_payment', ['payUrl', 'redirect'])
-                                    ->where('order_payment_status', 1);
-                        });
-                    })->count();
+                $newOrderCount = OrderModel::where('order_status', OrderStatus::New)
+                    ->confirmedSale()->count();
+                $returnOrderCount = OrderModel::whereIn('order_status', OrderStatus::comingBack())
+                    ->confirmedSale()->count();
+                $sucessOrderCount = OrderModel::where('order_status', OrderStatus::Completed)->whereDate('updated_at', $today)
+                    ->confirmedSale()->count();
                 $couponCount = CouponModel::where('coupon_end','=',$prevday)->pluck('coupon_name')->toArray();
                 $slideCount = PromotionModel::where('promotion_end','=',$prevday)->pluck('promotion_name')->toArray();
                 $contactCount = ContactFormModel::where('status',0)->count();
 
-                $latestOrder = OrderModel::where('order_status', 0)->latest('created_at')->first();
-                $latestReturnOrder = OrderModel::where('order_status', 3)->latest('updated_at')->first();
-                $latestSuccessOrder = OrderModel::where('order_status', 10)->latest('updated_at')->first();
+                $latestOrder = OrderModel::where('order_status', OrderStatus::New)->latest('created_at')->first();
+                $latestReturnOrder = OrderModel::whereIn('order_status', OrderStatus::comingBack())->latest('updated_at')->first();
+                $latestSuccessOrder = OrderModel::where('order_status', OrderStatus::Completed)->latest('updated_at')->first();
                 $latestContact = ContactFormModel::where('status', 0)->latest('created_at')->first();
                 $latestSlide = PromotionModel::where('promotion_end','=',$prevday)->latest('updated_at')->first();
                 $latestCoupon = CouponModel::where('coupon_end','=',$prevday)->latest('updated_at')->first();

@@ -123,7 +123,7 @@ class ProductReviewTest extends TestCase
             'order_payment' => 'cod',
             'order_payment_status' => 1,
             'order_date' => now()->toDateString(),
-            'order_status' => OrderStatus::Completed->value,
+            'order_status' => OrderStatus::Completed,
             'user_id' => $userId,
         ]);
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\PlaceOrderAction;
+use App\Enums\OrderStatus;
 use App\Models\OrderModel;
 use App\Models\UserModel;
 use App\Services\Shipping\FakeCarrier;
@@ -30,13 +31,13 @@ class ShipmentBookingTest extends TestCase
     use RefreshDatabase;
     use ShopFixtures;
 
-    private const MOI_DAT = 0;
+    private const MOI_DAT = OrderStatus::New;
 
-    private const DA_XAC_NHAN = 1;
+    private const DA_XAC_NHAN = OrderStatus::Confirmed;
 
-    private const DA_HUY = 2;
+    private const DA_HUY = OrderStatus::Cancelled;
 
-    private const HOAN_HANG = 3;
+    private const HOAN_HANG = OrderStatus::Returned;
 
     private FakeCarrier $carrier;
 
@@ -533,7 +534,7 @@ class ShipmentBookingTest extends TestCase
     // ------------------------------------- chỉ đơn đã xác nhận mới có vận đơn
 
     /**
-     * @return array<string, array{int}>
+     * @return array<string, array{OrderStatus}>
      */
     public static function trangThaiKhongDuocTaoVanDon(): array
     {
@@ -541,7 +542,9 @@ class ShipmentBookingTest extends TestCase
             'đơn hàng mới' => [self::MOI_DAT],
             'đã hủy' => [self::DA_HUY],
             'hoàn hàng' => [self::HOAN_HANG],
-            'thành công' => [10],
+            'thành công' => [OrderStatus::Completed],
+            'đã có vận đơn' => [OrderStatus::ReadyToShip],
+            'đang giao' => [OrderStatus::Delivering],
         ];
     }
 
@@ -550,9 +553,9 @@ class ShipmentBookingTest extends TestCase
      * Letting a parcel out for one sends goods that the books say never left.
      */
     #[DataProvider('trangThaiKhongDuocTaoVanDon')]
-    public function test_don_chua_xac_nhan_thi_khong_tao_duoc_van_don(int $trangThai): void
+    public function test_don_chua_xac_nhan_thi_khong_tao_duoc_van_don(OrderStatus $trangThai): void
     {
-        $order = $this->makeOrder('giay-trang-thai-'.$trangThai);
+        $order = $this->makeOrder('giay-trang-thai-'.$trangThai->value);
         $order->update(['order_status' => $trangThai]);
 
         $this->actingAs($this->admin)

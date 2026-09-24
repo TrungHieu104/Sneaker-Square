@@ -15,6 +15,8 @@ class Kernel extends ConsoleKernel
         // $schedule->command('inspire')->hourly();
         $schedule->command('order-detele')->withoutOverlapping()->daily();
         $schedule->command('app:generate-sitemap')->daily();
+        $schedule->command('orders:auto-complete')->withoutOverlapping()->hourly();
+        $schedule->command('wallet:doi-soat')->withoutOverlapping()->dailyAt('03:00');
         $schedule->call(function() {
             \Illuminate\Support\Facades\Artisan::call('cache:clear');
             // \Illuminate\Support\Facades\Log::info('Cache cleared successfully.');

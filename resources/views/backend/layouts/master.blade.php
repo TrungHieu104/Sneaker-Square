@@ -121,7 +121,7 @@
         //Alert Notifications
         @if (session('message'))
             swal({
-                title: '{{session('message')}}',
+                title: {{ Illuminate\Support\Js::from(session('message')) }},
                 text: 'Click để hoàn tất!',
                 icon: '{{session('iconMessage')}}',
             });

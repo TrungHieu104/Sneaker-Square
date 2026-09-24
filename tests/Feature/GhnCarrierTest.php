@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Services\Shipping\GhnCarrier;
 use App\Services\Shipping\Shipment;
+use App\Services\Shipping\ShipmentOrder;
+use App\Services\Shipping\ShipmentSender;
 use App\Services\Shipping\ShippingUnavailable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -203,5 +205,83 @@ class GhnCarrierTest extends TestCase
             [['code' => '20110', 'name' => 'Phường Tân Định']],
             (new GhnCarrier)->wards(1442),
         );
+    }
+
+    private function bookAndCapture(?ShipmentSender $from): void
+    {
+        config(['services.ghn.create_orders' => true]);
+        Http::fake([
+            self::HOST.'/shiip/public-api/v2/shipping-order/create' => Http::response([
+                'code' => 200,
+                'data' => ['order_code' => 'LTEST1', 'total_fee' => 27000],
+            ]),
+        ]);
+
+        (new GhnCarrier)->book(new ShipmentOrder(
+            reference: 'DH01-TH',
+            toName: 'Sneaker Square',
+            toPhone: '0585818504',
+            toAddress: '1 Võ Văn Ngân',
+            toDistrictId: 3695,
+            toWardCode: '90742',
+            weight: 1000,
+            insuranceValue: 1_000_000,
+            codAmount: 0,
+            items: [['name' => 'Giày', 'quantity' => 1, 'weight' => 1000]],
+            from: $from,
+        ));
+    }
+
+    public function test_van_don_thuong_lay_hang_tai_kho_shop(): void
+    {
+        $this->bookAndCapture(null);
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/shipping-order/create')
+            && $request['from_district_id'] === 3695
+            && $request['from_ward_code'] === '90742');
+    }
+
+    public function test_van_don_tra_hang_lay_hang_tai_nha_khach(): void
+    {
+        $this->bookAndCapture(new ShipmentSender('Nguyễn Văn A', '0912345678', '780 Bình Giã', 1442, '20110'));
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/shipping-order/create')
+            && $request['from_name'] === 'Nguyễn Văn A'
+            && $request['from_phone'] === '0912345678'
+            && $request['from_district_id'] === 1442
+            && $request['from_ward_code'] === '20110'
+            && $request['to_district_id'] === 3695
+            && $request['cod_amount'] === 0);
+    }
+
+    public function test_ghn_tra_ve_success_nhung_tu_choi_tung_van_don_thi_van_la_loi(): void
+    {
+        Http::fake([
+            self::HOST.'/shiip/public-api/v2/switch-status/storing' => Http::response([
+                'code' => 200,
+                'message' => 'Success',
+                'data' => [['order_code' => 'L8TY76', 'result' => false, 'message' => 'Trạng thái đơn hàng không hợp lệ']],
+            ]),
+        ]);
+
+        $this->expectException(ShippingUnavailable::class);
+        $this->expectExceptionMessage('Trạng thái đơn hàng không hợp lệ');
+
+        (new GhnCarrier)->switchStatus('L8TY76', 'storing');
+    }
+
+    public function test_ghn_nhan_chuyen_trang_thai_thi_khong_bao_loi(): void
+    {
+        Http::fake([
+            self::HOST.'/shiip/public-api/v2/switch-status/cancel' => Http::response([
+                'code' => 200,
+                'data' => [['order_code' => 'L8TY76', 'result' => true, 'message' => 'Thành công']],
+            ]),
+        ]);
+
+        (new GhnCarrier)->cancel('L8TY76');
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/switch-status/cancel')
+            && $request['order_codes'] === ['L8TY76']);
     }
 }

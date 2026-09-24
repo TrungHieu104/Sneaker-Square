@@ -7,11 +7,13 @@ use App\Actions\ConfirmPaymentAction;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\OrderModel;
+use App\Models\WalletTopupModel;
 use App\Services\OrderMailer;
 use App\Services\Payment\InvalidPaymentCallbackException;
 use App\Services\Payment\PaymentCallback;
 use App\Services\Payment\PaymentGatewayManager;
 use App\Services\Payment\PaymentOutcome;
+use App\Services\Wallet\WalletTopups;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,6 +35,7 @@ class PaymentCallbackController extends Controller
         private readonly ConfirmPaymentAction $confirmPayment,
         private readonly CancelOrderAction $cancelOrder,
         private readonly OrderMailer $mailer,
+        private readonly WalletTopups $topups,
     ) {
     }
 
@@ -58,6 +61,12 @@ class PaymentCallbackController extends Controller
             return redirect()->route('failed.checkout');
         }
 
+        // A top-up has no order behind it, so none of the order checks below
+        // mean anything for one; the customer goes back to their wallet.
+        if (WalletTopupModel::looksLikeTopupCode($callback->orderCode)) {
+            return $this->backToWallet($callback);
+        }
+
         if ($callback->outcome === PaymentOutcome::Failed || $callback->outcome === PaymentOutcome::Cancelled) {
             return redirect()->route('failed.checkout');
         }
@@ -68,7 +77,7 @@ class PaymentCallbackController extends Controller
         // have an order they do not have.
         $order = OrderModel::where('order_code', $callback->orderCode)->first();
 
-        if ($order && (int) $order->order_status === OrderStatus::Cancelled->value) {
+        if ($order && $order->hasStatus(OrderStatus::Cancelled)) {
             Session::flash('iconMessage', 'error');
             Session::flash(
                 'message',
@@ -111,6 +120,12 @@ class PaymentCallbackController extends Controller
      */
     private function apply(PaymentCallback $callback): void
     {
+        if (WalletTopupModel::looksLikeTopupCode($callback->orderCode)) {
+            $this->applyTopup($callback);
+
+            return;
+        }
+
         switch ($callback->outcome) {
             case PaymentOutcome::Paid:
                 // Only the call that settled the payment gets an order back, so the
@@ -134,6 +149,31 @@ class PaymentCallbackController extends Controller
                 // keeps its stock until a later notification settles it.
                 break;
         }
+    }
+
+    /**
+     * @throws InvalidPaymentCallbackException
+     */
+    private function applyTopup(PaymentCallback $callback): void
+    {
+        match ($callback->outcome) {
+            PaymentOutcome::Paid => $this->topups->settle($callback),
+            PaymentOutcome::Cancelled, PaymentOutcome::Failed => $this->topups->markFailed($callback->orderCode),
+            // Authorised but not captured: the wallet waits for the settlement.
+            PaymentOutcome::Pending => null,
+        };
+    }
+
+    private function backToWallet(PaymentCallback $callback): RedirectResponse
+    {
+        $paid = $callback->outcome === PaymentOutcome::Paid;
+
+        Session::flash('iconMessage', $paid ? 'success' : 'error');
+
+        return redirect()->route('user.wallet')->with(
+            'message',
+            $paid ? 'Nạp tiền thành công.' : 'Nạp tiền không thành công.',
+        );
     }
 
     private function logRejection(Request $request, InvalidPaymentCallbackException $e): void

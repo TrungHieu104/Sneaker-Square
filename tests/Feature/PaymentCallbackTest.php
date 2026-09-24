@@ -151,7 +151,7 @@ class PaymentCallbackTest extends TestCase
             ->assertRedirect(route('failed.checkout'));
 
         $this->assertSame(0, (int) $order->fresh()->order_payment_status, 'Đơn hàng không được đánh dấu đã thanh toán khi thiếu chữ ký');
-        $this->assertSame(OrderStatus::New->value, (int) $order->fresh()->order_status, 'Và cũng không được đụng vào trạng thái đơn');
+        $this->assertSame(OrderStatus::New, $order->fresh()->order_status, 'Và cũng không được đụng vào trạng thái đơn');
     }
 
     public function test_callback_thanh_cong_nhung_thieu_chu_ky_bi_tu_choi(): void
@@ -209,7 +209,7 @@ class PaymentCallbackTest extends TestCase
         ]));
 
         $this->assertNotNull(OrderModel::find($order->order_id), 'Đơn hàng phải còn nguyên');
-        $this->assertSame(OrderStatus::New->value, (int) $order->fresh()->order_status);
+        $this->assertSame(OrderStatus::New, $order->fresh()->order_status);
         $this->assertSame($stockAfterOrder, $this->stockOf(ProductModel::first()), 'Tồn kho không được đụng tới');
     }
 
@@ -274,7 +274,7 @@ class PaymentCallbackTest extends TestCase
         $this->get(route('process.checkout', $this->vnpayCallback($order, '24')));
 
         $cancelled = OrderModel::find($order->order_id);
-        $this->assertSame(OrderStatus::Cancelled->value, (int) $cancelled->order_status);
+        $this->assertSame(OrderStatus::Cancelled, $cancelled->order_status);
         $this->assertSame(10, $this->stockOf(ProductModel::firstOrFail()), 'Hàng đã trả về kho khi hủy');
 
         Mail::fake();
@@ -283,7 +283,7 @@ class PaymentCallbackTest extends TestCase
         $paid = OrderModel::find($order->order_id);
 
         $this->assertSame(1, (int) $paid->order_payment_status, 'Tiền đã về thì phải ghi nhận để còn hoàn lại');
-        $this->assertSame(OrderStatus::Cancelled->value, (int) $paid->order_status, 'Đơn vẫn là đã hủy');
+        $this->assertSame(OrderStatus::Cancelled, $paid->order_status, 'Đơn vẫn là đã hủy');
         $this->assertSame(10, $this->stockOf(ProductModel::firstOrFail()), 'Không được trừ kho lần nữa');
         Mail::assertNothingQueued();
     }
@@ -315,7 +315,7 @@ class PaymentCallbackTest extends TestCase
             ->assertRedirect(route('failed.checkout'));
 
         $this->assertSame(10, $this->stockOf($product), 'Hủy thanh toán phải hoàn lại tồn kho');
-        $this->assertSame(OrderStatus::Cancelled->value, (int) $order->fresh()->order_status);
+        $this->assertSame(OrderStatus::Cancelled, $order->fresh()->order_status);
         $this->assertSame(5, (int) $coupon->fresh()->coupon_quantity, 'Lượt dùng mã giảm giá phải được trả lại');
         $this->assertSame(0, (int) $coupon->fresh()->coupon_used);
     }
@@ -344,7 +344,7 @@ class PaymentCallbackTest extends TestCase
         $this->get(route('process.checkout', $this->vnpayCallback($order, responseCode: '24')));
 
         $this->assertSame(1, (int) $order->fresh()->order_payment_status);
-        $this->assertNotSame(OrderStatus::Cancelled->value, (int) $order->fresh()->order_status);
+        $this->assertNotSame(OrderStatus::Cancelled, $order->fresh()->order_status);
     }
 
     // --------------------------------------------------------- MoMo IPN
@@ -387,7 +387,7 @@ class PaymentCallbackTest extends TestCase
         $this->actingAs($intruder)
             ->patch(route('cancelOrder', $order->order_code), ['inputCancelOrder' => 'đổi ý']);
 
-        $this->assertSame(OrderStatus::New->value, (int) $order->fresh()->order_status, 'Đơn của người khác phải giữ nguyên');
+        $this->assertSame(OrderStatus::New, $order->fresh()->order_status, 'Đơn của người khác phải giữ nguyên');
         $this->assertSame(8, $this->stockOf(ProductModel::first()));
     }
 
@@ -399,7 +399,7 @@ class PaymentCallbackTest extends TestCase
         $this->actingAs($owner)
             ->patch(route('cancelOrder', $order->order_code), ['inputCancelOrder' => 'đổi ý']);
 
-        $this->assertSame(OrderStatus::Cancelled->value, (int) $order->fresh()->order_status);
+        $this->assertSame(OrderStatus::Cancelled, $order->fresh()->order_status);
         $this->assertSame(10, $this->stockOf(ProductModel::first()));
     }
 
@@ -419,7 +419,7 @@ class PaymentCallbackTest extends TestCase
             ->assertRedirect(route('failed.checkout'));
 
         $order->refresh();
-        $this->assertSame(OrderStatus::Cancelled->value, (int) $order->order_status);
+        $this->assertSame(OrderStatus::Cancelled, $order->order_status);
         $this->assertSame(1, (int) $order->order_payment_status, 'Tiền vẫn phải được ghi nhận để còn hoàn lại');
         $this->assertStringContainsString('hoàn lại', session('message'));
     }

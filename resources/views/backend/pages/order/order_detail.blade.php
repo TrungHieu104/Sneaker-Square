@@ -6,6 +6,12 @@
 
 @section('content')
     <h4 class="fw-bold py-3 mb-3"><span class="text-muted fw-light"><a href="{{route('order.index')}}" class="tab-back">Đơn hàng / </a></span> Chi tiết đơn hàng</h4>
+    @if ($order->hasStatus(\App\Enums\OrderStatus::CancelRequested))
+        @include('backend.pages.order.partials.cancel_request_panel', ['order' => $order])
+    @endif
+    @if ($order->orderReturn)
+        @include('backend.pages.order.partials.return_panel', ['order' => $order, 'return' => $order->orderReturn])
+    @endif
     <!-- Bordered Table -->
     <form action="/admin/order/{{$order->order_id}}" method="post">
         @csrf {{method_field('PUT')}}
@@ -16,22 +22,22 @@
                         <h5 class="fs-4 text-primary my-0">Thông tin người nhận</h5>
                     </div>
                     <div class="col-lg-6 mb-3 d-flex justify-content-end gap-3">
-                        @if($order->order_status == 0)
-                            <input type="hidden" name="status" value="1">
-                            <input type="hidden" name="pay" value="{{now()}}">
+                        @if($order->hasStatus(\App\Enums\OrderStatus::New))
+                            <input type="hidden" name="action" value="confirm">
                             <button type="submit" class="btn btn-success px-5 text-white">Xác nhận</button>
-                            <a href="{{ route('order.print', ['encryptedOrderId' => encrypt($order->order_id)]) }}" class="btn btn-primary px-5 text-white" target="_blank">In hóa đơn</a>
-                        @elseif($order->order_status == 3)
-                            <input type="hidden" name="status" value="2">
+                        @elseif($order->hasStatus(\App\Enums\OrderStatus::Returned) && ! $order->orderReturn)
+                            <input type="hidden" name="action" value="refund">
                             <button type="submit" class="btn btn-danger px-5 text-white">Xác nhận hoàn tiền</button>
-                            <a href="{{ route('order.print', ['encryptedOrderId' => encrypt($order->order_id)]) }}" class="btn btn-primary px-5 text-white" target="_blank">In hóa đơn</a>
-                        @elseif($order->order_status == 1 && $order->order_delivery_status == 0)
-                            <input type="hidden" name="deli" value="1">
-                            <input type="hidden" name="status" value="1">
+                        {{-- Handing the parcel over by hand and sending it through GHN are the
+                             two ways out of the warehouse, and taking one closes the other. --}}
+                        @elseif($order->hasStatus(\App\Enums\OrderStatus::Confirmed) && ! $order->usesGhn())
+                            <input type="hidden" name="action" value="handover">
                             <button type="submit" class="btn btn-warning px-5 text-white">Bàn giao vận chuyển</button>
-                            <a href="{{ route('order.print', ['encryptedOrderId' => encrypt($order->order_id)]) }}" class="btn btn-primary px-5 text-white" target="_blank">In hóa đơn</a>
                         @else
                             <a href="{{route('order.index')}}" class="btn px-5 text-white btn-warning"><i class='bx bx-arrow-back' ></i></a>
+                        @endif
+                        @if(! $order->order_status->isFinal() || $order->hasStatus(\App\Enums\OrderStatus::Returned))
+                            <a href="{{ route('order.print', ['encryptedOrderId' => encrypt($order->order_id)]) }}" class="btn btn-primary px-5 text-white" target="_blank">In hóa đơn</a>
                         @endif
                     </div>
                 </div>
@@ -79,30 +85,11 @@
                         </label>
                         {{-- <input type="text" class="form-control" readonly value="{{$order->order_payment_status == 0 ? "Chưa thanh toán" : "Đã thanh toán ".(date('d-m-Y H:m:s', strtotime($order->order_payment_time)))}}" />--}}
                         @php
-                            $orderStatus = '';
-                            switch ($order->order_status) {
-                                case 0:
-                                    $orderStatus = 'Đơn hàng mới';
-                                    break;
-                                case 1:
-                                    if ($order->order_delivery_status == 1) {
-                                        $orderStatus = 'Vận chuyển';
-                                    } else {
-                                        $orderStatus = 'Đã xử lý';
-                                    }
-                                    break;
-                                case 2:
-                                    $orderStatus = 'Đã hủy';
-                                    break;
-                                case 3:
-                                    $orderStatus = 'Hoàn hàng';
-                                    break;
-                                case 10:
-                                    $orderStatus = 'Thành công';
-                                    break;
-                                default:
-                                    $orderStatus = 'Không xác định';
-                            }
+                            // A returning order says more when it also says how far the
+                            // customer's own request has got.
+                            $orderStatus = $order->orderReturn
+                                ? $order->order_status->label().' · trả hàng: '.$order->orderReturn->statusLabel()
+                                : $order->order_status->label();
                         @endphp
                         <input type="text" class="form-control" readonly value="{{ $orderStatus }}" />
                     </div>
@@ -277,6 +264,10 @@
     @if ($order->isConfirmed())
         <form id="form-ma-van-don" action="{{ route('order.shipping_code', $order->order_id) }}" method="POST">
             @csrf {{ method_field('PATCH') }}
+        </form>
+
+        <form id="form-huy-ban-giao" action="{{ route('order.undo_handover', $order->order_id) }}" method="POST">
+            @csrf
         </form>
 
         @if (! $order->order_shipping_code && $batTaoVanDon)

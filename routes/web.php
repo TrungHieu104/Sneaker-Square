@@ -12,6 +12,10 @@ use App\Http\Controllers\Backend\MenusAdminController;
 use App\Http\Controllers\Backend\FaqAdminController;
 use App\Http\Controllers\Backend\ProductCateController;
 use App\Http\Controllers\Backend\OrderAdminController;
+use App\Http\Controllers\Backend\ShopSettingController;
+use App\Http\Controllers\Backend\ReturnAdminController;
+use App\Http\Controllers\Backend\GhnSimulatorController;
+use App\Http\Controllers\Backend\WalletAdminController;
 use App\Http\Controllers\Backend\CouponAdminController;
 use App\Http\Controllers\Backend\CateSlideAdminController;
 use App\Http\Controllers\Backend\PromotionAdminController;
@@ -33,6 +37,7 @@ use App\Http\Controllers\Frontend\WishListController;
 use App\Http\Controllers\Frontend\DeliveryInfoController;
 use App\Http\Controllers\Frontend\SearchController;
 use App\Http\Controllers\Frontend\PaymentCallbackController;
+use App\Http\Controllers\Frontend\WalletController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -166,6 +171,9 @@ Route::group(['middleware' => 'web'], function () {
         Route::get('thong-tin-don-hang',[UserController::class ,'userOrder'])->name('user.order');
         Route::post('da-nhan-hang',[UserController::class ,'successOrder'])->name('success.order');
         Route::patch('/yeu-cau-tra-hang/{order_code}',[UserController::class ,'returnOrder'])->name('return.order');
+        Route::get('vi-cua-toi', [WalletController::class, 'index'])->name('user.wallet');
+        Route::post('vi-cua-toi/nap-tien', [WalletController::class, 'topup'])->name('wallet.topup');
+        Route::post('vi-cua-toi/rut-tien', [WalletController::class, 'withdraw'])->name('wallet.withdraw');
     });
 
     // Login Google
@@ -367,9 +375,33 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     Route::patch('/order/{order_id}/ma-van-don', [OrderAdminController::class, 'updateShippingCode'])->name('order.shipping_code')->middleware('permission:Quản trị Đơn hàng');
     Route::post('/order/{order_id}/tao-van-don', [OrderAdminController::class, 'bookShipment'])->name('order.book_shipment')->middleware('permission:Quản trị Đơn hàng');
     Route::post('/order/{order_id}/huy-van-don', [OrderAdminController::class, 'cancelShipment'])->name('order.cancel_shipment')->middleware('permission:Quản trị Đơn hàng');
+    Route::post('/order/{order_id}/huy-ban-giao', [OrderAdminController::class, 'undoHandover'])->name('order.undo_handover')->middleware('permission:Quản trị Đơn hàng');
+    Route::post('/order/{order_id}/duyet-huy', [OrderAdminController::class, 'approveCancel'])->name('order.approve_cancel')->middleware('permission:Quản trị Đơn hàng');
+    Route::post('/order/{order_id}/tu-choi-huy', [OrderAdminController::class, 'rejectCancel'])->name('order.reject_cancel')->middleware('permission:Quản trị Đơn hàng');
     // Server-sent events: the page is written to when GHN's callback lands, so
     // nothing on the client polls.
     Route::get('/order/{order_id}/hanh-trinh-stream', [OrderAdminController::class, 'shipmentStream'])->name('order.shipment_stream')->middleware('permission:Quản trị Đơn hàng');
+    Route::middleware('permission:Quản trị Đơn hàng')->prefix('/order/{order_id}/tra-hang')->name('returns.')->group(function () {
+        Route::post('/duyet', [ReturnAdminController::class, 'approve'])->name('approve');
+        Route::post('/tu-choi', [ReturnAdminController::class, 'reject'])->name('reject');
+        Route::post('/tao-van-don', [ReturnAdminController::class, 'book'])->name('book');
+        Route::patch('/ma-van-don', [ReturnAdminController::class, 'shippingCode'])->name('shipping_code');
+        Route::post('/da-nhan', [ReturnAdminController::class, 'receive'])->name('receive');
+        Route::post('/hoan-tien', [ReturnAdminController::class, 'refund'])->name('refund');
+    });
+    Route::middleware('permission:Quản trị Đơn hàng')->prefix('/vi-khach-hang')->name('wallet_admin.')->group(function () {
+        Route::get('/', [WalletAdminController::class, 'index'])->name('index');
+        Route::post('/rut-tien/{withdrawal_id}/da-chuyen', [WalletAdminController::class, 'markPaid'])->name('withdrawal_paid');
+        Route::post('/rut-tien/{withdrawal_id}/tu-choi', [WalletAdminController::class, 'reject'])->name('withdrawal_reject');
+    });
+    Route::middleware('permission:Quản trị Đơn hàng')->prefix('/gia-lap-ghn')->name('ghn_simulator.')->group(function () {
+        Route::get('/', [GhnSimulatorController::class, 'index'])->name('index');
+        Route::post('/', [GhnSimulatorController::class, 'send'])->name('send');
+        Route::post('/goi-that', [GhnSimulatorController::class, 'real'])->name('real');
+        Route::post('/tu-hoan-thanh', [GhnSimulatorController::class, 'autoComplete'])->name('auto_complete');
+    });
+    Route::get('/cau-hinh', [ShopSettingController::class, 'edit'])->name('setting.edit')->middleware('permission:Quản trị Đơn hàng');
+    Route::put('/cau-hinh', [ShopSettingController::class, 'update'])->name('setting.update')->middleware('permission:Quản trị Đơn hàng');
 
     // Hình ảnh Slide
     Route::resource('promotion', (PromotionAdminController::class))->middleware('permission:Quản trị Slide');

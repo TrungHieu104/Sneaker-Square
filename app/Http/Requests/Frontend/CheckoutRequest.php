@@ -26,7 +26,7 @@ class CheckoutRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment' => ['required', 'string', 'in:cod,redirect,payUrl'],
+            'payment' => ['required', 'string', 'in:cod,redirect,payUrl,wallet'],
             'note_customer' => ['nullable', 'string', 'max:1000'],
         ];
     }

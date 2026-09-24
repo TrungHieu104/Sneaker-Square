@@ -127,15 +127,12 @@
                             <b>Số điện thoại:</b> <span>{{ $order_phone }}</span><br>
                             <b>Địa chỉ giao hàng:</b> <span>{{ $order_address }}, {{ $order_local }}</span><br>
                             <b>Phương thức thanh toán:</b> <span>
-                                @if ($order_payment == 'cod')
-                                    Thanh toán khi nhận hàng
-                                @else
-                                    @if ($order_payment == 'payUrl')
-                                        Thanh toán qua MoMo
-                                    @else
-                                        Thanh toán qua VNPay
-                                    @endif
-                                @endif
+                                @switch($order_payment)
+                                    @case('cod') Thanh toán khi nhận hàng @break
+                                    @case('payUrl') Thanh toán qua MoMo @break
+                                    @case('wallet') Thanh toán bằng ví Sneaker Square @break
+                                    @default Thanh toán qua VNPay
+                                @endswitch
                                 {{-- {{ $order_payment }} --}}
                             </span>
                             @if ($order_payment_status == 1)

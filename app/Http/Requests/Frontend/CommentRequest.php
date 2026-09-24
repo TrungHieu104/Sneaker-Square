@@ -32,7 +32,7 @@ class CommentRequest extends FormRequest
             ->join('order_details', 'order.order_id', '=', 'order_details.order_id')
             ->where('order.user_id', Auth::id())
             ->where('order_details.pro_id', $this->route('pro_id'))
-            ->where('order.order_status', OrderStatus::Completed->value)
+            ->where('order.order_status', OrderStatus::Completed)
             ->exists();
     }
 

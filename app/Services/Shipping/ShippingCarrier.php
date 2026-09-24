@@ -45,4 +45,12 @@ interface ShippingCarrier
      * @throws ShippingUnavailable
      */
     public function cancel(string $code): void;
+
+    /**
+     * Moves a parcel the carrier still holds to another status. Carriers only
+     * grant a shop a handful of these; the rest belong to their own staff.
+     *
+     * @throws ShippingUnavailable
+     */
+    public function switchStatus(string $code, string $status): void;
 }

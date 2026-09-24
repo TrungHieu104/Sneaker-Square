@@ -298,7 +298,7 @@ class VariantPricingDebtTest extends TestCase
     }
 
     /**
-     * Marking an order delivered records what it actually sold for.
+     * Completing an order records what it actually sold for.
      */
     public function test_thong_ke_ghi_doanh_thu_theo_gia_da_ban(): void
     {
@@ -318,13 +318,11 @@ class VariantPricingDebtTest extends TestCase
         $product->update(['pro_price' => 999_000, 'capital_price' => 1_000]);
 
         $admin = $this->makeStockAdmin();
-        $this->actingAs($admin)->put(route('order.update', $order->order_id), [
-            'note' => '',
-            'status' => 1,
-            'deli' => 1,
-            'order_product_id' => [$product->pro_id],
-            'cou_val' => 0,
-        ]);
+        $this->actingAs($admin)->put(route('order.update', $order->order_id), ['note' => '', 'action' => 'confirm']);
+        $this->actingAs($admin)->put(route('order.update', $order->order_id), ['note' => '', 'action' => 'handover']);
+
+        // Revenue is booked when the customer has the goods, not at handover.
+        $this->actingAs($user)->post(route('success.order'), ['order_code' => $order->order_code]);
 
         $statistic = DB::table('statistical')->first();
 

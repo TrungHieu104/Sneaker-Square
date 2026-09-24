@@ -2,12 +2,16 @@
 
 namespace App\Services;
 
+use App\Enums\OrderStatus;
 use App\Models\DeliveryInfoModel;
 use App\Models\OrderModel;
+use App\Models\OrderReturnModel;
+use App\Models\OrderStatusLogModel;
 use App\Services\Shipping\Shipment;
 use App\Services\Shipping\ShipmentBooking;
 use App\Services\Shipping\ShipmentPulse;
 use App\Services\Shipping\ShipmentOrder;
+use App\Services\Shipping\ShipmentSender;
 use App\Services\Shipping\ShippingCarrier;
 use App\Services\Shipping\ShippingQuote;
 use App\Services\Shipping\ShippingUnavailable;
@@ -149,7 +153,7 @@ class ShippingService
             $order->order_expected_delivery = $booking->estimated->toDateString();
         }
 
-        $order->save();
+        $order->moveTo(OrderStatus::ReadyToShip, OrderStatusLogModel::ACTOR_ADMIN, 'Tạo vận đơn '.$booking->code);
         $this->pulse->mark((int) $order->order_id);
 
         return $booking;
@@ -184,8 +188,65 @@ class ShippingService
         $order->order_shipping_code = null;
         $order->order_expected_delivery = null;
         $order->order_shipping_status = 'cancel';
-        $order->save();
+        $order->order_delivery_status = 0;
+        $order->moveTo(OrderStatus::Confirmed, OrderStatusLogModel::ACTOR_ADMIN, 'Huỷ vận đơn');
         $this->pulse->mark((int) $order->order_id);
+    }
+
+    /**
+     * Books the parcel that brings a returned order back: picked up at the
+     * customer's address, delivered to the shop's. The shop pays the fee and
+     * nothing is collected, so a refund is never netted against postage.
+     *
+     * @throws ShippingUnavailable
+     */
+    public function bookReturn(OrderReturnModel $return): ShipmentBooking
+    {
+        if ($return->status !== OrderReturnModel::APPROVED) {
+            throw new ShippingUnavailable('Chỉ yêu cầu trả hàng đã duyệt mới tạo được vận đơn trả hàng.');
+        }
+
+        if ($return->return_shipping_code) {
+            throw new ShippingUnavailable('Yêu cầu trả hàng này đã có vận đơn '.$return->return_shipping_code.'.');
+        }
+
+        $order = $return->order;
+
+        if (! $order->order_district_id || ! $order->order_ward_code) {
+            throw new ShippingUnavailable('Đơn hàng thiếu mã quận/huyện hoặc phường/xã của khách.');
+        }
+
+        $booking = $this->carrier->book(new ShipmentOrder(
+            reference: $return->reference(),
+            toName: (string) config('services.ghn.from_name'),
+            toPhone: (string) config('services.ghn.from_phone'),
+            toAddress: (string) config('services.ghn.from_address'),
+            toDistrictId: (int) config('services.ghn.from_district_id'),
+            toWardCode: (string) config('services.ghn.from_ward_code'),
+            weight: $this->weightOfOrder($order),
+            insuranceValue: $this->goodsValueOf($order),
+            codAmount: 0,
+            items: $order->orderDetail->map(fn ($line) => [
+                'name' => (string) $line->pro_name,
+                'quantity' => (int) $line->quantity,
+                'weight' => (int) ($line->product->pro_weight ?? self::MINIMUM_WEIGHT),
+            ])->all(),
+            note: 'Hàng trả lại của đơn '.$order->order_code,
+            from: new ShipmentSender(
+                name: (string) $order->order_name,
+                phone: (string) $order->order_phone,
+                address: trim($order->order_address.', '.$order->order_local, ', '),
+                districtId: (int) $order->order_district_id,
+                wardCode: (string) $order->order_ward_code,
+            ),
+        ));
+
+        $return->return_shipping_code = $booking->code;
+        $return->return_shipping_status = null;
+        $return->save();
+        $this->pulse->mark((int) $order->order_id);
+
+        return $booking;
     }
 
     public function weightOfOrder(OrderModel $order): int

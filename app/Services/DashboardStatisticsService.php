@@ -53,7 +53,7 @@ class DashboardStatisticsService
     public function newOrderCount(): int
     {
         return OrderModel::confirmedSale()
-            ->where('order_status', OrderStatus::New->value)
+            ->where('order_status', OrderStatus::New)
             ->count();
     }
 
@@ -97,15 +97,12 @@ class DashboardStatisticsService
             'orderFail' => OrderModel::where('order_status', OrderStatus::Cancelled->value)
                 ->whereMonth('order_date', $month)
                 ->count(),
+            // Still the shop's problem: not packed, or packed and waiting for
+            // the courier.
             'orderWaitDelivery' => OrderModel::whereMonth('order_date', $month)
-                ->where('order_status', OrderStatus::New->value)
-                ->orWhere('order_status', OrderStatus::Confirmed->value)
-                ->where('order_delivery_status', 0)
-                ->where('order_status', '!=', OrderStatus::Cancelled->value)
+                ->whereIn('order_status', [OrderStatus::New, OrderStatus::Confirmed, OrderStatus::ReadyToShip])
                 ->count(),
-            'orderDelivering' => OrderModel::where('order_status', OrderStatus::Confirmed->value)
-                ->where('order_delivery_status', 1)
-                ->where('order_status', '!=', OrderStatus::Cancelled->value)
+            'orderDelivering' => OrderModel::whereIn('order_status', [OrderStatus::Delivering, OrderStatus::Delivered])
                 ->whereMonth('order_date', $month)
                 ->count(),
             'orderDelivered' => OrderModel::where('order_status', OrderStatus::Completed->value)

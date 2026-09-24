@@ -33,7 +33,7 @@ class DashboardStatisticsTest extends TestCase
         $this->customer = $this->makeUser();
     }
 
-    private function makeOrder(string $payment, int $paymentStatus, int $status = OrderStatus::New->value): OrderModel
+    private function makeOrder(string $payment, int $paymentStatus, OrderStatus $status = OrderStatus::New): OrderModel
     {
         return OrderModel::create([
             'order_code' => 'DH' . random_int(1000000, 9999999),
@@ -89,8 +89,8 @@ class DashboardStatisticsTest extends TestCase
 
     public function test_don_da_xu_ly_khong_con_nam_trong_don_moi(): void
     {
-        $this->makeOrder('cod', 0, OrderStatus::Confirmed->value);
-        $this->makeOrder('cod', 0, OrderStatus::New->value);
+        $this->makeOrder('cod', 0, OrderStatus::Confirmed);
+        $this->makeOrder('cod', 0, OrderStatus::New);
 
         $this->assertSame(1, $this->stats()->newOrderCount(), 'Chỉ đếm đơn đang ở trạng thái mới');
         $this->assertSame(2, $this->stats()->totals()['totalOrder'], 'Nhưng tổng số đơn thì tính cả hai');
@@ -109,8 +109,8 @@ class DashboardStatisticsTest extends TestCase
 
     public function test_thong_ke_thang_phan_loai_dung_trang_thai(): void
     {
-        $this->makeOrder('cod', 0, OrderStatus::Cancelled->value);
-        $this->makeOrder('cod', 1, OrderStatus::Completed->value);
+        $this->makeOrder('cod', 0, OrderStatus::Cancelled);
+        $this->makeOrder('cod', 1, OrderStatus::Completed);
 
         $summary = $this->stats()->ordersThisMonth();
 

@@ -2,8 +2,6 @@
 
 namespace App\Services\Payment;
 
-use App\Models\OrderModel;
-
 interface PaymentGateway
 {
     /**
@@ -21,7 +19,7 @@ interface PaymentGateway
     /**
      * Builds the URL the customer is sent to in order to pay.
      */
-    public function checkoutUrl(OrderModel $order): string;
+    public function checkoutUrl(GatewayCharge $charge): string;
 
     /**
      * Verifies a callback's signature and translates it into our own vocabulary.

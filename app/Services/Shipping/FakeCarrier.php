@@ -85,8 +85,16 @@ class FakeCarrier implements ShippingCarrier
         );
     }
 
+    /** @var array<int, array{code: string, status: string}> */
+    public array $switched = [];
+
     public function cancel(string $code): void
     {
         $this->cancelled[] = $code;
+    }
+
+    public function switchStatus(string $code, string $status): void
+    {
+        $this->switched[] = ['code' => $code, 'status' => $status];
     }
 }

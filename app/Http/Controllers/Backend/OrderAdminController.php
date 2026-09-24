@@ -7,8 +7,13 @@ use App\Http\Requests\Backend\ShippingCodeRequest;
 use App\Services\Shipping\ShipmentPulse;
 use App\Services\Shipping\ShippingUnavailable;
 use App\Services\ShippingService;
+use App\Services\OrderRevenue;
+use App\Actions\CancelOrderAction;
+use App\Enums\OrderStatus;
+use Illuminate\Support\Facades\DB;
 use App\Models\OrderDetailModel;
 use App\Models\OrderModel;
+use App\Models\OrderStatusLogModel;
 use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\Request;
@@ -37,7 +42,7 @@ class OrderAdminController extends Controller
     }
     public function checkForNewOrders()
     {
-        $newOrdersCount = OrderModel::where('order_status', 0)
+        $newOrdersCount = OrderModel::where('order_status', OrderStatus::New)
             ->where('created_at', '>=', now()->subDay()) // Orders created in the last 24 hours
             ->count();
 
@@ -60,14 +65,7 @@ class OrderAdminController extends Controller
         $searchableFields = ['order_name','order_code','order_date'];
         
         $sortOption = $request->input('sort', 'default');
-        $query = OrderModel::orderBy($orderBy, $orderType)->where(function ($query) {
-            $query->where('order_payment', 'cod')
-                    ->where('order_payment_status', 0)
-                    ->orWhere(function ($query) {
-                        $query->whereIn('order_payment', ['payUrl', 'redirect'])
-                            ->where('order_payment_status', 1);
-            });
-        });
+        $query = OrderModel::orderBy($orderBy, $orderType)->confirmedSale();
 
         $thismonth = Carbon::now('Asia/Ho_Chi_minh')->startOfMonth()->toDateString();
         $start_month = Carbon::now('Asia/Ho_Chi_minh')->subMonth()->startOfMonth()->toDateString();
@@ -109,32 +107,36 @@ class OrderAdminController extends Controller
         $order = $query->paginate($perpage, ['*'], 'order_page')->withQueryString();   
         
         $orderNew = clone $query;  
-        $orderNew = $orderNew->where('order_status', 0)
+        $orderNew = $orderNew->where('order_status', OrderStatus::New)
             ->paginate($perpage, ['*'], 'order_new_page')->withQueryString();
 
+        // Waiting on the shop: confirmed but still on the shelf, or packed and
+        // waiting for the courier.
         $orderConfirm = clone $query;
-        $orderConfirm = $orderConfirm->where('order_status', 1)
-            ->where('order_delivery_status', 0)
+        $orderConfirm = $orderConfirm->whereIn('order_status', [OrderStatus::Confirmed, OrderStatus::ReadyToShip])
             ->paginate($perpage, ['*'], 'order_confirm')->withQueryString();
 
         $orderDeli = clone $query;
-        $orderDeli = $orderDeli->where('order_status', 1)
-            ->where('order_delivery_status', 1)
+        $orderDeli = $orderDeli->whereIn('order_status', [OrderStatus::Delivering, OrderStatus::Delivered])
             ->paginate($perpage, ['*'], 'order_new_page')->withQueryString();
-        
+
+        $orderCancelRequest = clone $query;
+        $orderCancelRequest = $orderCancelRequest->where('order_status', OrderStatus::CancelRequested)
+            ->paginate($perpage, ['*'], 'order_cancel_request')->withQueryString();
+
         $orderCancel = clone $query;
-        $orderCancel = $orderCancel->where('order_status', 2)
+        $orderCancel = $orderCancel->where('order_status', OrderStatus::Cancelled)
             ->paginate($perpage, ['*'], 'order_confirm')->withQueryString();
 
         $orderReturn = clone $query;
-        $orderReturn = $orderReturn->where('order_status', 3)
+        $orderReturn = $orderReturn->whereIn('order_status', OrderStatus::comingBack())
             ->paginate($perpage, ['*'], 'order_confirm')->withQueryString();
 
         $orderSuccess = clone $query;
-        $orderSuccess = $orderSuccess->where('order_status', 10)
+        $orderSuccess = $orderSuccess->where('order_status', OrderStatus::Completed)
             ->paginate($perpage, ['*'], 'order_confirm')->withQueryString();
                 
-        return view('backend.pages.order.order_list', compact('order', 'orderBy', 'orderType','keyword','orderNew','orderConfirm','orderCancel','orderDeli','orderSuccess','orderReturn'));
+        return view('backend.pages.order.order_list', compact('order', 'orderBy', 'orderType','keyword','orderNew','orderConfirm','orderCancel','orderCancelRequest','orderDeli','orderSuccess','orderReturn'));
     }
 
     public function printOrder(Request $request,$encryptedOrderId){
@@ -221,6 +223,51 @@ class OrderAdminController extends Controller
      * cancelled one has already put its stock back and released its coupon,
      * and a returned one is travelling the other way.
      */
+    /**
+     * Takes back the manual handover mark, which is all "bàn giao vận chuyển"
+     * ever wrote. It corrects a mis-click rather than reversing a step: the
+     * order goes back to having neither carrier chosen, the same place
+     * cancelling a GHN parcel leaves it.
+     */
+    public function undoHandover(string $order_id)
+    {
+        $order = OrderModel::find($order_id);
+
+        if ($order == null) {
+            Session::flash('iconMessage', 'info');
+
+            return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
+        }
+
+        if (! $order->hasStatus(OrderStatus::Delivering) || ! $order->isHandedOverManually()) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', 'Chỉ đơn đang giao thủ công và khách chưa xác nhận mới huỷ bàn giao được!');
+        }
+
+        $order->order_delivery_status = 0;
+        $order->moveTo(OrderStatus::Confirmed, OrderStatusLogModel::ACTOR_ADMIN, 'Huỷ bàn giao thủ công');
+
+        Session::flash('iconMessage', 'success');
+
+        return back()->with('message', 'Đã huỷ bàn giao. Chọn lại cách giao cho đơn này.');
+    }
+
+    /**
+     * The two ways out of the warehouse exclude each other, and hiding the
+     * buttons is not enough: whichever was chosen first has to hold.
+     */
+    private function refuseIfHandedOverManually(OrderModel $order): ?RedirectResponse
+    {
+        if (! $order->isHandedOverManually()) {
+            return null;
+        }
+
+        Session::flash('iconMessage', 'error');
+
+        return back()->with('message', 'Đơn này đã bàn giao cho đơn vị vận chuyển của shop, không dùng vận đơn GHN được!');
+    }
+
     private function refuseUnlessConfirmed(OrderModel $order): ?RedirectResponse
     {
         if ($order->isConfirmed()) {
@@ -242,7 +289,7 @@ class OrderAdminController extends Controller
             return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
         }
 
-        if ($refusal = $this->refuseUnlessConfirmed($order)) {
+        if ($refusal = $this->refuseIfHandedOverManually($order) ?? $this->refuseUnlessConfirmed($order)) {
             return $refusal;
         }
 
@@ -298,7 +345,7 @@ class OrderAdminController extends Controller
             return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
         }
 
-        if ($refusal = $this->refuseUnlessConfirmed($order)) {
+        if ($refusal = $this->refuseIfHandedOverManually($order) ?? $this->refuseUnlessConfirmed($order)) {
             return $refusal;
         }
 
@@ -402,98 +449,158 @@ class OrderAdminController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $order_id)
+    /**
+     * The one form on the order page, which carries the admin's note and at
+     * most one decision. The decision is named rather than being a status
+     * number posted from the browser: the page no longer gets to say what the
+     * order becomes, only which button was pressed.
+     */
+    public function update(Request $request, string $order_id, OrderRevenue $revenue)
     {
-        $arr = $request->post();
-        $note = ($request->has('note'))? $arr['note']:"";
-        $status = ($request->has('status'))? (int)$arr['status']:"0";
-        $deli = ($request->has('deli'))? (int)$arr['deli']:"0";
-        $order_product_id = ($request->has('order_product_id')) ? (array)$arr['order_product_id']:"0";
         $order = OrderModel::find($order_id);
-        if ($order ==null) {
-            $request->session();
+
+        if ($order == null) {
             Session::flash('iconMessage', 'info');
+
             return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
         }
-        if ($request->has('status')) {
-            if ($order->order_status == 0) {
-                $order->order_payment_time = now();
-            }
-        }
-        $order->note_admin = $note;
-        $order->order_status = $status;
-        $order->order_delivery_status = $deli;
-        $order->save();
-        $order_date = Carbon::parse($order->order_date)->format('Y-m-d');
-        $statistic = StatisticModel::where('order_date',$order_date)->get();
-        if($statistic){
-            $statistic_count = $statistic->count();
-        } else {
-            $statistic_count = 0;
-        }
-        if($order->order_status==1 && $order->order_delivery_status== 1){
-            $salesplus = 0;
-            $profitplus = 0;
-            $orderTotal = 0;
-            $order_product_id = $request->input('order_product_id', []);
-            $cou_val = $request->input('cou_val');
-            // dd($cou_val);
-            foreach ($this->soldLines($order, $order_product_id) as $line) {
-                $salesplus += (int) $line->price * (int) $line->quantity;
-                $profitplus += ((int) $line->price - (int) $line->capital_price) * (int) $line->quantity;
-                $orderTotal++;
-            }
 
-            $profit = max(0, $profitplus - $cou_val);
-            $sales = $salesplus - $cou_val;
-            
-            if($statistic_count>0){
-                $statistic_update = StatisticModel::where('order_date',$order_date)->first();
-                $statistic_update->sales = $statistic_update->sales + $sales;
-                $statistic_update->profit = $statistic_update->profit + $profit;
-                $statistic_update->order_total = $statistic_update->order_total + $orderTotal;
-                $statistic_update->save();
-            }else{
-                $statistic_new = new StatisticModel();
-                $statistic_new->order_date = $order_date;
-                $statistic_new->sales = $sales;
-                $statistic_new->profit = $profit;
-                $statistic_new->order_total = $orderTotal;
-                $statistic_new->save();
-            }
-        }
-        elseif($order->order_status==2){
-            $salesplus = 0;
-            $profitplus = 0;
-            $orderTotal = 0;
-            $order_product_id = $request->input('order_product_id', []);
-            $cou_val = $request->input('cou_val');
-            foreach ($this->soldLines($order, $order_product_id) as $line) {
-                $salesplus -= (int) $line->price * (int) $line->quantity;
-                $profitplus -= ((int) $line->price - (int) $line->capital_price) * (int) $line->quantity;
-                $orderTotal--;
-            }
+        $order->note_admin = (string) $request->input('note', '');
 
-            $profit = min(0, $profitplus + $cou_val);
-            $sales = $salesplus + $cou_val;
-            
-            if($statistic_count>0){
-                $statistic_update = StatisticModel::where('order_date',$order_date)->first();
-                $statistic_update->sales = $statistic_update->sales + $sales;
-                $statistic_update->profit = $statistic_update->profit + $profit;
-                $statistic_update->order_total = $statistic_update->order_total + $orderTotal;
-                $statistic_update->save();
-            }else{
-                $statistic_new = new StatisticModel();
-                $statistic_new->order_date = $order_date;
-                $statistic_new->sales = $sales;
-                $statistic_new->profit = $profit;
-                $statistic_new->order_total = $orderTotal;
-                $statistic_new->save();
-            }
+        $refusal = match ((string) $request->input('action', '')) {
+            'confirm' => $this->confirmOrder($order),
+            'handover' => $this->handOverManually($order),
+            'refund' => $this->confirmRefund($order, $revenue),
+            default => $this->saveNoteOnly($order),
+        };
+
+        if ($refusal) {
+            return $refusal;
         }
+
         Session::flash('iconMessage', 'success');
+
         return redirect('admin/order')->with('message', 'Cảm ơn bạn đã xác nhận');
+    }
+
+    private function saveNoteOnly(OrderModel $order): ?RedirectResponse
+    {
+        $order->save();
+
+        return null;
+    }
+
+    private function confirmOrder(OrderModel $order): ?RedirectResponse
+    {
+        if (! $order->hasStatus(OrderStatus::New)) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', 'Chỉ đơn hàng mới mới cần xác nhận!');
+        }
+
+        $order->order_payment_time = now();
+        $order->moveTo(OrderStatus::Confirmed, OrderStatusLogModel::ACTOR_ADMIN, 'Xác nhận đơn hàng');
+
+        return null;
+    }
+
+    private function handOverManually(OrderModel $order): ?RedirectResponse
+    {
+        if ($order->usesGhn()) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', 'Đơn này đang đi qua GHN, không bàn giao thủ công được!');
+        }
+
+        if (! $order->hasStatus(OrderStatus::Confirmed)) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', 'Chỉ đơn đã xác nhận và còn ở kho mới bàn giao được!');
+        }
+
+        $order->order_delivery_status = 1;
+        $order->moveTo(OrderStatus::Delivering, OrderStatusLogModel::ACTOR_ADMIN, 'Bàn giao cho đơn vị vận chuyển của shop');
+
+        return null;
+    }
+
+    /**
+     * The shop has sent the money back for a parcel that came home. Revenue is
+     * booked when the customer has the goods, so this is the one place here
+     * that takes it back out.
+     */
+    private function confirmRefund(OrderModel $order, OrderRevenue $revenue): ?RedirectResponse
+    {
+        if (! $order->hasStatus(OrderStatus::Returned) || $order->orderReturn) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', 'Đơn này không ở trạng thái chờ hoàn tiền!');
+        }
+
+        $order->order_refund_required = false;
+        $order->moveTo(OrderStatus::Cancelled, OrderStatusLogModel::ACTOR_ADMIN, 'Xác nhận đã hoàn tiền cho khách');
+
+        DB::transaction(function () use ($order, $revenue) {
+            $revenue->reverse(OrderModel::where('order_id', $order->order_id)->lockForUpdate()->first());
+        });
+
+        return null;
+    }
+
+    /**
+     * The customer asked the shop to call the order off. Approving it runs the
+     * same cancellation as any other, plus releasing the parcel if one was
+     * already booked.
+     */
+    public function approveCancel(string $order_id, CancelOrderAction $cancel, ShippingService $shipping)
+    {
+        $order = OrderModel::find($order_id);
+
+        if ($order == null || ! $order->hasStatus(OrderStatus::CancelRequested)) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', 'Đơn này không có yêu cầu huỷ đang chờ!');
+        }
+
+        if ($order->order_shipping_code) {
+            try {
+                $shipping->cancelBooking($order);
+            } catch (ShippingUnavailable $e) {
+                Session::flash('iconMessage', 'error');
+
+                return back()->with('message', 'Không huỷ được vận đơn GHN: '.$e->getMessage());
+            }
+        }
+
+        $cancel->execute($order->fresh(), allowPaid: true, actor: OrderStatusLogModel::ACTOR_ADMIN, note: 'Duyệt yêu cầu huỷ của khách');
+
+        Session::flash('iconMessage', 'success');
+
+        return back()->with('message', 'Đã duyệt huỷ đơn.');
+    }
+
+    public function rejectCancel(Request $request, string $order_id)
+    {
+        $order = OrderModel::find($order_id);
+
+        if ($order == null || ! $order->hasStatus(OrderStatus::CancelRequested)) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', 'Đơn này không có yêu cầu huỷ đang chờ!');
+        }
+
+        $reason = trim((string) $request->validate([
+            'cancel_reject_reason' => ['required', 'string', 'max:255'],
+        ], [
+            'cancel_reject_reason.required' => 'Nhập lý do từ chối để khách biết.',
+        ])['cancel_reject_reason']);
+
+        $order->order_cancel_reason = $reason;
+        $order->moveTo($order->statusBeforeCancelRequest(), OrderStatusLogModel::ACTOR_ADMIN, 'Từ chối yêu cầu huỷ: '.$reason);
+
+        Session::flash('iconMessage', 'success');
+
+        return back()->with('message', 'Đã từ chối yêu cầu huỷ.');
     }
 
     /**
@@ -563,22 +670,6 @@ class OrderAdminController extends Controller
 
     public function exportorder_scv(){
         return Excel::download(new ExportOrder() , 'Đơn hàng.xlsx');
-    }
-
-    /**
-     * The lines of this order, priced as they were sold.
-     *
-     * Never recompute revenue or profit from the product's current price: that is
-     * neither what the customer paid nor what the variant cost.
-     *
-     * @param  array<int, mixed>  $productIds  the products the form submitted, if any
-     * @return \Illuminate\Support\Collection<int, OrderDetailModel>
-     */
-    private function soldLines($order, array $productIds)
-    {
-        return OrderDetailModel::where('order_id', $order->order_id)
-            ->when($productIds !== [], fn ($lines) => $lines->whereIn('pro_id', $productIds))
-            ->get();
     }
 
 }

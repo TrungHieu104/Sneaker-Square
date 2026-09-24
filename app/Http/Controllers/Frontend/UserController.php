@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers\Frontend;
 
+use App\Actions\CompleteOrderAction;
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Frontend\ReturnOrderRequest;
+use App\Services\Returns\OrderReturns;
+use App\Services\Returns\ReturnNotAllowed;
 use App\Http\Requests\Frontend\Authuser\ResetpassRequets;
 use App\Http\Requests\Frontend\Authuser\ChangeEmailRequest;
 use App\Http\Requests\Frontend\Authuser\UserInfoRequest;
@@ -90,25 +95,43 @@ class UserController extends Controller
         return view('frontend.pages.account.user_info.pages.delivery', compact('delivery'));
     }
 
-    public function successOrder(Request $request)
+    public function successOrder(Request $request, CompleteOrderAction $complete)
     {
-        $order_code = $request['order_code'];
-        $order_db = Order::where('order_code', $order_code)->first();
-        $order_db->order_status = 10;
-        $order_db->save();
+        // Scoped to the signed-in customer: an order code is printed on the
+        // invoice and is not a secret.
+        $order_db = Order::where('order_code', (string) $request->input('order_code'))
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        if (! $complete->execute($order_db)) {
+            Session::flash('iconMessage', 'error');
+            return back()->with('message', 'Đơn hàng chưa thể xác nhận đã nhận hàng.');
+        }
+
         Session::flash('iconMessage', 'success');
-        return back()->with('message', 'Cám ơn bạn !');
+        return back()->with('message', 'Cám ơn bạn đã xác nhận đã nhận hàng!');
     }
 
-    public function returnOrder(Request $request)
+    public function returnOrder(ReturnOrderRequest $request, string $order_code, OrderReturns $returns)
     {
-        $order_code = $request['order_code'];
-        $order_db = Order::where('order_code', $order_code)->first();
-        $order_db->order_status = 3;
-        $order_db->note_customer = 'Lí do trả hàng: ' . $request->inputReturnOrder;
-        $order_db->save();
+        $order_db = Order::where('order_code', $order_code)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        try {
+            $returns->request(
+                $order_db,
+                $request->safe()->only(['reason', 'description', 'refund_info']),
+                $request->input('items', []),
+                $request->file('images', []),
+            );
+        } catch (ReturnNotAllowed $e) {
+            Session::flash('iconMessage', 'error');
+            return back()->with('message', $e->getMessage());
+        }
+
         Session::flash('iconMessage', 'success');
-        return back()->with('message', 'Gửi yêu cầu trả hàng thành công !');
+        return back()->with('message', 'Gửi yêu cầu trả hàng thành công, cửa hàng sẽ phản hồi sớm.');
     }
 
     public function userOrder()
@@ -126,7 +149,7 @@ class UserController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         $wait_confirm = Order::where('user_id', $current_user)
-            ->where('order_status', 0)
+            ->where('order_status', OrderStatus::New)
             ->where(function ($query) {
                 $query->where(function ($subQuery) {
                     $subQuery->where('order_payment', 'payUrl')
@@ -142,22 +165,22 @@ class UserController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         $delivery_order = Order::where('user_id', $current_user)
-            ->where('order_status', 1)
+            ->whereIn('order_status', [OrderStatus::Confirmed, OrderStatus::ReadyToShip, OrderStatus::Delivering, OrderStatus::Delivered, OrderStatus::CancelRequested])
             ->orderBy('created_at', 'desc')
             ->get();
 
         $success_order = Order::where('user_id', $current_user)
-            ->where('order_status', 10)
+            ->where('order_status', OrderStatus::Completed)
             ->orderBy('created_at', 'desc')
             ->get();
 
         $cancel_order = Order::where('user_id', $current_user)
-            ->where('order_status', 2)
+            ->where('order_status', OrderStatus::Cancelled)
             ->orderBy('created_at', 'desc')
             ->get();
 
         $return_order = Order::where('user_id', $current_user)
-            ->where('order_status', 3)
+            ->whereIn('order_status', OrderStatus::comingBack())
             ->orderBy('created_at', 'desc')
             ->get();
 

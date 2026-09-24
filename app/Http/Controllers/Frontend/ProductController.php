@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Actions\CancelOrderAction;
+use App\Enums\OrderStatus;
+use App\Models\OrderStatusLogModel;
 use App\Actions\PlaceOrderAction;
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
@@ -214,7 +216,7 @@ class ProductController extends Controller
                 ->join('order_details', 'order.order_id', '=', 'order_details.order_id')
                 ->where('order.user_id', Auth::id())
                 ->where('order_details.pro_id', $proId)
-                ->where('order.order_status', 10)
+                ->where('order.order_status', OrderStatus::Completed)
                 ->exists();
         }
 
@@ -471,8 +473,9 @@ class ProductController extends Controller
         // The fee depends on the cart, so it is quoted now rather than read
         // back from whatever the address was quoted when it was saved.
         $shippingQuote = app(ShippingService::class)->quoteForAddress($cart, $InfoDeli->firstWhere('info_default', 1));
+        $walletBalance = (int) app(\App\Services\Wallet\WalletService::class)->for(Auth::user())->balance;
 
-        return view('frontend.pages.product.product_checkout', compact('cart', 'coupon_data', 'InfoDeli', 'shippingQuote'));
+        return view('frontend.pages.product.product_checkout', compact('cart', 'coupon_data', 'InfoDeli', 'shippingQuote', 'walletBalance'));
 
     }
 
@@ -531,12 +534,19 @@ class ProductController extends Controller
             Session::flash('iconMessage', 'error');
 
             return redirect()->back()->with('message', 'Chưa tính được phí vận chuyển cho địa chỉ này, vui lòng kiểm tra lại địa chỉ nhận hàng!');
+        } catch (\App\Services\Wallet\InsufficientBalance $e) {
+            Session::flash('iconMessage', 'error');
+
+            return redirect()->back()->with('message', $e->getMessage());
         }
 
         session()->forget('cart');
         session()->forget('coupon_data');
 
-        if ($order->order_payment === self::PAYMENT_ON_DELIVERY) {
+        // Cash on delivery and the wallet both leave nowhere to send the
+        // customer: one is paid at the door, the other was paid as the order
+        // was written.
+        if (in_array($order->order_payment, [self::PAYMENT_ON_DELIVERY, PlaceOrderAction::PAY_FROM_WALLET], true)) {
             $this->mailer->sendConfirmation($order);
 
             return redirect()->route('success.checkout');
@@ -561,7 +571,7 @@ class ProductController extends Controller
                 throw new InvalidPaymentCallbackException('Phương thức thanh toán không hợp lệ.');
             }
 
-            $checkoutUrl = $gateway->checkoutUrl($order);
+            $checkoutUrl = $gateway->checkoutUrl(\App\Services\Payment\GatewayCharge::forOrder($order));
         } catch (Throwable $e) {
             report($e);
             $this->cancelOrder->execute($order);
@@ -684,22 +694,46 @@ class ProductController extends Controller
             return redirect()->back()->with('message', 'Không tìm thấy đơn hàng này trong tài khoản của bạn !');
         }
 
-        // A person cancelling an order they paid for is a refund, not a fraud
-        // attempt, so this call is allowed to touch paid orders.
-        if (! $this->cancelOrder->execute($order, allowPaid: true)) {
-            Session::flash('iconMessage', 'warning');
+        $reason = trim((string) $request->input('inputCancelOrder'));
 
-            return redirect()->back()->with('message', 'Đơn hàng này đã được hủy trước đó.');
+        // Before the shop has looked at it, the order is still the customer's
+        // to call off. Once it has been confirmed the goods may already be
+        // packed, so from there the customer asks and the shop decides; once
+        // the parcel has left, not even that.
+        if ($order->hasStatus(OrderStatus::New)) {
+            // Cancelling an order they paid for is a refund, not a fraud
+            // attempt, so this call is allowed to touch paid orders.
+            if (! $this->cancelOrder->execute($order, allowPaid: true, actor: OrderStatusLogModel::ACTOR_CUSTOMER, note: $reason ?: null)) {
+                Session::flash('iconMessage', 'warning');
+
+                return redirect()->back()->with('message', 'Đơn hàng này đã được hủy trước đó.');
+            }
+
+            $order->note_customer = 'Lí do hủy đơn: '.$reason;
+            $order->save();
+
+            Session::flash('iconMessage', 'success');
+
+            return redirect()->back()->with([
+                'message' => ' Đã hủy đơn hàng !',
+                'text' => 'Số tiền sẽ được hoàn trả trong vòng 24h nếu bạn đã thanh toán',
+            ]);
         }
 
-        $order->note_customer = 'Lí do hủy đơn: ' . $request->input('inputCancelOrder');
-        $order->save();
+        if (! $order->canRequestCancel()) {
+            Session::flash('iconMessage', 'warning');
+
+            return redirect()->back()->with('message', 'Đơn hàng đã rời kho, không hủy được nữa. Bạn có thể từ chối nhận hàng khi shipper giao.');
+        }
+
+        $order->order_cancel_reason = $reason;
+        $order->moveTo(OrderStatus::CancelRequested, OrderStatusLogModel::ACTOR_CUSTOMER, $reason ?: null);
 
         Session::flash('iconMessage', 'success');
 
         return redirect()->back()->with([
-            'message' => ' Gửi yêu cầu hủy đơn thành công !',
-            'text' => 'Số tiền sẽ được hoàn trả trong vòng 24h',
+            'message' => ' Đã gửi yêu cầu hủy đơn !',
+            'text' => 'Shop sẽ duyệt trong thời gian sớm nhất',
         ]);
     }
 

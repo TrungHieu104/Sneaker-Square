@@ -62,6 +62,11 @@ return [
 
     'ghn' => [
         'host' => env('GHN_HOST', 'https://online-gateway.ghn.vn'),
+
+        // The shop's own parcel management site on GHN, opened from the admin
+        // sidebar. The sandbox account lives on a different host from the live
+        // one, so it follows GHN_HOST rather than being hardcoded.
+        'dashboard' => env('GHN_DASHBOARD', 'https://khachhang.ghn.vn'),
         'token' => env('GHN_TOKEN'),
         'shop_id' => env('GHN_SHOP_ID'),
 
@@ -98,6 +103,17 @@ return [
         // How long one admin page holds its event stream open before the browser
         // reconnects. Each open stream occupies a PHP worker for that long.
         'stream_seconds' => (int) env('GHN_STREAM_SECONDS', 60),
+
+        // Opens an admin page that feeds made-up GHN callbacks into the
+        // tracker. Never available in production, whatever this says.
+        'simulator' => filter_var(env('GHN_SIMULATOR', false), FILTER_VALIDATE_BOOL),
+    ],
+    'wallet' => [
+        // Signs the balance and the ledger. Kept out of the database on
+        // purpose: that is the whole point — somebody who can write to MySQL
+        // still cannot produce a valid signature. Falls back to the app key so
+        // a fresh checkout works, but production should give it its own.
+        'signing_key' => env('WALLET_SIGNING_KEY'),
     ],
     'vnpay' => [
         'url' => env('VNPAY_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'),

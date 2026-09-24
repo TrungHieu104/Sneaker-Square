@@ -58,6 +58,7 @@
                                 @php 
                                     $total = $order->total();
                                     $totalNew = $orderNew->total();
+                                    $totalCancelRequest = $orderCancelRequest->total();
                                     $totalConfirm = $orderConfirm->total();
                                     $totalCancel = $orderCancel->total();
                                     $totalDelivery = $orderDeli->total();
@@ -92,6 +93,21 @@
                                     >
                                         Đơn hàng mới
                                         <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-primary">{{$totalNew}}</span>
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button
+                                    type="button"
+                                    class="nav-link p-2"
+                                    role="tab"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#navs-pills-top-cancel-request"
+                                    aria-controls="navs-pills-top-cancel-request"
+                                    aria-selected="false"
+                                    id="ordercancelrequest-tab"
+                                    >
+                                        Xin huỷ
+                                        <span class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger">{{$totalCancelRequest}}</span>
                                     </button>
                                 </li>
                                 <li class="nav-item">
@@ -236,21 +252,7 @@
                                                             {{date('d-m-Y', strtotime($data->order_date))}}
                                                         </td>
                                                         <td class="text-center">
-                                                            @if($data->order_status==0)
-                                                                <span style="color:darkblue">Đơn hàng mới</span>
-                                                            @elseif($data->order_status==1)
-                                                                @if ($data->order_delivery_status == 1)
-                                                                    <span>Vận chuyển</span>
-                                                                @else
-                                                                    <span style="color: green">Đã xác nhận</span>
-                                                                @endif
-                                                            @elseif($data->order_status==2)
-                                                                <span style="color: red">Đã hủy</span>
-                                                            @elseif($data->order_status==3)
-                                                                <span style="color: orange">Hoàn hàng</span>
-                                                            @elseif($data->order_status==10)
-                                                                <span style="color:chocolate">Thành công</span>
-                                                            @endif
+                                                            <span style="color: {{ $data->order_status->color() }}">{{ $data->order_status->label() }}</span>
                                                         </td>
                                                         
                                                         <td class="text-center">
@@ -328,21 +330,7 @@
                                                             {{date('d-m-Y', strtotime($data->order_date))}}
                                                         </td>
                                                         <td class="text-center">
-                                                            @if($data->order_status==0)
-                                                                <span style="color:darkblue">Đơn hàng mới</span>
-                                                            @elseif($data->order_status==1)
-                                                                @if ($data->order_delivery_status == 1)
-                                                                    <span>Vận chuyển</span>
-                                                                @else
-                                                                    <span style="color: green">Đã xác nhận</span>
-                                                                @endif
-                                                            @elseif($data->order_status==2)
-                                                                <span style="color: red">Đã hủy</span>
-                                                            @elseif($data->order_status==3)
-                                                                <span style="color: orange">Hoàn hàng</span>
-                                                            @elseif($data->order_status==10)
-                                                                <span style="color:chocolate">Thành công</span>
-                                                            @endif
+                                                            <span style="color: {{ $data->order_status->color() }}">{{ $data->order_status->label() }}</span>
                                                         </td>
                                                         
                                                         <td class="text-center">
@@ -364,6 +352,84 @@
                                         </table>
                                     </div>
                                     {{$orderNew->onEachSide(1)->links('backend.layouts.partials.pagination'),['page' => 'order_new_page']}}
+                                </div>
+                                <div class="tab-pane fade" id="navs-pills-top-cancel-request" role="tabpanel">
+                                    <div class="table-responsive text-nowrap" id="cancel-request-orders">
+                                        <table class="table table-bordered w-100" id="cancelRequestTable">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-center">
+                                                        STT
+                                                    </th>
+                                                    <th class="text-center">
+                                                       <a class="tab-sort" href="?sort-by=order_code&sort-type={{ $orderBy === 'order_code' ? $orderType : 'desc' }}">
+                                                            Mã đơn hàng
+                                                        </a>
+                                                    </th>                            
+                                                    <th class="text-center">
+                                                        Tên người đặt
+                                                    </th>
+                                                    <th class="text-center">
+                                                        Tổng tiền
+                                                    </th>
+                                                    <th class="text-center">
+                                                        Ngày đặt
+                                                    </th>
+                                                    <th class="text-center">
+                                                        Trạng thái
+                                                    </th>
+                                                    <th class="text-center" style="width: 100px;">Thao tác</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @php
+                                                    $stt = $orderCancelRequest->firstItem();
+                                                @endphp
+                                                @if($orderCancelRequest->isEmpty())
+                                                    <tr>
+                                                        <td colspan="7" class="text-center">
+                                                            Không có dữ liệu để hiển thị.
+                                                        </td>
+                                                    </tr>
+                                                @else
+                                                    @foreach($orderCancelRequest as $data)
+                                                    <tr>
+                                                        <td class="text-center">
+                                                            {{$stt}}
+                                                        </td>
+                                                        <td>
+                                                            {{$data->order_code}}
+                                                        </td>
+                                                        <td class="pro-name">
+                                                            {{$data->order_name}}
+                                                        </td>
+                                                        <td class="pro-name" style="text-align:right">{{number_format($data->order_total,0,',','.')}} VNĐ</td>
+                                                        <td class="text-center">
+                                                            {{date('d-m-Y', strtotime($data->order_date))}}
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span style="color: {{ $data->order_status->color() }}">{{ $data->order_status->label() }}</span>
+                                                        </td>
+                                                        
+                                                        <td class="text-center">
+                                                            <div>
+                                                                <a class="btn btn-success btn-sm mx-1"
+                                                                    href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}"
+                                                                    title="Xem chi tiết">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    @php
+                                                        $stt++; 
+                                                    @endphp
+                                                    @endforeach
+                                                @endif  
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {{$orderCancelRequest->onEachSide(1)->links('backend.layouts.partials.pagination'),['page' => 'order_cancel_request']}}
                                 </div>
                                 <div class="tab-pane fade" id="navs-pills-top-messages" role="tabpanel">
                                     <div class="table-responsive text-nowrap">
@@ -420,21 +486,7 @@
                                                             {{date('d-m-Y', strtotime($data->order_date))}}
                                                         </td>
                                                         <td class="text-center">
-                                                            @if($data->order_status==0)
-                                                                <span style="color:darkblue">Đơn hàng mới</span>
-                                                            @elseif($data->order_status==1)
-                                                                @if ($data->order_delivery_status == 1)
-                                                                    <span>Vận chuyển</span>
-                                                                @else
-                                                                    <span style="color: green">Đã xác nhận</span>
-                                                                @endif
-                                                            @elseif($data->order_status==2)
-                                                                <span style="color: red">Đã hủy</span>
-                                                            @elseif($data->order_status==3)
-                                                                <span style="color: orange">Hoàn hàng</span>
-                                                            @elseif($data->order_status==10)
-                                                                <span style="color:chocolate">Thành công</span>
-                                                            @endif
+                                                            <span style="color: {{ $data->order_status->color() }}">{{ $data->order_status->label() }}</span>
                                                         </td>
                                                         
                                                         <td class="text-center">
@@ -512,21 +564,7 @@
                                                             {{date('d-m-Y', strtotime($data->order_date))}}
                                                         </td>
                                                         <td class="text-center">
-                                                            @if($data->order_status==0)
-                                                                <span style="color:darkblue">Đơn hàng mới</span>
-                                                            @elseif($data->order_status==1)
-                                                                @if ($data->order_delivery_status == 1)
-                                                                    <span>Vận chuyển</span>
-                                                                @else
-                                                                    <span style="color: green">Đã xác nhận</span>
-                                                                @endif
-                                                            @elseif($data->order_status==2)
-                                                                <span style="color: red">Đã hủy</span>
-                                                            @elseif($data->order_status==3)
-                                                                <span style="color: orange">Hoàn hàng</span>
-                                                            @elseif($data->order_status==10)
-                                                                <span style="color:chocolate">Thành công</span>
-                                                            @endif
+                                                            <span style="color: {{ $data->order_status->color() }}">{{ $data->order_status->label() }}</span>
                                                         </td>
                                                         
                                                         <td class="text-center">
@@ -604,21 +642,7 @@
                                                             {{date('d-m-Y', strtotime($data->order_date))}}
                                                         </td>
                                                         <td class="text-center">
-                                                            @if($data->order_status==0)
-                                                                <span style="color:darkblue">Đơn hàng mới</span>
-                                                            @elseif($data->order_status==1)
-                                                                @if ($data->order_delivery_status == 1)
-                                                                    <span>Vận chuyển</span>
-                                                                @else
-                                                                    <span style="color: green">Đã xác nhận</span>
-                                                                @endif
-                                                            @elseif($data->order_status==2)
-                                                                <span style="color: red">Đã hủy</span>
-                                                            @elseif($data->order_status==3)
-                                                                <span style="color: orange">Hoàn hàng</span>
-                                                            @elseif($data->order_status==10)
-                                                                <span style="color:chocolate">Thành công</span>
-                                                            @endif
+                                                            <span style="color: {{ $data->order_status->color() }}">{{ $data->order_status->label() }}</span>
                                                         </td>
                                                         
                                                         <td class="text-center">
@@ -696,21 +720,7 @@
                                                             {{date('d-m-Y', strtotime($data->order_date))}}
                                                         </td>
                                                         <td class="text-center">
-                                                            @if($data->order_status==0)
-                                                                <span style="color:darkblue">Đơn hàng mới</span>
-                                                            @elseif($data->order_status==1)
-                                                                @if ($data->order_delivery_status == 1)
-                                                                    <span>Vận chuyển</span>
-                                                                @else
-                                                                    <span style="color: green">Đã xác nhận</span>
-                                                                @endif
-                                                            @elseif($data->order_status==2)
-                                                                <span style="color: red">Đã hủy</span>
-                                                            @elseif($data->order_status==3)
-                                                                <span style="color: orange">Hoàn hàng</span>
-                                                            @elseif($data->order_status==10)
-                                                                <span style="color:chocolate">Thành công</span>
-                                                            @endif
+                                                            <span style="color: {{ $data->order_status->color() }}">{{ $data->order_status->label() }}</span>
                                                         </td>
                                                         
                                                         <td class="text-center">
@@ -788,21 +798,7 @@
                                                             {{date('d-m-Y', strtotime($data->order_date))}}
                                                         </td>
                                                         <td class="text-center">
-                                                            @if($data->order_status==0)
-                                                                <span style="color:darkblue">Đơn hàng mới</span>
-                                                            @elseif($data->order_status==1)
-                                                                @if ($data->order_delivery_status == 1)
-                                                                    <span>Vận chuyển</span>
-                                                                @else
-                                                                    <span style="color: green">Đã xác nhận</span>
-                                                                @endif
-                                                            @elseif($data->order_status==2)
-                                                                <span style="color: red">Đã hủy</span>
-                                                            @elseif($data->order_status==3)
-                                                                <span style="color: orange">Hoàn hàng</span>
-                                                            @elseif($data->order_status==10)
-                                                                <span style="color:chocolate">Thành công</span>
-                                                            @endif
+                                                            <span style="color: {{ $data->order_status->color() }}">{{ $data->order_status->label() }}</span>
                                                         </td>
                                                         
                                                         <td class="text-center">

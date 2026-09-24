@@ -32,8 +32,13 @@ return new class extends Migration
             $table->date('order_expected_delivery')->nullable();
             $table->string('order_shipping_code', 50)->nullable()->unique();
             $table->string('order_shipping_status', 50)->nullable();
+            $table->dateTime('order_delivered_at')->nullable();
+            $table->dateTime('order_completed_at')->nullable();
+            $table->boolean('order_revenue_counted')->default(0);
             $table->date('order_date');
-            $table->boolean('order_status')->default(0);
+            $table->string('order_status', 20)->default('new')->index();
+            $table->string('order_cancel_reason', 255)->nullable();
+            $table->boolean('order_refund_required')->default(0);
             $table->longText('note_customer')->nullable();
             $table->longText('note_admin')->nullable();
             $table->unsignedBigInteger('coupon_id')->nullable();

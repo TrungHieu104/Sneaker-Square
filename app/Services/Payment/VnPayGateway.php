@@ -2,8 +2,6 @@
 
 namespace App\Services\Payment;
 
-use App\Models\OrderModel;
-
 /**
  * VNPay, version 2.1.0.
  *
@@ -31,21 +29,21 @@ class VnPayGateway implements PaymentGateway
         return isset($params['vnp_TxnRef']);
     }
 
-    public function checkoutUrl(OrderModel $order): string
+    public function checkoutUrl(GatewayCharge $charge): string
     {
         $input = [
             'vnp_Version' => '2.1.0',
             'vnp_TmnCode' => (string) config('services.vnpay.tmn_code'),
-            'vnp_Amount' => (int) $order->order_total * 100,
+            'vnp_Amount' => $charge->amount * 100,
             'vnp_Command' => 'pay',
             'vnp_CreateDate' => now('Asia/Ho_Chi_Minh')->format('YmdHis'),
             'vnp_CurrCode' => 'VND',
             'vnp_IpAddr' => request()->ip() ?? '127.0.0.1',
             'vnp_Locale' => 'vn',
-            'vnp_OrderInfo' => 'Thanh toán hóa đơn ' . $order->order_code . ' qua VNPay',
+            'vnp_OrderInfo' => $charge->description . ' qua VNPay',
             'vnp_OrderType' => 'billpayment',
             'vnp_ReturnUrl' => route('process.checkout'),
-            'vnp_TxnRef' => $order->order_code,
+            'vnp_TxnRef' => $charge->code,
             'vnp_BankCode' => 'NCB',
         ];
 

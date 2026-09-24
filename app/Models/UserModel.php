@@ -56,6 +56,11 @@ class UserModel extends Authenticatable
         'password' => 'hashed',
     ];
 
+    public function wallet()
+    {
+        return $this->hasOne(WalletModel::class, 'user_id', 'user_id');
+    }
+
     public function lockAccount()
     {
         $this->save([

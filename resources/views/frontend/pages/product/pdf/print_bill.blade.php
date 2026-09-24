@@ -768,15 +768,7 @@
                                     <span class="BTN-en">(Payment method)</span>:
                                 </div>
                                 <div class="BTN-text BTN-payment-method">
-                                    @if ($order->order_payment == 'cod')
-                                        Thanh toán khi nhận hàng
-                                    @else
-                                        @if ($order->order_payment == 'payUrl')
-                                            Thanh toán qua MoMo
-                                        @else
-                                            Thanh toán qua VNPay
-                                        @endif
-                                    @endif
+                                    {{ $order->paymentLabel() }}
                                 </div>
                             </div>
                             <div class="BTN-row">

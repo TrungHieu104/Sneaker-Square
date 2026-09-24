@@ -123,16 +123,17 @@ class GhnCarrier implements ShippingCarrier
         }
 
         $box = config('services.ghn.box');
+        $from = $order->from;
 
         $data = $this->post('/shiip/public-api/v2/shipping-order/create', [
             'payment_type_id' => self::SHOP_PAYS,
             'required_note' => self::NO_INSPECTION,
             'client_order_code' => $order->reference,
-            'from_name' => (string) config('services.ghn.from_name'),
-            'from_phone' => (string) config('services.ghn.from_phone'),
-            'from_address' => (string) config('services.ghn.from_address'),
-            'from_district_id' => (int) config('services.ghn.from_district_id'),
-            'from_ward_code' => (string) config('services.ghn.from_ward_code'),
+            'from_name' => $from ? $from->name : (string) config('services.ghn.from_name'),
+            'from_phone' => $from ? $from->phone : (string) config('services.ghn.from_phone'),
+            'from_address' => $from ? $from->address : (string) config('services.ghn.from_address'),
+            'from_district_id' => $from ? $from->districtId : (int) config('services.ghn.from_district_id'),
+            'from_ward_code' => $from ? $from->wardCode : (string) config('services.ghn.from_ward_code'),
             'to_name' => $order->toName,
             'to_phone' => $order->toPhone,
             'to_address' => $order->toAddress,
@@ -168,7 +169,21 @@ class GhnCarrier implements ShippingCarrier
 
     public function cancel(string $code): void
     {
-        $this->post('/shiip/public-api/v2/switch-status/cancel', ['order_codes' => [$code]]);
+        $this->switchStatus($code, 'cancel');
+    }
+
+    public function switchStatus(string $code, string $status): void
+    {
+        $rows = $this->post('/shiip/public-api/v2/switch-status/'.$status, ['order_codes' => [$code]]);
+
+        // The call takes a list of parcels, so GHN answers "Success" for the
+        // request and puts each parcel's own verdict inside it. A parcel it
+        // refused reads as a success until this row is looked at.
+        foreach ($rows as $row) {
+            if (is_array($row) && ($row['result'] ?? true) === false) {
+                throw new ShippingUnavailable('GHN từ chối: '.($row['message'] ?? 'không rõ lý do'));
+            }
+        }
     }
 
     /**
