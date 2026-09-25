@@ -132,7 +132,7 @@
                             @if ($order->hasStatus(\App\Enums\OrderStatus::Cancelled))
                                 <h4 class="fw-bold mb-3">Đã hủy đơn</h4>
                             @else
-                                @if ($order->order_status->isComingBack() && $order->orderReturn)
+                                @if ($order->orderReturn)
                                     <div class="text-center mb-3">
                                         <h4 class="fw-bold mb-1">Yêu cầu trả hàng: {{ $order->orderReturn->statusLabel() }}</h4>
                                         <div class="text-muted small">
@@ -149,6 +149,14 @@
                                                 @case(\App\Models\OrderReturnModel::RECEIVED)
                                                     Cửa hàng đã nhận được hàng trả và sẽ hoàn tiền cho bạn.
                                                     @break
+                                                @case(\App\Models\OrderReturnModel::REJECTED)
+                                                    Cửa hàng đã từ chối yêu cầu này. Còn trong thời hạn thì bạn vẫn gửi lại được.
+                                                    @break
+
+                                                @case(\App\Models\OrderReturnModel::CANCELLED)
+                                                    Bạn đã huỷ yêu cầu này. Còn trong thời hạn thì bạn vẫn gửi lại được.
+                                                    @break
+
                                                 @case(\App\Models\OrderReturnModel::REFUNDED)
                                                     Đã hoàn {{ number_format((int) $order->orderReturn->refund_amount, 0, ',', '.') }} VNĐ.
                                                     @break
@@ -297,7 +305,7 @@
 
                                                     {{-- check status payment wallet --}}
                                                     @if ($order->order_payment == 'wallet')
-                                                        Đã trừ từ ví Sneaker Square
+                                                        Đã trừ từ SPay
                                                         <br>
                                                         <sub>
                                                             {{ date('H:i d/m/Y', strtotime($order->order_payment_time)) }}
@@ -518,11 +526,12 @@
                             </div>
                             {{--  --}}
                             <div class="row">
-                                @if ($order->orderReturn?->status === \App\Models\OrderReturnModel::REJECTED)
+                                @if ($order->orderReturn)
                                     <div class="col-lg-12 mb-3">
-                                        <div class="alert alert-warning mb-0 small">
-                                            Yêu cầu trả hàng đã bị từ chối: {{ $order->orderReturn->reject_reason }}
-                                        </div>
+                                        <button class="w-100 border grey-hover border-1 p-2 custom-btn text-dark rounded btn-order"
+                                            data-bs-toggle="modal" data-bs-target="#returnDetail">
+                                            Lịch sử trả hàng ({{ $order->orderReturns->count() }})
+                                        </button>
                                     </div>
                                 @endif
                                 @if (! $order->hasStatus(\App\Enums\OrderStatus::Cancelled) && ! $order->order_status->isComingBack())
@@ -553,13 +562,6 @@
                                                     data-bs-toggle="modal" data-bs-target="#returnOrder">Yêu cầu trả hàng / Hoàn
                                                     tiền</button>
                                             </div>
-                                        @else
-                                            <div class="col-lg-12 mb-3">
-                                                <button disabled
-                                                    class="w-100 border grey-hover border-1 p-2 custom-btn text-dark rounded btn-order"
-                                                    data-bs-toggle="modal" data-bs-target="#returnOrder">Yêu cầu trả hàng / Hoàn
-                                                    tiền</button>
-                                            </div>
                                         @endif
                                     @endif
                                 @endif                                      
@@ -572,7 +574,7 @@
         </div>
     </section>
     {{-- return Order --}}
-    @if ($order->canRequestReturn() || $errors->hasAny(['reason', 'items', 'description', 'refund_info', 'images', 'images.*']))
+    @if ($order->canRequestReturn() || $errors->hasAny(['reason', 'items', 'description', 'images', 'images.*']))
     <div class="modal fade" id="returnOrder" tabindex="-1" aria-labelledby="returnOrderLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
@@ -582,29 +584,43 @@
                         <h1 class="modal-title fs-5" id="returnOrderLabel">Yêu cầu trả hàng / Hoàn tiền</h1>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
+                    @php
+                        // Only what is still at the customer's house can be sent
+                        // back: a line returned last week is not on offer again.
+                        $conTraDuoc = $order->returnableQuantities();
+                        $dongConLai = $orderDetail->filter(fn ($dong) => isset($conTraDuoc[$dong->order_details_id]));
+                        $daTraBot = $dongConLai->count() < $orderDetail->count()
+                            || $dongConLai->contains(fn ($dong) => $conTraDuoc[$dong->order_details_id] < (int) $dong->quantity);
+                    @endphp
                     <div class="modal-body">
                         <p class="text-muted small mb-3">
                             Bạn có thể gửi yêu cầu đến hết
                             {{ optional($order->returnDeadline())->format('H:i d/m/Y') }}.
-                            Mỗi đơn hàng chỉ gửi được một yêu cầu. Sau khi cửa hàng duyệt, nhân viên GHN sẽ đến
-                            địa chỉ nhận hàng của đơn để lấy hàng trả.
+                            Mỗi lần chỉ xử lý được một yêu cầu; xong yêu cầu này bạn vẫn gửi tiếp được cho phần còn lại.
+                            Sau khi cửa hàng duyệt, nhân viên GHN sẽ đến địa chỉ nhận hàng của đơn để lấy hàng trả.
                         </p>
                         <div class="mb-3">
                             <label class="form-label">Sản phẩm muốn trả <span class="text-danger">*</span></label>
                             <div class="border rounded p-2">
-                                @foreach ($orderDetail as $dong)
+                                @foreach ($dongConLai as $dong)
+                                    @php $conLai = $conTraDuoc[$dong->order_details_id]; @endphp
                                     <div class="d-flex justify-content-between align-items-center gap-3 py-2 {{ ! $loop->last ? 'border-bottom' : '' }}">
                                         <div>
                                             <div>{{ $dong->pro_name }}</div>
                                             <div class="text-muted small">
                                                 Size {{ $dong->size }} &middot; {{ $dong->color }} &middot;
-                                                đã mua {{ $dong->quantity }} &middot;
+                                                @if ($conLai < (int) $dong->quantity)
+                                                    còn trả được {{ $conLai }}/{{ $dong->quantity }}
+                                                @else
+                                                    đã mua {{ $dong->quantity }}
+                                                @endif
+                                                &middot;
                                                 {{ number_format((int) $dong->price, 0, ',', '.') }}đ / sản phẩm
                                             </div>
                                         </div>
                                         <div style="width: 150px;">
                                             <select class="form-select form-select-sm" name="items[{{ $dong->order_details_id }}]">
-                                                @for ($sl = 0; $sl <= (int) $dong->quantity; $sl++)
+                                                @for ($sl = 0; $sl <= $conLai; $sl++)
                                                     <option value="{{ $sl }}" @selected((int) old('items.'.$dong->order_details_id, 0) === $sl)>
                                                         {{ $sl === 0 ? 'Không trả' : 'Trả '.$sl }}
                                                     </option>
@@ -614,6 +630,11 @@
                                     </div>
                                 @endforeach
                             </div>
+                            @if ($daTraBot)
+                                <div class="form-text">
+                                    Danh sách chỉ còn phần bạn chưa gửi trả ở các yêu cầu trước.
+                                </div>
+                            @endif
                             <div class="form-text">
                                 Chỉ chọn số lượng bạn thực sự gửi trả. Phần giữ lại vẫn tính là đã mua, và phí vận chuyển
                                 không được hoàn khi bạn chỉ trả một phần đơn.
@@ -642,15 +663,10 @@
                             @error('images') <small class="text-danger">{{ $message }}</small> @enderror
                             @error('images.*') <small class="text-danger">{{ $message }}</small> @enderror
                         </div>
-                        <div class="mb-3">
-                            <label for="return-refund" class="form-label">Thông tin nhận tiền hoàn <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="return-refund" name="refund_info" rows="2"
-                                placeholder="Ngân hàng, số tài khoản, tên chủ tài khoản">{{ old('refund_info') }}</textarea>
-                            <div class="form-text">
-                                Tiền hoàn được cộng vào <a href="{{ route('user.wallet') }}">ví Sneaker Square</a> của bạn ngay khi
-                                cửa hàng nhận và kiểm tra hàng trả; từ ví bạn có thể mua đơn khác hoặc rút về tài khoản này.
-                            </div>
-                            @error('refund_info') <small class="text-danger">{{ $message }}</small> @enderror
+                        <div class="alert alert-light border small mb-0" role="note">
+                            Tiền hoàn được cộng vào <a href="{{ route('user.wallet') }}">SPay</a> của bạn ngay khi
+                            cửa hàng nhận và kiểm tra hàng trả. Từ ví bạn có thể mua đơn khác, hoặc rút về ngân hàng —
+                            khai số tài khoản ở bước rút tiền.
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -661,7 +677,7 @@
             </div>
         </div>
     </div>
-    @if ($errors->hasAny(['reason', 'items', 'description', 'refund_info', 'images', 'images.*']))
+    @if ($errors->hasAny(['reason', 'items', 'description', 'images', 'images.*']))
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 new bootstrap.Modal(document.getElementById('returnOrder')).show();
@@ -669,6 +685,10 @@
         </script>
     @endif
     @endif
+    @if ($order->orderReturn)
+        @include('components.return_request', ['order' => $order->load('orderReturns.items.line')])
+    @endif
+
     {{-- cancel Order --}}
     <div class="modal fade" id="cancelOrder" tabindex="-1" aria-labelledby="cancelOrderLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">

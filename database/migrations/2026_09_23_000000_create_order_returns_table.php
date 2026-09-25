@@ -10,13 +10,12 @@ return new class extends Migration
     {
         Schema::create('order_returns', function (Blueprint $table) {
             $table->id('return_id');
-            $table->unsignedBigInteger('order_id')->unique();
+            $table->unsignedBigInteger('order_id')->index();
             $table->foreign('order_id')->references('order_id')->on('order')->onDelete('cascade')->onUpdate('cascade');
             $table->string('status', 20)->default('requested');
             $table->string('reason', 50);
             $table->text('description')->nullable();
             $table->json('images')->nullable();
-            $table->text('refund_info');
             $table->text('reject_reason')->nullable();
             $table->string('return_shipping_code', 50)->nullable()->unique();
             $table->string('return_shipping_status', 50)->nullable();

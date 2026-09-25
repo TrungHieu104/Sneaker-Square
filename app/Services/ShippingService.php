@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\OrderStatus;
 use App\Models\DeliveryInfoModel;
 use App\Models\OrderModel;
+use App\Models\OrderReturnItemModel;
 use App\Models\OrderReturnModel;
 use App\Models\OrderStatusLogModel;
 use App\Services\Shipping\Shipment;
@@ -15,6 +16,7 @@ use App\Services\Shipping\ShipmentSender;
 use App\Services\Shipping\ShippingCarrier;
 use App\Services\Shipping\ShippingQuote;
 use App\Services\Shipping\ShippingUnavailable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -194,6 +196,36 @@ class ShippingService
     }
 
     /**
+     * Lets go of the parcel that was to bring a return home, so the shop can
+     * book it again.
+     *
+     * The carrier's own callback releases the code when a parcel is cancelled,
+     * but a shop that cancelled on GHN's dashboard while its webhook could not
+     * be reached is left holding a code for a parcel nobody will collect. Then
+     * $hoiHang is false and only this side is cleaned up — which is why the
+     * screen says plainly that it does not cancel anything at GHN.
+     *
+     * @throws ShippingUnavailable
+     */
+    public function releaseReturnBooking(OrderReturnModel $return, bool $hoiHang = true): void
+    {
+        if (! $return->return_shipping_code) {
+            throw new ShippingUnavailable('Yêu cầu trả hàng này chưa có vận đơn.');
+        }
+
+        if ($hoiHang) {
+            $this->carrier->cancel($return->return_shipping_code);
+        }
+
+        // Released, not erased: shipment_events hang off the order, so a late
+        // callback for the cancelled parcel still finds its own history.
+        $return->return_shipping_code = null;
+        $return->return_shipping_status = 'cancel';
+        $return->save();
+        $this->pulse->mark((int) $return->order_id);
+    }
+
+    /**
      * Books the parcel that brings a returned order back: picked up at the
      * customer's address, delivered to the shop's. The shop pays the fee and
      * nothing is collected, so a refund is never netted against postage.
@@ -216,6 +248,11 @@ class ShippingService
             throw new ShippingUnavailable('Đơn hàng thiếu mã quận/huyện hoặc phường/xã của khách.');
         }
 
+        // The parcel is what the customer is sending back, not what they bought:
+        // a return of one of two pairs is one box, and GHN prices the carriage
+        // and the insurance from the numbers it is given.
+        $dongTra = $return->items()->with('line.product')->get();
+
         $booking = $this->carrier->book(new ShipmentOrder(
             reference: $return->reference(),
             toName: (string) config('services.ghn.from_name'),
@@ -223,13 +260,13 @@ class ShippingService
             toAddress: (string) config('services.ghn.from_address'),
             toDistrictId: (int) config('services.ghn.from_district_id'),
             toWardCode: (string) config('services.ghn.from_ward_code'),
-            weight: $this->weightOfOrder($order),
-            insuranceValue: $this->goodsValueOf($order),
+            weight: $this->weightOfReturn($dongTra),
+            insuranceValue: (int) $dongTra->sum(fn ($muc) => $muc->lineTotal()),
             codAmount: 0,
-            items: $order->orderDetail->map(fn ($line) => [
-                'name' => (string) $line->pro_name,
-                'quantity' => (int) $line->quantity,
-                'weight' => (int) ($line->product->pro_weight ?? self::MINIMUM_WEIGHT),
+            items: $dongTra->map(fn ($muc) => [
+                'name' => (string) $muc->line?->pro_name,
+                'quantity' => (int) $muc->quantity,
+                'weight' => (int) ($muc->line?->product?->pro_weight ?? self::MINIMUM_WEIGHT),
             ])->all(),
             note: 'Hàng trả lại của đơn '.$order->order_code,
             from: new ShipmentSender(
@@ -247,6 +284,20 @@ class ShippingService
         $this->pulse->mark((int) $order->order_id);
 
         return $booking;
+    }
+
+    /**
+     * @param  Collection<int, OrderReturnItemModel>  $items
+     */
+    private function weightOfReturn(Collection $items): int
+    {
+        $grams = 0;
+
+        foreach ($items as $muc) {
+            $grams += (int) ($muc->line?->product?->pro_weight ?? 0) * (int) $muc->quantity;
+        }
+
+        return max(self::MINIMUM_WEIGHT, $grams);
     }
 
     public function weightOfOrder(OrderModel $order): int

@@ -3,6 +3,7 @@
 namespace App\Services\Wallet;
 
 use App\Models\OrderModel;
+use App\Models\OrderReturnModel;
 use App\Models\UserModel;
 use App\Models\WalletModel;
 use App\Models\WalletTransactionModel;
@@ -31,6 +32,12 @@ class WalletService
     public const REF_ORDER = 'order';
 
     public const REF_ORDER_REFUND = 'order_refund';
+
+    /**
+     * Keyed on the return, not the order: an order may be sent back in more
+     * than one batch, and each batch is paid for once.
+     */
+    public const REF_RETURN_REFUND = 'return_refund';
 
     public const REF_TOPUP = 'topup';
 
@@ -137,6 +144,37 @@ class WalletService
                 $description,
                 self::REF_ORDER_REFUND,
                 (int) $order->order_id,
+            );
+
+            return true;
+        });
+    }
+
+    /**
+     * Pays back one accepted return.
+     *
+     * @return bool whether this call is the one that paid the money back
+     */
+    public function refundReturn(OrderReturnModel $return, int $amount, string $description): bool
+    {
+        if ($amount <= 0) {
+            return false;
+        }
+
+        return (bool) DB::transaction(function () use ($return, $amount, $description) {
+            $wallet = $this->for((int) $return->order->user_id);
+
+            if ($this->alreadyRecorded($wallet, self::REF_RETURN_REFUND, (int) $return->return_id)) {
+                return false;
+            }
+
+            $this->credit(
+                $wallet,
+                $amount,
+                WalletTransactionModel::TYPE_REFUND,
+                $description,
+                self::REF_RETURN_REFUND,
+                (int) $return->return_id,
             );
 
             return true;

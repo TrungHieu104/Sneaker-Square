@@ -32,7 +32,7 @@ enum OrderStatus: string
             self::Confirmed => 'Đã xác nhận',
             self::ReadyToShip => 'Chờ lấy hàng',
             self::Delivering => 'Đang giao',
-            self::Delivered => 'Đã giao, chờ khách xác nhận',
+            self::Delivered => 'Đã giao',
             self::Completed => 'Thành công',
             self::Returning => 'Đang hoàn về',
             self::Returned => 'Hoàn về kho',

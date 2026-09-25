@@ -10787,12 +10787,12 @@ label.color-swatch {
     font-weight: bold;
 }
 
-.product-add_cart a.btn-add-pro__detail {
+.product-add_cart .btn-add-pro__detail {
     background-color: #3AB0FF !important;
     font-size: 14px;
 }
 
-.product-add_cart a.btn-add-pro__detail:active {
+.product-add_cart .btn-add-pro__detail:active {
     border-color: unset !important;
 }
 
@@ -10895,6 +10895,24 @@ button {
 
 .modal-content {
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+}
+
+/* Bootstrap makes a scrollable modal work by capping .modal-content and letting
+   .modal-body scroll inside it — which only holds while the body is a direct
+   child. Wrap the three parts in a <form> to post them together, as every money
+   form here does, and the form grows past the cap instead: the body never
+   scrolls and .modal-content's overflow:hidden eats the footer, submit button
+   and all. The form has to carry the column itself. */
+.modal-dialog-scrollable .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    min-height: 0;
+}
+
+.modal-dialog-scrollable .modal-content > form > .modal-body {
+    overflow-y: auto;
+    min-height: 0;
 }
 
 /* css modal-dialog cancel order at success checkout template  */

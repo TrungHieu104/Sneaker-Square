@@ -130,7 +130,7 @@
                                 @switch($order_payment)
                                     @case('cod') Thanh toán khi nhận hàng @break
                                     @case('payUrl') Thanh toán qua MoMo @break
-                                    @case('wallet') Thanh toán bằng ví Sneaker Square @break
+                                    @case('wallet') Thanh toán bằng SPay @break
                                     @default Thanh toán qua VNPay
                                 @endswitch
                                 {{-- {{ $order_payment }} --}}

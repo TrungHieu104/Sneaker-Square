@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Actions\PlaceOrderAction;
 use App\Enums\OrderStatus;
+use App\Models\OrderModel;
 use App\Models\UserModel;
 use App\Models\WalletTransactionModel;
+use App\Services\Shipping\GhnStatus;
 use App\Services\Wallet\WalletService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -120,6 +122,86 @@ class AccountPagesTest extends TestCase
 
         $this->assertStringContainsString(route('orderBill.checkout', $order->order_code), $tatCa);
         $this->assertStringContainsString(url('/in-don-hang/'.$order->order_code), $tatCa);
+    }
+
+    public function test_the_don_hang_in_dung_trang_thai_that_cua_don(): void
+    {
+        $product = $this->makeProduct(slug: 'giay-trang-thai');
+
+        $order = app(PlaceOrderAction::class)->execute(
+            $this->customer,
+            [$this->cartLine($product, 1)],
+            null,
+            $this->makeAddress($this->customer),
+            ['payment' => 'cod', 'note_customer' => null],
+        );
+
+        // The "Đang giao" tab holds five statuses but printed that one word for
+        // all of them, so a confirmed order told the customer it was on a van.
+        $order->forceFill(['order_status' => OrderStatus::Confirmed])->save();
+
+        $this->actingAs($this->customer)
+            ->get(route('user.order'))
+            ->assertOk()
+            ->assertSee(OrderStatus::Confirmed->label())
+            ->assertDontSee('*Trạng thái đơn hàng*');
+    }
+
+    public function test_don_dang_van_chuyen_thi_the_in_trang_thai_cua_hang_van_chuyen(): void
+    {
+        $order = $this->makeOrderForStatusLine();
+        $order->forceFill([
+            'order_status' => OrderStatus::Delivering,
+            'order_shipping_code' => 'GHN123456',
+            'order_shipping_status' => 'transporting',
+        ])->save();
+
+        $this->actingAs($this->customer)
+            ->get(route('user.order'))
+            ->assertOk()
+            ->assertSee(GhnStatus::label('transporting'));
+    }
+
+    public function test_don_chua_giao_thi_khong_in_dong_van_chuyen(): void
+    {
+        $order = $this->makeOrderForStatusLine();
+        $order->forceFill(['order_status' => OrderStatus::New])->save();
+
+        $this->actingAs($this->customer)
+            ->get(route('user.order'))
+            ->assertOk()
+            ->assertSee(OrderStatus::New->label())
+            ->assertDontSee('nkmfr2');
+    }
+
+    public function test_don_da_giao_khong_giuc_khach_bam_xac_nhan(): void
+    {
+        $order = $this->makeOrderForStatusLine();
+        $order->forceFill([
+            'order_status' => OrderStatus::Delivered,
+            'order_delivered_at' => now(),
+        ])->save();
+
+        $this->actingAs($this->customer)
+            ->get(route('user.order'))
+            ->assertOk()
+            ->assertSee(OrderStatus::Delivered->label())
+            // Confirming receipt only brings the auto-completion forward, so the
+            // status must not read like the order is stuck waiting on it.
+            ->assertDontSee('chờ khách xác nhận');
+    }
+
+    private function makeOrderForStatusLine(): OrderModel
+    {
+        $product = $this->makeProduct(slug: 'giay-van-chuyen');
+
+        return app(PlaceOrderAction::class)->execute(
+            $this->customer,
+            [$this->cartLine($product, 1)],
+            null,
+            $this->makeAddress($this->customer),
+            ['payment' => 'cod', 'note_customer' => null],
+        );
     }
 
     public function test_khach_chua_dang_nhap_bi_day_ve_trang_dang_nhap(): void

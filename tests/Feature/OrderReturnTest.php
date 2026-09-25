@@ -6,13 +6,16 @@ use App\Actions\PlaceOrderAction;
 use App\Enums\OrderStatus;
 use App\Models\OrderDetailModel;
 use App\Models\OrderModel;
+use App\Models\OrderReturnItemModel;
 use App\Models\OrderReturnModel;
 use App\Models\ProductModel;
 use App\Models\ProductQuantityModel;
 use App\Models\UserModel;
+use App\Models\WalletTransactionModel;
 use App\Services\Shipping\FakeCarrier;
 use App\Services\Shipping\ShippingCarrier;
 use App\Services\ShopSettings;
+use App\Services\Wallet\WalletService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -93,7 +96,6 @@ class OrderReturnTest extends TestCase
                     ->toArray(),
                 'reason' => 'sai_size',
                 'description' => 'Giày bị chật',
-                'refund_info' => 'Vietcombank 0123456789 NGUYEN VAN A',
                 'images' => [UploadedFile::fake()->image('giay.jpg', 400, 400)],
             ], $overrides));
     }
@@ -176,7 +178,7 @@ class OrderReturnTest extends TestCase
         $this->assertSame(0, OrderReturnModel::count());
     }
 
-    public function test_moi_don_chi_gui_duoc_mot_yeu_cau(): void
+    public function test_dang_co_yeu_cau_cho_xu_ly_thi_khong_gui_them(): void
     {
         $order = $this->makeCompletedOrder();
 
@@ -205,7 +207,6 @@ class OrderReturnTest extends TestCase
             'thiếu lý do' => [['reason' => ''], 'reason'],
             'lý do lạ' => [['reason' => 'hack'], 'reason'],
             'lý do khác mà không mô tả' => [['reason' => 'khac', 'description' => ''], 'description'],
-            'thiếu thông tin nhận tiền' => [['refund_info' => ''], 'refund_info'],
         ];
     }
 
@@ -248,6 +249,149 @@ class OrderReturnTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_da_gui_yeu_cau_thi_doi_sang_nut_xem_yeu_cau(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $trang = route('orderBill.checkout', $order->order_code);
+
+        $this->actingAs($this->customer)->get($trang)->assertDontSee('Lịch sử trả hàng');
+
+        $this->requestReturn($order);
+
+        $this->actingAs($this->customer)->get($trang)
+            ->assertOk()
+            // The form for a second request is gone, and the one already sent
+            // is now something the customer can open and read.
+            ->assertDontSee('id="returnOrder"', false)
+            ->assertSee('Lịch sử trả hàng (1)')
+            ->assertSee('id="returnDetail"', false);
+    }
+
+    public function test_yeu_cau_vua_gui_hien_ngay_trang_thai_cho_duyet(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->requestReturn($order);
+
+        // The panel used to wait for the shop to approve, so a customer who had
+        // just sent a request saw no sign of it anywhere on the page.
+        $this->actingAs($this->customer)
+            ->get(route('orderBill.checkout', $order->order_code))
+            ->assertOk()
+            ->assertSee('Chờ duyệt');
+    }
+
+    // ------------------------------------------- nhiều lượt trả trên một đơn
+
+    public function test_tra_mot_phan_xong_van_tra_duoc_phan_con_lai(): void
+    {
+        $order = $this->makeCompletedOrder(quantity: 3);
+        $dong = OrderDetailModel::where('order_id', $order->order_id)->firstOrFail();
+
+        $this->requestReturn($order, ['items' => [$dong->order_details_id => 1]]);
+        $this->runThroughRefund($order);
+
+        $order = $order->fresh();
+        $this->assertSame(OrderStatus::PartiallyReturned, $order->order_status);
+        $this->assertSame([$dong->order_details_id => 2], $order->returnableQuantities());
+
+        $this->requestReturn($order, ['items' => [$dong->order_details_id => 2]])
+            ->assertSessionHas('iconMessage', 'success');
+
+        $this->runThroughRefund($order);
+
+        // Everything has now gone home, whether it went in one parcel or two.
+        $this->assertSame(OrderStatus::Returned, $order->fresh()->order_status);
+        $this->assertSame([], $order->fresh()->returnableQuantities());
+    }
+
+    public function test_khong_tra_duoc_qua_so_luong_con_lai(): void
+    {
+        $order = $this->makeCompletedOrder(quantity: 2);
+        $dong = OrderDetailModel::where('order_id', $order->order_id)->firstOrFail();
+
+        $this->requestReturn($order, ['items' => [$dong->order_details_id => 1]]);
+        $this->runThroughRefund($order);
+
+        $this->requestReturn($order->fresh(), ['items' => [$dong->order_details_id => 2]])
+            ->assertSessionHas('iconMessage', 'error');
+
+        $this->assertSame(1, OrderReturnItemModel::query()->count());
+    }
+
+    public function test_hai_lan_hoan_tien_deu_vao_vi_khach(): void
+    {
+        $order = $this->makeCompletedOrder(quantity: 2);
+        $order->forceFill(['order_payment_status' => 1])->save();
+        $dong = OrderDetailModel::where('order_id', $order->order_id)->firstOrFail();
+
+        $this->requestReturn($order, ['items' => [$dong->order_details_id => 1]]);
+        $this->runThroughRefund($order, 100_000);
+
+        $this->requestReturn($order->fresh(), ['items' => [$dong->order_details_id => 1]]);
+        $this->runThroughRefund($order, 150_000);
+
+        // Keyed on the order, the second refund would have been mistaken for a
+        // repeat of the first and silently paid nothing.
+        $vi = app(WalletService::class)->for($this->customer);
+        $this->assertSame(250_000, (int) $vi->balance);
+        $this->assertSame(2, WalletTransactionModel::where('reference_type', WalletService::REF_RETURN_REFUND)->count());
+    }
+
+    public function test_khach_huy_yeu_cau_thi_gui_lai_duoc(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->requestReturn($order);
+
+        $this->actingAs($this->customer)
+            ->from(route('orderBill.checkout', $order->order_code))
+            ->patch(route('return.cancel', $order->order_code))
+            ->assertSessionHas('iconMessage', 'success');
+
+        $this->assertSame(OrderReturnModel::CANCELLED, $order->fresh()->orderReturn->status);
+        $this->assertTrue($order->fresh()->canRequestReturn());
+
+        $this->requestReturn($order->fresh())->assertSessionHas('iconMessage', 'success');
+        $this->assertSame(2, OrderReturnModel::count());
+    }
+
+    public function test_da_duyet_thi_khach_khong_huy_duoc_nua(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->requestReturn($order);
+        $this->admin('returns.approve', $order);
+
+        $this->actingAs($this->customer)
+            ->from(route('orderBill.checkout', $order->order_code))
+            ->patch(route('return.cancel', $order->order_code))
+            ->assertSessionHas('iconMessage', 'error');
+
+        $this->assertSame(OrderReturnModel::APPROVED, $order->fresh()->orderReturn->status);
+    }
+
+    public function test_khach_khong_huy_duoc_yeu_cau_cua_don_nguoi_khac(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->requestReturn($order);
+
+        $nguoiLa = $this->makeUser(email: 'nguoila@example.test', username: 'nguoila');
+
+        $this->actingAs($nguoiLa)
+            ->patch(route('return.cancel', $order->order_code))
+            ->assertNotFound();
+
+        $this->assertSame(OrderReturnModel::REQUESTED, $order->fresh()->orderReturn->status);
+    }
+
+    /**
+     * Walks the shop's half of a return the customer has just asked for.
+     */
+    private function runThroughRefund(OrderModel $order, int $amount = 100_000): void
+    {
+        $this->admin('returns.approve', $order);
+        $this->admin('returns.receive', $order);
+        $this->admin('returns.refund', $order, ['refund_amount' => $amount]);
+    }
+
     // ------------------------------------------------------ admin xử lý
 
     public function test_tu_choi_thi_don_ve_thanh_cong_va_giu_doanh_thu(): void
@@ -275,15 +419,86 @@ class OrderReturnTest extends TestCase
         $this->assertSame(OrderReturnModel::REQUESTED, OrderReturnModel::firstOrFail()->status);
     }
 
-    public function test_bi_tu_choi_thi_khong_gui_lai_duoc(): void
+    public function test_bi_tu_choi_thi_van_gui_lai_duoc_trong_han(): void
     {
         $order = $this->makeCompletedOrder();
         $this->requestReturn($order);
-        $this->admin('returns.reject', $order, ['reject_reason' => 'Quá hạn đổi trả']);
+        $this->admin('returns.reject', $order, ['reject_reason' => 'Ảnh chưa rõ, gửi lại giúp shop']);
 
-        $this->requestReturn($order->fresh())->assertSessionHas('iconMessage', 'error');
+        // A refused request holds nothing: the goods never left the customer.
+        $this->requestReturn($order->fresh())->assertSessionHas('iconMessage', 'success');
 
-        $this->assertSame(1, OrderReturnModel::count());
+        $this->assertSame(2, OrderReturnModel::count());
+        $this->assertSame(OrderReturnModel::REQUESTED, $order->fresh()->orderReturn->status);
+    }
+
+    public function test_lich_su_liet_ke_tung_lan_gui(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->requestReturn($order);
+        $this->admin('returns.reject', $order, ['reject_reason' => 'Ảnh chưa rõ']);
+        Carbon::setTestNow(now()->addHours(3));
+        $this->requestReturn($order->fresh());
+        Carbon::setTestNow();
+
+        $moi = OrderReturnModel::orderByDesc('return_id')->firstOrFail();
+        $cu = OrderReturnModel::orderBy('return_id')->firstOrFail();
+
+        $this->actingAs($this->customer)
+            ->get(route('orderBill.checkout', $order->order_code))
+            ->assertOk()
+            ->assertSee('Lịch sử trả hàng (2)')
+            ->assertSee('2 yêu cầu đã gửi')
+            // Each line is told apart by when it was sent, nothing else.
+            ->assertSee($moi->created_at->format('H:i d/m/Y'))
+            ->assertSee($cu->created_at->format('H:i d/m/Y'))
+            // The list is what opens; a docket is a pane the same modal swaps to.
+            ->assertSee('data-return-open', false)
+            ->assertSee('data-return-pane="detail"', false);
+    }
+
+    public function test_admin_chi_mo_san_yeu_cau_dang_cho_xu_ly(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->requestReturn($order);
+        $this->admin('returns.reject', $order, ['reject_reason' => 'Ảnh chưa rõ']);
+        $cu = OrderReturnModel::orderBy('return_id')->firstOrFail();
+        $this->requestReturn($order->fresh());
+        $moi = OrderReturnModel::orderByDesc('return_id')->firstOrFail();
+
+        $trang = $this->actingAs($this->makeOrderAdminOnce())
+            ->get(route('orders.edit', encrypt($order->order_id)))
+            ->assertOk()
+            ->assertSee('2 lần');
+
+        $html = $trang->getContent();
+        $mo = fn (int $id) => '/id="tra-hang-'.$id.'"\s+class="accordion-collapse collapse show"/';
+
+        $this->assertMatchesRegularExpression($mo($moi->return_id), $html);
+        $this->assertDoesNotMatchRegularExpression($mo($cu->return_id), $html);
+    }
+
+    public function test_thao_tac_admin_nham_vao_yeu_cau_dang_cho_xu_ly(): void
+    {
+        $order = $this->makeCompletedOrder(quantity: 2);
+        $this->requestReturn($order);
+        $this->admin('returns.reject', $order, ['reject_reason' => 'Ảnh chưa rõ']);
+
+        $this->requestReturn($order->fresh());
+        $this->admin('returns.approve', $order);
+
+        // The settled request is the first row in the table; every button here
+        // must reach past it to the one the shop is actually working on.
+        $this->admin('returns.shipping_code', $order, ['return_shipping_code' => 'TRAHANG001'], 'patch');
+
+        $moi = OrderReturnModel::orderByDesc('return_id')->firstOrFail();
+        $this->assertSame('TRAHANG001', $moi->fresh()->return_shipping_code);
+
+        $this->admin('returns.receive', $order);
+        $this->admin('returns.refund', $order, ['refund_amount' => $moi->fresh()->refundDue()])
+            ->assertSessionHas('iconMessage', 'success');
+
+        $this->assertSame(OrderReturnModel::REFUNDED, $moi->fresh()->status);
     }
 
     public function test_tron_luong_duyet_nhan_hang_hoan_tien(): void
@@ -376,6 +591,26 @@ class OrderReturnTest extends TestCase
         $this->assertNotNull(OrderReturnModel::firstOrFail()->return_shipping_code);
     }
 
+    public function test_van_don_tra_hang_chi_khai_phan_khach_gui_tra(): void
+    {
+        $order = $this->makeCompletedOrder(quantity: 2);
+        $this->product->update(['pro_weight' => 600]);
+        $dong = OrderDetailModel::where('order_id', $order->order_id)->firstOrFail();
+
+        $this->requestReturn($order, ['items' => [$dong->order_details_id => 1]]);
+        $this->admin('returns.approve', $order);
+        $this->admin('returns.book', $order)->assertSessionHas('iconMessage', 'success');
+
+        $booked = end($this->carrier->booked);
+
+        // One of the two pairs is coming back, so GHN must be told about one
+        // pair: it prices the carriage by weight and the cover by value.
+        $this->assertSame(600, $booked->weight);
+        $this->assertSame(1_000_000, $booked->insuranceValue);
+        $this->assertCount(1, $booked->items);
+        $this->assertSame(1, $booked->items[0]['quantity']);
+    }
+
     public function test_chua_duyet_thi_khong_tao_duoc_van_don_tra_hang(): void
     {
         $order = $this->makeCompletedOrder();
@@ -414,6 +649,38 @@ class OrderReturnTest extends TestCase
         $this->assertSame('LTRA02', OrderReturnModel::firstOrFail()->return_shipping_code);
     }
 
+    public function test_admin_huy_van_don_tra_hang_roi_tao_lai_duoc(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->requestReturn($order);
+        $this->admin('returns.approve', $order);
+        $this->admin('returns.book', $order);
+        $maCu = OrderReturnModel::firstOrFail()->return_shipping_code;
+
+        $this->admin('returns.cancel_shipment', $order)->assertSessionHas('iconMessage', 'success');
+
+        $this->assertContains($maCu, $this->carrier->cancelled);
+        $this->assertNull(OrderReturnModel::firstOrFail()->return_shipping_code);
+
+        $this->admin('returns.book', $order)->assertSessionHas('iconMessage', 'success');
+        $this->assertNotNull(OrderReturnModel::firstOrFail()->return_shipping_code);
+    }
+
+    public function test_go_ma_van_don_tra_hang_khong_goi_ghn(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->requestReturn($order);
+        $this->admin('returns.approve', $order);
+        $this->admin('returns.shipping_code', $order, ['return_shipping_code' => 'LTRA09'], 'patch');
+
+        // The parcel is already gone at GHN; asking again would only fail.
+        $this->admin('returns.detach_shipment', $order, [], 'delete')
+            ->assertSessionHas('iconMessage', 'success');
+
+        $this->assertSame([], $this->carrier->cancelled);
+        $this->assertNull(OrderReturnModel::firstOrFail()->return_shipping_code);
+    }
+
     public function test_huy_van_don_tra_hang_nha_ma(): void
     {
         $order = $this->makeCompletedOrder();
@@ -438,7 +705,6 @@ class OrderReturnTest extends TestCase
             ->assertOk()
             ->assertSee('Yêu cầu trả hàng')
             ->assertSee('Sai size, không vừa')
-            ->assertSee('Vietcombank 0123456789')
             ->assertSee(route('returns.approve', $order->order_id))
             ->assertDontSee('Xác nhận hoàn tiền');
     }
@@ -464,7 +730,7 @@ class OrderReturnTest extends TestCase
         $this->actingAs($this->customer)
             ->get(route('orderBill.checkout', $order->order_code))
             ->assertOk()
-            ->assertSee('Yêu cầu trả hàng đã bị từ chối: Sản phẩm đã qua sử dụng');
+            ->assertSee('Lý do từ chối: Sản phẩm đã qua sử dụng');
     }
 
     public function test_admin_cau_hinh_so_ngay_tra_hang(): void

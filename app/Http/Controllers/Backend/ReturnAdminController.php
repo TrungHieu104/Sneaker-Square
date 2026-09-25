@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Session;
  */
 class ReturnAdminController extends Controller
 {
+    private const KHONG_CO_YEU_CAU = 'Đơn hàng không có yêu cầu trả hàng nào đang chờ xử lý.';
+
     public function __construct(private OrderReturns $returns) {}
 
     public function approve(string $order_id): RedirectResponse
@@ -38,7 +40,10 @@ class ReturnAdminController extends Controller
     public function book(string $order_id, ShippingService $shipping): RedirectResponse
     {
         $order = OrderModel::findOrFail($order_id);
-        $return = OrderReturnModel::where('order_id', $order->order_id)->firstOrFail();
+
+        if (! $return = $this->dangXuLy($order)) {
+            return $this->back($order, 'error', self::KHONG_CO_YEU_CAU);
+        }
 
         try {
             $booking = $shipping->bookReturn($return);
@@ -47,6 +52,36 @@ class ReturnAdminController extends Controller
         }
 
         return $this->back($order, 'success', 'Đã tạo vận đơn trả hàng '.$booking->code.'.');
+    }
+
+    public function cancelShipment(string $order_id, ShippingService $shipping): RedirectResponse
+    {
+        return $this->releaseShipment($order_id, $shipping, true, 'Đã huỷ vận đơn trả hàng, bạn có thể tạo lại.');
+    }
+
+    /**
+     * For a parcel the shop already cancelled on GHN's dashboard.
+     */
+    public function detachShipment(string $order_id, ShippingService $shipping): RedirectResponse
+    {
+        return $this->releaseShipment($order_id, $shipping, false, 'Đã gỡ mã vận đơn trả hàng khỏi yêu cầu này.');
+    }
+
+    private function releaseShipment(string $order_id, ShippingService $shipping, bool $hoiHang, string $done): RedirectResponse
+    {
+        $order = OrderModel::findOrFail($order_id);
+
+        if (! $return = $this->dangXuLy($order)) {
+            return $this->back($order, 'error', self::KHONG_CO_YEU_CAU);
+        }
+
+        try {
+            $shipping->releaseReturnBooking($return, $hoiHang);
+        } catch (ShippingUnavailable $e) {
+            return $this->back($order, 'error', $e->getMessage());
+        }
+
+        return $this->back($order, 'success', $done);
     }
 
     /**
@@ -64,7 +99,10 @@ class ReturnAdminController extends Controller
         );
 
         $order = OrderModel::findOrFail($order_id);
-        $return = OrderReturnModel::where('order_id', $order->order_id)->firstOrFail();
+
+        if (! $return = $this->dangXuLy($order)) {
+            return $this->back($order, 'error', self::KHONG_CO_YEU_CAU);
+        }
 
         if ($return->status !== OrderReturnModel::APPROVED || $return->return_shipping_code) {
             return $this->back($order, 'error', 'Chỉ gắn được mã cho yêu cầu đã duyệt và chưa có vận đơn.');
@@ -85,7 +123,10 @@ class ReturnAdminController extends Controller
     public function refund(Request $request, string $order_id): RedirectResponse
     {
         $order = OrderModel::findOrFail($order_id);
-        $return = OrderReturnModel::where('order_id', $order->order_id)->firstOrFail();
+
+        if (! $return = $this->dangXuLy($order)) {
+            return $this->back($order, 'error', self::KHONG_CO_YEU_CAU);
+        }
 
         // Capped at what the returned lines are worth, not at the order total:
         // a customer who sent one of two pairs back is owed one pair.
@@ -100,6 +141,17 @@ class ReturnAdminController extends Controller
         );
 
         return $this->run($order_id, fn (OrderModel $o) => $this->returns->refund($o, (int) $data['refund_amount']), 'Đã hoàn tiền vào ví khách.');
+    }
+
+    /**
+     * The request every button on the page acts on: the one the shop still
+     * owes an answer. An order collects several over its return window, and
+     * the settled ones are history — reaching for the first row in the table
+     * hands the shop a refused request and refuses the action.
+     */
+    private function dangXuLy(OrderModel $order): ?OrderReturnModel
+    {
+        return $order->activeReturn()->first();
     }
 
     private function run(string $order_id, callable $step, string $done): RedirectResponse

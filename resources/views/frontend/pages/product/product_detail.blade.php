@@ -90,7 +90,10 @@
                                 <span class="text-muted">|</span>
                                 <a href="#review-section" class="text-decoration-underline text-warning" onclick="showCommentTab()" style="font-weight: 500;">{{ $reviewCount }} đánh giá</a>
                             </div>
-                            <h6 class="fw-bold">SKU: <span class="fw-normal">{{ $detailProduct->pro_code }}</span></h6>
+                            <div class="d-flex align-items-center gap-3 flex-wrap">
+                                <h6 class="fw-bold mb-0">SKU: <span class="fw-normal">{{ $detailProduct->pro_code }}</span></h6>
+                                @include('components.stock_tag', ['stock' => $stockTotal, 'id' => 'stock-status'])
+                            </div>
                         </div>
                         <div class="product-detail_price mt-4">
                             <div class="d-flex align-items-center gap-4">
@@ -142,7 +145,6 @@
 
                         <div class="product-detail_quality mt-3">
                             <label class="fw-bold fs-6 mb-2">Số lượng:</label>
-                            <span id="stock-note" class="ms-2 text-muted"></span>
                             <div class="d-flex">
                                 <button type="button" class="minus rounded-start-2">
                                     <i class="fas fa-minus"></i>
@@ -159,10 +161,11 @@
                                 <div class="row">
                                     <div class="col-lg-12 px-0 d-flex gap-3 mb-3 flex-wrap product-data">
                                         <div class="flex-fill">
-                                            <a href="{{ route('product.page') }}"
-                                                class="w-100 h-100 py-2 d-flex align-items-center justify-content-center btn text-white btn-order gap-2 fw-bold btn-add-pro__detail">
-                                                 <i class='bx bx-shopping-bag fs-5'></i> Tiếp tục mua hàng
-                                            </a>
+                                            <button type="submit" name="action" value="stay"
+                                                class="w-100 h-100 py-2 d-flex align-items-center justify-content-center btn text-white btn-order gap-2 fw-bold btn-add-pro__detail"
+                                                @disabled($stockTotal === 0)>
+                                                 <i class='bx bx-cart-add fs-5'></i> Thêm vào giỏ hàng
+                                            </button>
                                         </div>
                                         <div class="flex-fill">
                                             <input type="hidden" class="product-id" name="" value="{{ $detailProduct->pro_id }}">
@@ -191,7 +194,9 @@
                                     </div>
                                     <div class="col-lg-12 px-0">
                                         <button class="btn btn-order w-100 py-2 btn-cart_order text-white fw-bold"
-                                            type="submit"> Mua hàng</button>
+                                            type="submit" @disabled($stockTotal === 0)>
+                                            {{ $stockTotal > 0 ? 'Mua hàng' : 'Hết hàng' }}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -478,6 +483,12 @@
             opacity: 0.3;
             filter: grayscale(0.7);
         }
+
+
+        .btn-order:disabled {
+            cursor: not-allowed;
+            opacity: .55;
+        }
     </style>
 @endpush
 
@@ -486,6 +497,7 @@
     <script>
         const variantPrices = @json($variantPrices);
         const variantStock = @json($variantStock);
+        const stockTotal = @json($stockTotal);
         const rangeSellingPrice = @json($detailProduct->displaySellingPrice());
         const rangeListPrice = @json($detailProduct->displayListPrice());
         const rangeIsOnSale = @json($detailProduct->isOnSale());
@@ -525,22 +537,59 @@
         // to argue with.
         const QUANTITY_CEILING = 20;
 
+        // Re-writes the shelf tag the way components.stock_tag first drew it.
+        // The wording lives on the tag's data attributes, so the component stays
+        // the only place the Vietnamese is written down.
+        function drawStockTag(quantity, exact) {
+            const tag = document.getElementById('stock-status');
+            const label = tag.dataset;
+            const threshold = Number(label.threshold);
+            const padded = String(quantity).padStart(2, '0');
+
+            let state = 'in';
+            let text = label.labelIn;
+            let count = '';
+
+            if (quantity === 0) {
+                state = 'out';
+                text = label.labelOut;
+            } else if (quantity <= threshold) {
+                state = 'low';
+                text = label.labelLow;
+                count = padded;
+            } else if (exact) {
+                text = label.labelExact;
+                count = padded;
+            }
+
+            tag.dataset.state = state;
+            tag.innerHTML = '<span class="stock-tag__label"></span>'
+                + (count ? '<span class="stock-tag__count"></span>' : '');
+            tag.querySelector('.stock-tag__label').textContent = text;
+
+            if (count) {
+                tag.querySelector('.stock-tag__count').textContent = count;
+            }
+        }
+
         function refreshQuantity() {
             const key = selectedVariantKey();
             const inStock = key === null ? null : variantStock[key];
             const box = $('.btn_quality');
-            const note = $('#stock-note');
 
             if (inStock === null || inStock === undefined) {
                 box.attr('max', QUANTITY_CEILING);
-                note.text('');
+                drawStockTag(stockTotal, false);
 
                 return;
             }
 
             const max = Math.min(inStock, QUANTITY_CEILING);
 
-            note.text('Còn ' + inStock + ' sản phẩm');
+            // Once the pair is settled the count is that pair's, not the whole
+            // product's: five left in this colour is what the customer can buy,
+            // whatever the other colours hold.
+            drawStockTag(inStock, true);
             box.attr('max', max);
 
             if (parseInt(box.val(), 10) > max) {

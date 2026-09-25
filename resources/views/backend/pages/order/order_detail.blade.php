@@ -9,8 +9,8 @@
     @if ($order->hasStatus(\App\Enums\OrderStatus::CancelRequested))
         @include('backend.pages.order.partials.cancel_request_panel', ['order' => $order])
     @endif
-    @if ($order->orderReturn)
-        @include('backend.pages.order.partials.return_panel', ['order' => $order, 'return' => $order->orderReturn])
+    @if ($order->orderReturns->isNotEmpty())
+        @include('backend.pages.order.partials.return_panel', ['order' => $order])
     @endif
     <!-- Bordered Table -->
     <form action="/admin/order/{{$order->order_id}}" method="post">
@@ -75,15 +75,18 @@
                     </div> 
                 </div>
                 <div class="row">
-                    <div class="col-lg-6 mb-3">
-                        <label for="content" class="form-label">Phương thức thanh toán: 
-                        </label>
-                        <input type="text" class="form-control" readonly value="@if ($order->order_payment == 'cod') Thanh toán khi nhận hàng @else @if ($order->order_payment == 'redirect')Thanh toán qua VNPay @else Thanh toán qua Momo @endif @endif" />                                                                                 
+                    <div class="col-lg-4 mb-3">
+                        <label for="content" class="form-label">Phương thức thanh toán: </label>
+                        <input type="text" class="form-control" readonly value="{{ $order->paymentLabel() }}" />
                     </div>
-                    <div class="col-lg-6 mb-3">
-                        <label for="content" class="form-label">Trạng thái: 
-                        </label>
-                        {{-- <input type="text" class="form-control" readonly value="{{$order->order_payment_status == 0 ? "Chưa thanh toán" : "Đã thanh toán ".(date('d-m-Y H:m:s', strtotime($order->order_payment_time)))}}" />--}}
+                    <div class="col-lg-4 mb-3">
+                        <label for="content" class="form-label">Tình trạng thanh toán: </label>
+                        <input type="text"
+                            class="form-control {{ (int) $order->order_payment_status === 1 ? 'text-success' : 'text-warning' }}"
+                            readonly value="{{ $order->paymentStatusLabel() }}" />
+                    </div>
+                    <div class="col-lg-4 mb-3">
+                        <label for="content" class="form-label">Trạng thái đơn: </label>
                         @php
                             // A returning order says more when it also says how far the
                             // customer's own request has got.

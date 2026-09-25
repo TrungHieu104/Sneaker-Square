@@ -97,7 +97,6 @@ class PartialReturnTest extends TestCase
                 'items' => $items,
                 'reason' => 'sai_size',
                 'description' => 'Đôi thứ hai bị chật',
-                'refund_info' => 'Vietcombank 0123456789 NGUYEN VAN A',
             ]);
     }
 

@@ -86,6 +86,7 @@ class OrderModel extends Model
     protected $casts = [
         'order_delivered_at' => 'datetime',
         'order_completed_at' => 'datetime',
+        'order_payment_time' => 'datetime',
         'order_status' => OrderStatus::class,
         'order_refund_required' => 'boolean',
     ];
@@ -99,9 +100,26 @@ class OrderModel extends Model
             'cod' => 'Thanh toán khi nhận hàng',
             'payUrl' => 'Thanh toán qua MoMo',
             'redirect' => 'Thanh toán qua VNPay',
-            'wallet' => 'Thanh toán bằng ví Sneaker Square',
+            'wallet' => 'Thanh toán bằng SPay',
             default => (string) $this->order_payment,
         };
+    }
+
+    /**
+     * Whether the money has arrived, and when.
+     *
+     * Cash on delivery is not unpaid the way an abandoned gateway order is —
+     * nobody walked away from it, the shop simply has not collected yet.
+     */
+    public function paymentStatusLabel(): string
+    {
+        if ((int) $this->order_payment_status === 1) {
+            return $this->order_payment_time
+                ? 'Đã thanh toán · '.$this->order_payment_time->format('H:i d/m/Y')
+                : 'Đã thanh toán';
+        }
+
+        return $this->order_payment === 'cod' ? 'Thu khi giao hàng' : 'Chưa thanh toán';
     }
 
     public function statusLogs()
@@ -254,18 +272,86 @@ class OrderModel extends Model
         return (int) $this->order_delivery_status === 1 && ! $this->usesGhn();
     }
 
-    public function orderReturn()
+    /**
+     * Every return the customer has opened on this order, newest first.
+     */
+    public function orderReturns()
     {
-        return $this->hasOne(OrderReturnModel::class, 'order_id', 'order_id');
+        return $this->hasMany(OrderReturnModel::class, 'order_id', 'order_id')->latest('return_id');
     }
 
     /**
-     * Whether the customer may still ask to send this order back: it is
-     * complete, nothing has been requested yet, and the window is open.
+     * The newest request. Kept as a singular relation because every screen
+     * that shows "the" return means the one the customer is looking at now.
+     */
+    public function orderReturn()
+    {
+        return $this->hasOne(OrderReturnModel::class, 'order_id', 'order_id')->latestOfMany('return_id');
+    }
+
+    /**
+     * The one the shop still has work to do on, if any. Only one may be open
+     * at a time, which is what lets the admin screens act on an order rather
+     * than on a request id.
+     */
+    public function activeReturn()
+    {
+        return $this->hasOne(OrderReturnModel::class, 'order_id', 'order_id')
+            ->whereIn('status', OrderReturnModel::OPEN)
+            ->latestOfMany('return_id');
+    }
+
+    /**
+     * How many units of each line the customer could still send back.
+     *
+     * A refused or cancelled request gives its units back to the pool: the
+     * goods never left the customer's house. Everything else holds them.
+     *
+     * @return array<int, int>  quantity left, keyed by order_details_id
+     */
+    public function returnableQuantities(): array
+    {
+        $daTra = OrderReturnItemModel::query()
+            ->join('order_returns', 'order_returns.return_id', '=', 'order_return_items.return_id')
+            ->where('order_returns.order_id', $this->order_id)
+            ->whereIn('order_returns.status', OrderReturnModel::HOLDS_GOODS)
+            ->groupBy('order_return_items.order_details_id')
+            ->selectRaw('order_return_items.order_details_id, SUM(order_return_items.quantity) as da_tra')
+            ->pluck('da_tra', 'order_details_id');
+
+        $conLai = [];
+
+        foreach (OrderDetailModel::where('order_id', $this->order_id)->get() as $dong) {
+            $con = (int) $dong->quantity - (int) ($daTra[$dong->order_details_id] ?? 0);
+
+            if ($con > 0) {
+                $conLai[(int) $dong->order_details_id] = $con;
+            }
+        }
+
+        return $conLai;
+    }
+
+    /**
+     * Whether every unit the customer bought has gone back to the shop.
+     */
+    public function allUnitsReturned(): bool
+    {
+        return $this->returnableQuantities() === [];
+    }
+
+    /**
+     * Whether the customer may open a return now: the order has arrived and
+     * settled, the window is open, nothing else is being handled, and there
+     * is something left to send back.
      */
     public function canRequestReturn(): bool
     {
-        if (! $this->hasStatus(OrderStatus::Completed) || $this->orderReturn()->exists()) {
+        if (! $this->hasStatus(OrderStatus::Completed, OrderStatus::PartiallyReturned)) {
+            return false;
+        }
+
+        if ($this->activeReturn()->exists() || $this->returnableQuantities() === []) {
             return false;
         }
 

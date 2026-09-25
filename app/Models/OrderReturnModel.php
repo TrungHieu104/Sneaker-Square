@@ -7,10 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A customer sending back an order they already received.
+ * A customer sending back goods from an order they already received.
  *
- * One per order: a rejected request is final, the way the marketplaces treat
- * it, so there is never a second request to reconcile against the first.
+ * An order may collect several of these over its return window — one per
+ * conversation with the shop — but only ever one at a time. A request that
+ * was refused, or that the customer called off, frees the units it named so
+ * they can be asked for again; a request that reached the shop's shelves
+ * spends them for good.
  */
 class OrderReturnModel extends Model
 {
@@ -28,6 +31,20 @@ class OrderReturnModel extends Model
 
     public const REFUNDED = 'refunded';
 
+    public const CANCELLED = 'cancelled';
+
+    /**
+     * A request the shop still has work to do on. At most one of these exists
+     * per order: two open requests would race each other over the same units.
+     */
+    public const OPEN = [self::REQUESTED, self::APPROVED, self::RECEIVED];
+
+    /**
+     * Requests whose units are gone or spoken for. What is left of a line,
+     * and so what may still be sent back, is the quantity bought minus these.
+     */
+    public const HOLDS_GOODS = [self::REQUESTED, self::APPROVED, self::RECEIVED, self::REFUNDED];
+
     /** @var array<string, string> */
     public const REASONS = [
         'sai_size' => 'Sai size, không vừa',
@@ -44,6 +61,7 @@ class OrderReturnModel extends Model
         self::REJECTED => 'Bị từ chối',
         self::RECEIVED => 'Đã nhận hàng trả, chờ hoàn tiền',
         self::REFUNDED => 'Đã hoàn tiền',
+        self::CANCELLED => 'Khách đã huỷ',
     ];
 
     protected $fillable = [
@@ -52,7 +70,6 @@ class OrderReturnModel extends Model
         'reason',
         'description',
         'images',
-        'refund_info',
     ];
 
     protected $casts = [
@@ -128,6 +145,14 @@ class OrderReturnModel extends Model
     public function reasonLabel(): string
     {
         return self::REASONS[$this->reason] ?? $this->reason;
+    }
+
+    /**
+     * Whether the shop still owes this request an answer or an action.
+     */
+    public function isOpen(): bool
+    {
+        return in_array($this->status, self::OPEN, true);
     }
 
     public function statusLabel(): string

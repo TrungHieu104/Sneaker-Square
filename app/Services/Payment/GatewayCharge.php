@@ -35,7 +35,7 @@ final class GatewayCharge
         return new self(
             code: (string) $topup->topup_code,
             amount: (int) $topup->amount,
-            description: 'Nạp tiền vào ví Sneaker Square '.$topup->topup_code,
+            description: 'Nạp tiền vào SPay '.$topup->topup_code,
         );
     }
 }

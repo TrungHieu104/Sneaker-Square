@@ -25,7 +25,6 @@ class ReturnOrderRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*' => ['nullable', 'integer', 'min:0'],
             'description' => ['nullable', 'required_if:reason,khac', 'string', 'max:1000'],
-            'refund_info' => ['required', 'string', 'max:500'],
             'images' => ['nullable', 'array', 'max:'.self::MAX_IMAGES],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
@@ -44,8 +43,6 @@ class ReturnOrderRequest extends FormRequest
             'reason.in' => 'Lý do trả hàng không hợp lệ.',
             'description.required_if' => 'Vui lòng mô tả lý do trả hàng.',
             'description.max' => 'Mô tả tối đa :max ký tự.',
-            'refund_info.required' => 'Vui lòng nhập thông tin nhận tiền hoàn.',
-            'refund_info.max' => 'Thông tin nhận tiền hoàn tối đa :max ký tự.',
             'images.max' => 'Chỉ gửi tối đa :max ảnh.',
             'images.*.image' => 'Tệp đính kèm phải là ảnh.',
             'images.*.mimes' => 'Ảnh phải có định dạng jpg, png hoặc webp.',

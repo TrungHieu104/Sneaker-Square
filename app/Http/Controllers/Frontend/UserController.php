@@ -121,7 +121,7 @@ class UserController extends Controller
         try {
             $returns->request(
                 $order_db,
-                $request->safe()->only(['reason', 'description', 'refund_info']),
+                $request->safe()->only(['reason', 'description']),
                 $request->input('items', []),
                 $request->file('images', []),
             );
@@ -132,6 +132,25 @@ class UserController extends Controller
 
         Session::flash('iconMessage', 'success');
         return back()->with('message', 'Gửi yêu cầu trả hàng thành công, cửa hàng sẽ phản hồi sớm.');
+    }
+
+    public function cancelReturn(string $order_code, OrderReturns $returns)
+    {
+        $order_db = Order::where('order_code', $order_code)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        try {
+            $returns->cancelByCustomer($order_db);
+        } catch (ReturnNotAllowed $e) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', $e->getMessage());
+        }
+
+        Session::flash('iconMessage', 'success');
+
+        return back()->with('message', 'Đã huỷ yêu cầu trả hàng.');
     }
 
     public function userOrder()

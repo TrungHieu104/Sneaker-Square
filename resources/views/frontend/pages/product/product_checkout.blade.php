@@ -482,7 +482,7 @@
                                         <label class="btn border p-2 d-flex justify-content-center gap-3 align-items-center"
                                             for="btnradio4">
                                             <span>
-                                                Ví Sneaker Square
+                                                SPay
                                                 <small class="d-block text-muted">Số dư {{ number_format($walletBalance, 0, ',', '.') }}đ</small>
                                             </span>
                                             <i class='bx bx-wallet fs-3'></i>

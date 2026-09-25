@@ -46,7 +46,8 @@
                 tabindex="0">
                 <div class="d-flex mb-3 position-relative" role="search">
                     <svg style="left:23px;" class="position-absolute top-50 translate-middle"
-                        xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512">
+                        xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512" fill="#AAA"
+                        aria-hidden="true">
                         <path
                             d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z" />
                     </svg>
@@ -74,27 +75,7 @@
                                     # Mã đơn hàng - {{ $all_order_data->order_code }}
                                 </div>
                                 <div class="col-8 text-end">
-                                    <span class="nkmfr2"><svg class="mx-1" xmlns="http://www.w3.org/2000/svg"
-                                            height="1em" viewBox="0 0 640 512">
-                                            <style>
-                                                svg {
-                                                    fill: #26aa99
-                                                }
-                                            </style>
-                                            <path
-                                                d="M48 0C21.5 0 0 21.5 0 48V368c0 26.5 21.5 48 48 48H64c0 53 43 96 96 96s96-43 96-96H384c0 53 43 96 96 96s96-43 96-96h32c17.7 0 32-14.3 32-32s-14.3-32-32-32V288 256 237.3c0-17-6.7-33.3-18.7-45.3L512 114.7c-12-12-28.3-18.7-45.3-18.7H416V48c0-26.5-21.5-48-48-48H48zM416 160h50.7L544 237.3V256H416V160zM112 416a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm368-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z" />
-                                        </svg> *Trạng thái đơn hàng*</span> |
-                                    <span class="text-co fw-bold text-uppercase">
-                                        @php
-                                            // A gateway order nobody has paid for yet is waiting on the
-                                            // customer, not on the shop, and says so.
-                                            echo $all_order_data->hasStatus(\App\Enums\OrderStatus::New)
-                                                && in_array($all_order_data->order_payment, ['payUrl', 'redirect'], true)
-                                                && (int) $all_order_data->order_payment_status === 0
-                                                    ? 'Chờ thanh toán'
-                                                    : $all_order_data->order_status->label();
-                                        @endphp
-                                    </span>
+                                    @include('components.order_status_line', ['order' => $all_order_data])
                                 </div>
                             </div>
                             <hr>
@@ -236,27 +217,7 @@
                                     # Mã đơn hàng - {{ $wait_payment_data->order_code }}
                                 </div>
                                 <div class="col-8 text-end">
-                                    <span class="nkmfr2"><svg class="mx-1" xmlns="http://www.w3.org/2000/svg"
-                                            height="1em" viewBox="0 0 640 512">
-                                            <style>
-                                                svg {
-                                                    fill: #26aa99
-                                                }
-                                            </style>
-                                            <path
-                                                d="M48 0C21.5 0 0 21.5 0 48V368c0 26.5 21.5 48 48 48H64c0 53 43 96 96 96s96-43 96-96H384c0 53 43 96 96 96s96-43 96-96h32c17.7 0 32-14.3 32-32s-14.3-32-32-32V288 256 237.3c0-17-6.7-33.3-18.7-45.3L512 114.7c-12-12-28.3-18.7-45.3-18.7H416V48c0-26.5-21.5-48-48-48H48zM416 160h50.7L544 237.3V256H416V160zM112 416a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm368-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z" />
-                                        </svg> *Trạng thái đơn hàng*</span> |
-                                    <span class="text-co fw-bold text-uppercase">
-                                        @php
-                                            // A gateway order nobody has paid for yet is waiting on the
-                                            // customer, not on the shop, and says so.
-                                            echo $wait_payment_data->hasStatus(\App\Enums\OrderStatus::New)
-                                                && in_array($wait_payment_data->order_payment, ['payUrl', 'redirect'], true)
-                                                && (int) $wait_payment_data->order_payment_status === 0
-                                                    ? 'Chờ thanh toán'
-                                                    : $wait_payment_data->order_status->label();
-                                        @endphp
-                                    </span>
+                                    @include('components.order_status_line', ['order' => $wait_payment_data])
                                 </div>
                             </div>
                             <hr>
@@ -336,27 +297,7 @@
                                     # Mã đơn hàng - {{ $wait_confirm_data->order_code }}
                                 </div>
                                 <div class="col-8 text-end">
-                                    <span class="nkmfr2"><svg class="mx-1" xmlns="http://www.w3.org/2000/svg"
-                                            height="1em" viewBox="0 0 640 512">
-                                            <style>
-                                                svg {
-                                                    fill: #26aa99
-                                                }
-                                            </style>
-                                            <path
-                                                d="M48 0C21.5 0 0 21.5 0 48V368c0 26.5 21.5 48 48 48H64c0 53 43 96 96 96s96-43 96-96H384c0 53 43 96 96 96s96-43 96-96h32c17.7 0 32-14.3 32-32s-14.3-32-32-32V288 256 237.3c0-17-6.7-33.3-18.7-45.3L512 114.7c-12-12-28.3-18.7-45.3-18.7H416V48c0-26.5-21.5-48-48-48H48zM416 160h50.7L544 237.3V256H416V160zM112 416a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm368-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z" />
-                                        </svg> *Trạng thái đơn hàng*</span> |
-                                    <span class="text-co fw-bold text-uppercase">
-                                        @php
-                                            // A gateway order nobody has paid for yet is waiting on the
-                                            // customer, not on the shop, and says so.
-                                            echo $wait_confirm_data->hasStatus(\App\Enums\OrderStatus::New)
-                                                && in_array($wait_confirm_data->order_payment, ['payUrl', 'redirect'], true)
-                                                && (int) $wait_confirm_data->order_payment_status === 0
-                                                    ? 'Chờ thanh toán'
-                                                    : $wait_confirm_data->order_status->label();
-                                        @endphp
-                                    </span>
+                                    @include('components.order_status_line', ['order' => $wait_confirm_data])
                                 </div>
                             </div>
                             <hr>
@@ -442,19 +383,7 @@
                                     # Mã đơn hàng - {{ $delivery_order_data->order_code }}
                                 </div>
                                 <div class="col-8 text-end">
-                                    <span class="nkmfr2"><svg class="mx-1" xmlns="http://www.w3.org/2000/svg"
-                                            height="1em" viewBox="0 0 640 512">
-                                            <style>
-                                                svg {
-                                                    fill: #26aa99
-                                                }
-                                            </style>
-                                            <path
-                                                d="M48 0C21.5 0 0 21.5 0 48V368c0 26.5 21.5 48 48 48H64c0 53 43 96 96 96s96-43 96-96H384c0 53 43 96 96 96s96-43 96-96h32c17.7 0 32-14.3 32-32s-14.3-32-32-32V288 256 237.3c0-17-6.7-33.3-18.7-45.3L512 114.7c-12-12-28.3-18.7-45.3-18.7H416V48c0-26.5-21.5-48-48-48H48zM416 160h50.7L544 237.3V256H416V160zM112 416a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm368-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z" />
-                                        </svg> *Trạng thái đơn hàng*</span> |
-                                    <span class="text-co fw-bold text-uppercase">
-                                        Đang giao <br>
-                                    </span>
+                                    @include('components.order_status_line', ['order' => $delivery_order_data])
                                 </div>
                             </div>
                             <hr>
@@ -556,19 +485,7 @@
                                     # Mã đơn hàng - {{ $success_order_data->order_code }}
                                 </div>
                                 <div class="col-8 text-end">
-                                    <span class="nkmfr2"><svg class="mx-1" xmlns="http://www.w3.org/2000/svg"
-                                            height="1em" viewBox="0 0 640 512">
-                                            <style>
-                                                svg {
-                                                    fill: #26aa99
-                                                }
-                                            </style>
-                                            <path
-                                                d="M48 0C21.5 0 0 21.5 0 48V368c0 26.5 21.5 48 48 48H64c0 53 43 96 96 96s96-43 96-96H384c0 53 43 96 96 96s96-43 96-96h32c17.7 0 32-14.3 32-32s-14.3-32-32-32V288 256 237.3c0-17-6.7-33.3-18.7-45.3L512 114.7c-12-12-28.3-18.7-45.3-18.7H416V48c0-26.5-21.5-48-48-48H48zM416 160h50.7L544 237.3V256H416V160zM112 416a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm368-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z" />
-                                        </svg> *Trạng thái đơn hàng*</span> |
-                                    <span class="text-co fw-bold text-uppercase">
-                                        Hoàn thành
-                                    </span>
+                                    @include('components.order_status_line', ['order' => $success_order_data])
                                 </div>
                             </div>
                             <hr>
@@ -671,19 +588,7 @@
                                     # Mã đơn hàng - {{ $cancel_order_data->order_code }}
                                 </div>
                                 <div class="col-8 text-end">
-                                    <span class="nkmfr2"><svg class="mx-1" xmlns="http://www.w3.org/2000/svg"
-                                            height="1em" viewBox="0 0 640 512">
-                                            <style>
-                                                svg {
-                                                    fill: #26aa99
-                                                }
-                                            </style>
-                                            <path
-                                                d="M48 0C21.5 0 0 21.5 0 48V368c0 26.5 21.5 48 48 48H64c0 53 43 96 96 96s96-43 96-96H384c0 53 43 96 96 96s96-43 96-96h32c17.7 0 32-14.3 32-32s-14.3-32-32-32V288 256 237.3c0-17-6.7-33.3-18.7-45.3L512 114.7c-12-12-28.3-18.7-45.3-18.7H416V48c0-26.5-21.5-48-48-48H48zM416 160h50.7L544 237.3V256H416V160zM112 416a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm368-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z" />
-                                        </svg> *Trạng thái đơn hàng*</span> |
-                                    <span class="text-co fw-bold text-uppercase">
-                                        Đã hủy
-                                    </span>
+                                    @include('components.order_status_line', ['order' => $cancel_order_data])
                                 </div>
                             </div>
                             <hr>
@@ -765,9 +670,7 @@
                                     # Mã đơn hàng - {{ $return_order_data->order_code }}
                                 </div>
                                 <div class="col-8 text-end">
-                                    <span class="text-co fw-bold text-uppercase">
-                                        Trả hàng / hoàn tiền
-                                    </span>
+                                    @include('components.order_status_line', ['order' => $return_order_data])
                                 </div>
                             </div>
                             <hr>

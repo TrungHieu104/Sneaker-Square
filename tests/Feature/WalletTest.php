@@ -248,7 +248,7 @@ class WalletTest extends TestCase
             ->withSession(['cart' => [$this->cartLine($product)]])
             ->get(route('product.checkout'))
             ->assertOk()
-            ->assertSee('Ví Sneaker Square')
+            ->assertSee('SPay')
             ->assertSee('1.234.000');
     }
 

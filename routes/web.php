@@ -171,6 +171,7 @@ Route::group(['middleware' => 'web'], function () {
         Route::get('thong-tin-don-hang',[UserController::class ,'userOrder'])->name('user.order');
         Route::post('da-nhan-hang',[UserController::class ,'successOrder'])->name('success.order');
         Route::patch('/yeu-cau-tra-hang/{order_code}',[UserController::class ,'returnOrder'])->name('return.order');
+        Route::patch('/huy-yeu-cau-tra-hang/{order_code}',[UserController::class ,'cancelReturn'])->name('return.cancel');
         Route::get('vi-cua-toi', [WalletController::class, 'index'])->name('user.wallet');
         Route::post('vi-cua-toi/nap-tien', [WalletController::class, 'topup'])->name('wallet.topup');
         Route::post('vi-cua-toi/rut-tien', [WalletController::class, 'withdraw'])->name('wallet.withdraw');
@@ -386,6 +387,8 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
         Route::post('/tu-choi', [ReturnAdminController::class, 'reject'])->name('reject');
         Route::post('/tao-van-don', [ReturnAdminController::class, 'book'])->name('book');
         Route::patch('/ma-van-don', [ReturnAdminController::class, 'shippingCode'])->name('shipping_code');
+        Route::post('/huy-van-don', [ReturnAdminController::class, 'cancelShipment'])->name('cancel_shipment');
+        Route::delete('/ma-van-don', [ReturnAdminController::class, 'detachShipment'])->name('detach_shipment');
         Route::post('/da-nhan', [ReturnAdminController::class, 'receive'])->name('receive');
         Route::post('/hoan-tien', [ReturnAdminController::class, 'refund'])->name('refund');
     });

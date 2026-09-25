@@ -173,7 +173,6 @@ class GhnSimulatorTest extends TestCase
             'order_id' => $this->order->order_id,
             'status' => OrderReturnModel::APPROVED,
             'reason' => 'sai_size',
-            'refund_info' => 'VCB 0123',
         ]);
         $return->return_shipping_code = 'LTRA99';
         $return->save();

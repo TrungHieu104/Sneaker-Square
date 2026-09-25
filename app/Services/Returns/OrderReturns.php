@@ -20,13 +20,18 @@ use Illuminate\Support\Facades\Storage;
  * Every step of a return after the customer has the goods:
  *
  *   requested → approved → received → refunded
- *            ↘ rejected (the order stays completed)
+ *            ↘ rejected  (the order stays completed)
+ *            ↘ cancelled (the customer changed their mind)
  *
  * A request names the lines and quantities going back, not the order, because
  * a customer who bought two pairs to try on keeps one. What comes off the
  * shelf, off the revenue report and out of the till is computed from those
  * rows every time. Each step locks the order and checks the step before it, so
  * a double click or two admins at once change nothing twice.
+ *
+ * An order can go through this more than once — the second pair can come back
+ * next week, and a refused request can be argued again — but never twice at
+ * the same time. Every step here works on the order's one open request.
  */
 class OrderReturns
 {
@@ -37,7 +42,7 @@ class OrderReturns
     ) {}
 
     /**
-     * @param  array{reason: string, description: ?string, refund_info: string}  $data
+     * @param  array{reason: string, description: ?string}  $data
      * @param  array<int, int>  $items  quantity to send back, keyed by order_details_id
      * @param  array<int, UploadedFile>  $images
      */
@@ -45,6 +50,10 @@ class OrderReturns
     {
         return DB::transaction(function () use ($order, $data, $items, $images) {
             $fresh = $this->lock($order);
+
+            if ($fresh->activeReturn()->exists()) {
+                throw new ReturnNotAllowed('Đơn hàng đang có một yêu cầu trả hàng chờ xử lý.');
+            }
 
             if (! $fresh->canRequestReturn()) {
                 throw new ReturnNotAllowed('Đơn hàng này không thể yêu cầu trả hàng.');
@@ -63,7 +72,6 @@ class OrderReturns
                 'reason' => $data['reason'],
                 'description' => $data['description'] ?? null,
                 'images' => $paths,
-                'refund_info' => $data['refund_info'],
             ]);
 
             foreach ($chosen as $lineId => $quantity) {
@@ -105,6 +113,33 @@ class OrderReturns
     }
 
     /**
+     * The customer calls off a request the shop has not acted on yet.
+     *
+     * The units go straight back into what may be sent later, so a customer
+     * who picked the wrong pair can simply ask again.
+     */
+    public function cancelByCustomer(OrderModel $order): void
+    {
+        DB::transaction(function () use ($order) {
+            $fresh = $this->lock($order);
+
+            $return = OrderReturnModel::where('order_id', $fresh->order_id)
+                ->whereIn('status', OrderReturnModel::OPEN)
+                ->orderByDesc('return_id')
+                ->lockForUpdate()
+                ->first();
+
+            if (! $return || $return->status !== OrderReturnModel::REQUESTED) {
+                throw new ReturnNotAllowed('Cửa hàng đã xử lý yêu cầu này nên không huỷ được nữa.');
+            }
+
+            $return->status = OrderReturnModel::CANCELLED;
+            $return->decided_at = Carbon::now();
+            $return->save();
+        });
+    }
+
+    /**
      * The goods are back on the shelf. The coupon stays spent: it paid for a
      * sale that did happen, and on a partial return part of it still stands.
      */
@@ -120,7 +155,9 @@ class OrderReturns
                 $fresh->order_refund_required = true;
             }
 
-            $landing = $return->isPartial() ? OrderStatus::PartiallyReturned : OrderStatus::Returned;
+            // Read after this return's items are counted in: two partial
+            // returns that together cover the order leave nothing behind.
+            $landing = $fresh->allUnitsReturned() ? OrderStatus::Returned : OrderStatus::PartiallyReturned;
 
             $fresh->moveTo($landing, OrderStatusLogModel::ACTOR_ADMIN, 'Đã nhận và kiểm tra hàng trả');
         });
@@ -137,7 +174,7 @@ class OrderReturns
             $return->refund_amount = $amount;
             $return->refunded_at = Carbon::now();
 
-            $this->wallets->refundOrder($fresh, $amount, 'Hoàn tiền trả hàng đơn '.$fresh->order_code);
+            $this->wallets->refundReturn($return, $amount, 'Hoàn tiền trả hàng đơn '.$fresh->order_code);
 
             $fresh->order_refund_required = false;
             $fresh->save();
@@ -159,6 +196,7 @@ class OrderReturns
     private function checkItems(OrderModel $order, array $items): array
     {
         $lines = OrderDetailModel::where('order_id', $order->order_id)->get()->keyBy('order_details_id');
+        $conLai = $order->returnableQuantities();
         $chosen = [];
 
         foreach ($items as $lineId => $quantity) {
@@ -175,8 +213,14 @@ class OrderReturns
                 throw new ReturnNotAllowed('Sản phẩm được chọn không thuộc đơn hàng này.');
             }
 
-            if ($quantity > (int) $line->quantity) {
-                throw new ReturnNotAllowed('Số lượng trả của "'.$line->pro_name.'" vượt quá số đã mua.');
+            $con = (int) ($conLai[$lineId] ?? 0);
+
+            if ($con === 0) {
+                throw new ReturnNotAllowed('"'.$line->pro_name.'" đã được gửi trả hết trong yêu cầu trước.');
+            }
+
+            if ($quantity > $con) {
+                throw new ReturnNotAllowed('Số lượng trả của "'.$line->pro_name.'" vượt quá số còn lại có thể trả ('.$con.').');
             }
 
             $chosen[$lineId] = $quantity;
@@ -196,7 +240,11 @@ class OrderReturns
     {
         DB::transaction(function () use ($order, $from, $change) {
             $fresh = $this->lock($order);
-            $return = OrderReturnModel::where('order_id', $fresh->order_id)->lockForUpdate()->first();
+            $return = OrderReturnModel::where('order_id', $fresh->order_id)
+                ->whereIn('status', OrderReturnModel::OPEN)
+                ->orderByDesc('return_id')
+                ->lockForUpdate()
+                ->first();
 
             if (! $return || $return->status !== $from) {
                 throw new ReturnNotAllowed('Yêu cầu trả hàng đã được xử lý hoặc không còn ở bước này.');

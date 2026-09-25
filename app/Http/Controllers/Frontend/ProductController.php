@@ -237,7 +237,11 @@ class ProductController extends Controller
             $variantStock[$key] = (int) $variant->quantity;
         }
 
-        return view('frontend.pages.product.product_detail', compact('detailProduct', 'getColor', 'getSize', 'relatedProduct', 'hotProduct', 'likeStatus', 'hasPurchased', 'variantPrices', 'variantStock'));
+        // Answered before the customer picks anything. Without it the only way
+        // to learn the shelf is empty is to fill in the form and be turned away.
+        $stockTotal = (int) $detailProduct->getQuantities->sum('quantity');
+
+        return view('frontend.pages.product.product_detail', compact('detailProduct', 'getColor', 'getSize', 'relatedProduct', 'hotProduct', 'likeStatus', 'hasPurchased', 'variantPrices', 'variantStock', 'stockTotal'));
     }
 
     public function cart(Request $request)
@@ -339,6 +343,15 @@ class ProductController extends Controller
             }
             $request->session()->put('cart', $cart);
         }
+
+        // Two buttons post this form: one to carry on browsing, one to go and
+        // pay. Only the second should take the customer off the page.
+        if ($request->input('action') === 'stay') {
+            Session::flash('iconMessage', 'success');
+
+            return back()->with('message', 'Đã thêm vào giỏ hàng.');
+        }
+
         return redirect('/gio-hang');
     }
 
