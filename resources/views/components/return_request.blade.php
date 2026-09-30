@@ -367,6 +367,18 @@
                                 <div class="return-log__note">
                                     Đã hoàn {{ number_format((int) $return->refund_amount, 0, ',', '.') }} VNĐ vào
                                     <a href="{{ route('user.wallet') }}">SPay</a>.
+                                    @if ($return->buyerBorneShipping() > 0)
+                                        Đã trừ {{ number_format($return->buyerBorneShipping(), 0, ',', '.') }} VNĐ
+                                        phí gửi trả.
+                                    @endif
+                                </div>
+                            @endif
+
+                            @if ($return->buyerBorneShipping() > 0 && $return->status !== OrderReturnModel::REFUNDED)
+                                <div class="return-log__note">
+                                    Lý do trả thuộc về người mua nên phí gửi trả
+                                    {{ number_format($return->buyerBorneShipping(), 0, ',', '.') }} VNĐ
+                                    sẽ được trừ vào tiền hoàn.
                                 </div>
                             @endif
 

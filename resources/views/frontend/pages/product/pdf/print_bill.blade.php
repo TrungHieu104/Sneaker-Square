@@ -646,14 +646,14 @@
                                     Địa chỉ
                                     <span class="BTN-en">(Address)</span>:
                                 </div>
-                                <div id="BTN-ComAddress" class="BTN-text">Quận 12, TP. Hồ Chí Minh</div>
+                                <div id="BTN-ComAddress" class="BTN-text">{{ $shopInfo['address'] }}</div>
                             </div>
                             <div class="BTN-row">
                                 <div class="BTN-label">
                                     Điện thoại
                                     <span class="BTN-en">(Tel)</span>:
                                 </div>
-                                <div id="BTN-ComPhone" class="BTN-text BTN-phone">0917403833</div>
+                                <div id="BTN-ComPhone" class="BTN-text BTN-phone">{{ $shopInfo['phone_display'] }}</div>
                                 &nbsp;
                             </div>
                             <div class="BTN-row">

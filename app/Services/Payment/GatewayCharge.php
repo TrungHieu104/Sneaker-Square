@@ -3,7 +3,9 @@
 namespace App\Services\Payment;
 
 use App\Models\OrderModel;
+use App\Models\PaymentAttemptModel;
 use App\Models\WalletTopupModel;
+use Carbon\CarbonInterface;
 
 /**
  * What a gateway is being asked to collect.
@@ -19,14 +21,20 @@ final class GatewayCharge
         public readonly string $code,
         public readonly int $amount,
         public readonly string $description,
+        public readonly ?CarbonInterface $expiresAt = null,
     ) {}
 
-    public static function forOrder(OrderModel $order): self
+    /**
+     * One attempt at paying an order. The code is the attempt's, not the
+     * order's, because a gateway refuses a code it has already seen.
+     */
+    public static function forAttempt(PaymentAttemptModel $attempt, OrderModel $order, ?CarbonInterface $expiresAt): self
     {
         return new self(
-            code: (string) $order->order_code,
-            amount: (int) $order->order_total,
+            code: (string) $attempt->code,
+            amount: (int) $attempt->amount,
             description: 'Thanh toán hóa đơn '.$order->order_code,
+            expiresAt: $expiresAt,
         );
     }
 

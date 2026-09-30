@@ -22,6 +22,11 @@ class ShopSettingRequest extends FormRequest
         return [
             'auto_complete_days' => $days,
             'return_days' => $days,
+            'payment_window_minutes' => [
+                'required', 'integer',
+                'min:'.ShopSettings::MIN_PAYMENT_WINDOW,
+                'max:'.ShopSettings::MAX_PAYMENT_WINDOW,
+            ],
         ];
     }
 
@@ -35,6 +40,10 @@ class ShopSettingRequest extends FormRequest
             '*.integer' => 'Số ngày phải là số nguyên.',
             '*.min' => 'Số ngày tối thiểu là :min.',
             '*.max' => 'Số ngày tối đa là :max.',
+            'payment_window_minutes.required' => 'Vui lòng nhập số phút.',
+            'payment_window_minutes.integer' => 'Số phút phải là số nguyên.',
+            'payment_window_minutes.min' => 'Tối thiểu :min phút.',
+            'payment_window_minutes.max' => 'Tối đa :max phút (1 ngày).',
         ];
     }
 }

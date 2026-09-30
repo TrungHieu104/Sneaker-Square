@@ -2,6 +2,7 @@
 
 namespace App\Services\Shipping;
 
+use App\Actions\LoseParcelAction;
 use App\Actions\ReceiveReturnedParcelAction;
 use App\Enums\OrderStatus;
 use App\Models\OrderModel;
@@ -24,6 +25,7 @@ class ShipmentTracker
     public function __construct(
         private ShipmentPulse $pulse,
         private ReceiveReturnedParcelAction $receiveReturned,
+        private LoseParcelAction $loseParcel,
     ) {}
 
     /**
@@ -221,6 +223,14 @@ class ShipmentTracker
             // The clock for auto-completing the order starts here, and only
             // once: a resent callback must not push the deadline back.
             $order->order_delivered_at ??= $happenedAt;
+
+            // GHN hands a cash parcel over only against the money, so its word
+            // on "delivered" is also its word on having collected. Nothing else
+            // in the shop ever hears about that cash.
+            if ($order->isCashOnDelivery() && (int) $order->order_payment_status !== 1) {
+                $order->order_payment_status = 1;
+                $order->order_payment_time = $happenedAt;
+            }
         }
 
         // A parcel cancelled on GHN's own dashboard has to free the order the
@@ -236,6 +246,11 @@ class ShipmentTracker
 
         if ($status === 'returned') {
             $this->receiveReturned->execute($order);
+            $order->refresh();
+        }
+
+        if ($status === 'lost') {
+            $this->loseParcel->execute($order);
             $order->refresh();
         }
     }
@@ -264,6 +279,18 @@ class ShipmentTracker
         // already at the customer's door.
         if ($status === 'cancel' && ! $order->hasStatus(OrderStatus::ReadyToShip, OrderStatus::Delivering)) {
             $target = null;
+        }
+
+        // A cancel request can only be granted while the parcel is still in
+        // the warehouse. Once GHN has it, the request is settled by the parcel
+        // itself; left pending, the order would ignore every later callback
+        // and could never reach delivered.
+        if ($order->hasStatus(OrderStatus::CancelRequested)
+            && in_array($target, [OrderStatus::Delivering, OrderStatus::Delivered, OrderStatus::Returning], true)) {
+            $order->order_cancel_reason = 'Không thể huỷ vì GHN đã lấy hàng để giao.';
+            $order->moveTo($target, OrderStatusLogModel::ACTOR_CARRIER, 'GHN: '.GhnStatus::label($status).'. Yêu cầu huỷ của khách tự động bị từ chối');
+
+            return;
         }
 
         if ($target === null || ! $travelling) {

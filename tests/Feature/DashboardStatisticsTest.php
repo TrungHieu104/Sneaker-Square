@@ -78,13 +78,15 @@ class DashboardStatisticsTest extends TestCase
         $this->assertSame(1, $this->stats()->newOrderCount());
     }
 
-    public function test_don_cod_da_thanh_toan_khong_bi_dem_them_lan_nua(): void
+    public function test_don_cod_da_giao_van_la_doanh_thu_that(): void
     {
-        // COD is marked paid on delivery, at which point the order is no longer
-        // new. Counting it again here would double-count the same sale.
-        $this->makeOrder('cod', 1);
+        // The courier collects the cash on delivery, so the order is marked
+        // paid then. It is the same one sale either way, and it must not drop
+        // out of the reports the moment the money actually arrives.
+        $this->makeOrder('cod', 1, OrderStatus::Delivered);
 
-        $this->assertSame(0, $this->stats()->newOrderCount());
+        $this->assertSame(0, $this->stats()->newOrderCount(), 'Đã giao thì không còn là đơn mới');
+        $this->assertSame(1, $this->stats()->totals()['totalOrder']);
     }
 
     public function test_don_da_xu_ly_khong_con_nam_trong_don_moi(): void

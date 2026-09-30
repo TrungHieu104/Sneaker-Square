@@ -10,6 +10,11 @@ namespace App\Services\Shipping;
 final class ShipmentOrder
 {
     /**
+     * `$senderPaysCarriage` says which end settles the carriage with GHN, and
+     * the two ends swap between an order going out and a parcel coming back:
+     * the shop is the sender on one and the receiver on the other. It is
+     * always the shop that pays, so this flag follows whichever end it is on.
+     *
      * @param  array<int, array{name: string, quantity: int, weight: int}>  $items
      */
     public function __construct(
@@ -25,5 +30,6 @@ final class ShipmentOrder
         public readonly array $items,
         public readonly ?string $note = null,
         public readonly ?ShipmentSender $from = null,
+        public readonly bool $senderPaysCarriage = true,
     ) {}
 }

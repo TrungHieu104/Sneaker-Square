@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Services\Shipping\FakeCarrier;
 use App\Services\Shipping\GhnCarrier;
 use App\Services\Shipping\ShippingCarrier;
+use App\Services\ShopSettings;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -34,6 +36,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Everything the shop sends or prints under its own name — the emails,
+        // both copies of the bill — and the sign-in pages, which sit outside
+        // the storefront layout that carries the contact details. They show
+        // the address and hotline the admin set, not the ones the templates
+        // were drawn with.
+        View::composer(
+            [
+                'mail.*',
+                'vendor.notifications.*',
+                'backend.pages.order.pdf.*',
+                'frontend.pages.product.pdf.*',
+                'frontend.pages.account.*',
+            ],
+            fn ($view) => $view->with('shopInfo', app(ShopSettings::class)->shopInfoForDisplay()),
+        );
     }
 }

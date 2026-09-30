@@ -11,12 +11,12 @@ use App\Http\Controllers\Controller;
 use App\Services\CartPricingService;
 use App\Services\CartService;
 use App\Services\OrderMailer;
-use App\Services\Payment\InvalidPaymentCallbackException;
+use App\Services\Payment\OrderPayments;
+use App\Services\Payment\PaymentNotAllowed;
 use App\Services\Payment\PaymentGatewayManager;
 use App\Services\Shipping\ShippingUnavailable;
 use App\Services\ShippingService;
 use Illuminate\Http\RedirectResponse;
-use Throwable;
 use Carbon\Traits\Timestamp;
 use Illuminate\Http\Request;
 use App\Http\Requests\Frontend\CheckoutRequest;
@@ -28,7 +28,6 @@ use App\Models\LikeModel;
 use App\Models\ProductModel as Product;
 use App\Models\ProductQuantityModel as Quantity;
 use App\Models\PromotionModel as Promotion;
-use App\Models\ContactModel as Contact;
 use App\Models\FaqModel as Faq;
 use App\Models\CouponModel as Coupon;
 use App\Models\MenuModel as Menu;
@@ -70,10 +69,11 @@ class ProductController extends Controller
         private readonly CancelOrderAction $cancelOrder,
         private readonly OrderMailer $mailer,
         private readonly CartService $cart,
+        private readonly OrderPayments $payments,
     ) {
         $keyword = $request->input('keyword');
         $slide = Promotion::where('cate_slide_id', 1)->where('promotion_hidden', 1)->get();
-        $contact = Contact::where('contact_hidden', 1)->limit(1)->get();
+        $contact = app(\App\Services\ShopSettings::class)->storefrontContact();
         $faq = Faq::where('faq_hidden', 1)->where('faq_about', 0)->orderBy('faq_id', 'desc')->get();
         $data = Menu::where('menu_hidden', 1)->orderBy('menu_position', 'asc')->get();
         $menu = $this->data_tree($data);
@@ -571,34 +571,19 @@ class ProductController extends Controller
     /**
      * Sends the customer to the gateway that will take their money.
      *
-     * If building that URL fails the order is cancelled straight away, so the
-     * stock it reserved goes back instead of sitting behind an order nobody can
-     * ever pay for.
+     * A gateway that cannot be reached leaves the order standing: it keeps
+     * its stock until the payment window closes, and the customer can try
+     * again or pay another way from the order page in the meantime.
      */
     private function startGatewayPayment(Order $order): RedirectResponse
     {
-        $gateway = $this->gateways->byName((string) $order->order_payment);
-
         try {
-            if (! $gateway) {
-                throw new InvalidPaymentCallbackException('Phương thức thanh toán không hợp lệ.');
-            }
-
-            $checkoutUrl = $gateway->checkoutUrl(\App\Services\Payment\GatewayCharge::forOrder($order));
-        } catch (Throwable $e) {
-            report($e);
-            $this->cancelOrder->execute($order);
-
+            return redirect()->away($this->payments->startAttempt($order));
+        } catch (PaymentNotAllowed $e) {
             Session::flash('iconMessage', 'error');
 
-            return redirect()->route('product.cart')
-                ->with('message', 'Không thể kết nối cổng thanh toán, đơn hàng đã được hủy.');
+            return redirect()->route('orderBill.checkout', $order->order_code)->with('message', $e->getMessage());
         }
-
-        $order->order_payment_url = $checkoutUrl;
-        $order->save();
-
-        return redirect()->away($checkoutUrl);
     }
 
     public function successCheckout()
@@ -644,7 +629,11 @@ class ProductController extends Controller
     public function orderBill(string $order_code = '')
     {
         if (Auth::check()) {
-            $order = Order::where('order_code', $order_code)->first();
+            // Someone else's order answers exactly like one that does not
+            // exist, so the page cannot be used to find out which codes are real.
+            $order = Order::where('order_code', $order_code)
+                ->where('user_id', Auth::id())
+                ->first();
             if ($order) {
                 $coupon_data = Coupon::where('coupon_id', $order->coupon_id)->first();
                 $orderDetail = OrderDetail::where('order_id', $order->order_id)->get();
@@ -662,8 +651,10 @@ class ProductController extends Controller
     public function printBill($order_code)
     {
         if (Auth::check()) {
-            $check_current_order = Order::where('order_code', $order_code)->first();
-            if (Auth::guard('web')->user()->user_id != $check_current_order->user_id) {
+            $check_current_order = Order::where('order_code', $order_code)
+                ->where('user_id', Auth::id())
+                ->first();
+            if (! $check_current_order) {
                 Session::flash('iconMessage', 'warning');
                 return redirect()->back()->with('message', 'Bạn chỉ được quyền xuất hóa đơn của bạn !');
             }
@@ -727,10 +718,12 @@ class ProductController extends Controller
 
             Session::flash('iconMessage', 'success');
 
-            return redirect()->back()->with([
-                'message' => ' Đã hủy đơn hàng !',
-                'text' => 'Số tiền sẽ được hoàn trả trong vòng 24h nếu bạn đã thanh toán',
-            ]);
+            // CancelOrderAction has already put the money in the wallet.
+            if ((int) $order->order_payment_status === 1) {
+                Session::flash('text', 'Số tiền đã thanh toán đã được hoàn vào SPay của bạn.');
+            }
+
+            return redirect()->back()->with('message', ' Đã hủy đơn hàng !');
         }
 
         if (! $order->canRequestCancel()) {

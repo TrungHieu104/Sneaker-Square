@@ -8,7 +8,6 @@ use App\Models\CateNewsModel as CateNews;
 use App\Models\NewsModel as News;
 use App\Models\TagsModel as Tags;
 use App\Models\NewsByTagsModel as NewsByTags;
-use App\Models\ContactModel as Contact;
 use App\Models\PromotionModel as Promotion;
 use App\Models\FaqModel as Faq;
 use App\Models\MenuModel as Menu;
@@ -20,7 +19,7 @@ class BlogController extends Controller
     public function __construct()
     {
         $slide = Promotion::where('cate_slide_id',1)->where('promotion_hidden',1)->get();
-        $contact = Contact::where('contact_hidden',1)->limit(1)->get();
+        $contact = app(\App\Services\ShopSettings::class)->storefrontContact();
         $faq = Faq::where('faq_hidden',1)->where('faq_about',0)->orderBy('faq_id','desc')->get();
         // The sidebar prints how many articles each category holds; withCount
         // fetches that number instead of every article row.

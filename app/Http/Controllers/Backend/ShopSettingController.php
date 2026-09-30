@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Backend\ShopInfoRequest;
 use App\Http\Requests\Backend\ShopSettingRequest;
 use App\Services\ShopSettings;
 use Illuminate\Http\RedirectResponse;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View as ViewFacade;
 use Illuminate\View\View;
+use Spatie\ResponseCache\Facades\ResponseCache;
 
 class ShopSettingController extends Controller
 {
@@ -26,6 +28,8 @@ class ShopSettingController extends Controller
         return view('backend.pages.setting.setting_edit', [
             'autoCompleteDays' => $settings->autoCompleteDays(),
             'returnDays' => $settings->returnDays(),
+            'paymentWindow' => $settings->paymentWindowMinutes(),
+            'shopInfo' => $settings->shopInfo(),
         ]);
     }
 
@@ -33,9 +37,23 @@ class ShopSettingController extends Controller
     {
         $settings->setAutoCompleteDays((int) $request->validated('auto_complete_days'));
         $settings->setReturnDays((int) $request->validated('return_days'));
+        $settings->setPaymentWindowMinutes((int) $request->validated('payment_window_minutes'));
 
         Session::flash('iconMessage', 'success');
 
-        return redirect()->route('setting.edit')->with('message', 'Đã lưu cấu hình.');
+        return redirect()->to(route('setting.edit').'#tab-don-hang')->with('message', 'Đã lưu cấu hình.');
+    }
+
+    public function updateGeneral(ShopInfoRequest $request, ShopSettings $settings): RedirectResponse
+    {
+        $settings->setShopInfo($request->validated());
+
+        // Every storefront page prints these, and the response cache would
+        // keep serving the old address for up to ten minutes.
+        ResponseCache::clear();
+
+        Session::flash('iconMessage', 'success');
+
+        return redirect()->to(route('setting.edit').'#tab-chung')->with('message', 'Đã lưu thông tin cửa hàng.');
     }
 }

@@ -653,13 +653,13 @@
                                 <div class="BTN-label">
                                     Địa chỉ:
                                 </div>
-                                <div id="BTN-ComAddress" class="BTN-text">99 Nguyễn Du, Bến Thành, Quận 1, TP.Hồ Chí Minh</div>
+                                <div id="BTN-ComAddress" class="BTN-text">{{ $shopInfo['address'] }}</div>
                             </div>
                             <div class="BTN-row">
                                 <div class="BTN-label">
                                     Điện thoại:
                                 </div>
-                                <div id="BTN-ComPhone" class="BTN-text BTN-phone">0369 469 525</div>
+                                <div id="BTN-ComPhone" class="BTN-text BTN-phone">{{ $shopInfo['phone_display'] }}</div>
                                 &nbsp;
                             </div>
                         </div>

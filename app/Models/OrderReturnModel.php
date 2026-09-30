@@ -45,6 +45,22 @@ class OrderReturnModel extends Model
      */
     public const HOLDS_GOODS = [self::REQUESTED, self::APPROVED, self::RECEIVED, self::REFUNDED];
 
+    /**
+     * A request the shop agreed to. It spends the order's one return: from
+     * here a courier has been sent, or is about to be, and the shop pays for
+     * that trip. A refusal or a cancellation costs nothing and spends nothing.
+     */
+    public const SETTLED = [self::APPROVED, self::RECEIVED, self::REFUNDED];
+
+    /**
+     * Reasons the shop brought on itself. The parcel coming back is then the
+     * shop's own cost; the others are the buyer changing their mind, and the
+     * carriage comes out of what they get back.
+     *
+     * @var array<int, string>
+     */
+    public const SHOP_AT_FAULT = ['loi_san_pham', 'giao_nham', 'khong_giong_mo_ta', 'khac'];
+
     /** @var array<string, string> */
     public const REASONS = [
         'sai_size' => 'Sai size, không vừa',
@@ -74,6 +90,7 @@ class OrderReturnModel extends Model
 
     protected $casts = [
         'images' => 'array',
+        'return_shipping_fee' => 'integer',
         'decided_at' => 'datetime',
         'received_at' => 'datetime',
         'refunded_at' => 'datetime',
@@ -139,7 +156,27 @@ class OrderReturnModel extends Model
             $refund += (int) $order->order_delivery_fee;
         }
 
-        return $refund;
+        return max(0, $refund - $this->buyerBorneShipping());
+    }
+
+    /**
+     * Whether the shop caused this return.
+     */
+    public function shopAtFault(): bool
+    {
+        return in_array($this->reason, self::SHOP_AT_FAULT, true);
+    }
+
+    /**
+     * What the buyer pays towards bringing the parcel home.
+     *
+     * Zero while no parcel has been booked: the shop cannot charge for
+     * carriage it has not arranged, and a return handed over at the counter
+     * costs nobody anything.
+     */
+    public function buyerBorneShipping(): int
+    {
+        return $this->shopAtFault() ? 0 : (int) $this->return_shipping_fee;
     }
 
     public function reasonLabel(): string
@@ -160,26 +197,44 @@ class OrderReturnModel extends Model
         return self::STATUS_LABELS[$this->status] ?? $this->status;
     }
 
+    public const REFERENCE_SUFFIX = '-TH';
+
     /**
-     * What the shop sends GHN as client_order_code for the parcel coming
-     * back. It must differ from the outbound parcel's, and it is how a
-     * callback for a parcel booked on GHN's own dashboard finds this request.
+     * What the shop sends GHN as client_order_code for the parcel coming back.
+     *
+     * It carries this request's own id, not just the order code: GHN keeps
+     * client_order_code unique across the shop, so an order sending a second
+     * parcel home under the same string would be refused.
      */
     public function reference(): string
     {
-        return $this->order->order_code.self::REFERENCE_SUFFIX;
+        return $this->order->order_code.self::REFERENCE_SUFFIX.$this->return_id;
     }
 
-    public const REFERENCE_SUFFIX = '-TH';
-
+    /**
+     * The request a callback belongs to.
+     *
+     * Parcels booked before the id was added carry the bare suffix; those
+     * resolve to the order's open request, which is the only one a parcel can
+     * belong to.
+     */
     public static function forReference(?string $reference): ?self
     {
-        if (! $reference || ! str_ends_with($reference, self::REFERENCE_SUFFIX)) {
+        if (! $reference || ! preg_match('/^(.+)'.preg_quote(self::REFERENCE_SUFFIX, '/').'(\d*)$/', $reference, $m)) {
             return null;
         }
 
-        $orderCode = substr($reference, 0, -strlen(self::REFERENCE_SUFFIX));
+        [, $orderCode, $id] = $m;
 
-        return self::whereHas('order', fn ($q) => $q->where('order_code', $orderCode))->first();
+        if ($id !== '') {
+            return self::where('return_id', (int) $id)
+                ->whereHas('order', fn ($q) => $q->where('order_code', $orderCode))
+                ->first();
+        }
+
+        return self::whereHas('order', fn ($q) => $q->where('order_code', $orderCode))
+            ->whereIn('status', self::OPEN)
+            ->orderByDesc('return_id')
+            ->first();
     }
 }

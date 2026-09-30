@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
         $this->call(CouponSeeder::class);
         // $this->call(FaqSeeder::class);
         $this->call(MenuSeeder::class);
-        $this->call(ContactSeeder::class);
+        $this->call(ShopInfoSeeder::class);
         $this->call(FaqSeeder::class);
         $this->call(PermissionSeeder::class);
         $this->call(RoleSeeder::class);

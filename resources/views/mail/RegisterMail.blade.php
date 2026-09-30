@@ -285,7 +285,7 @@
                         </td>
                         </tr>
                     </table>
-                      <div><span style="font-size: 14px;color: rgb(29, 29, 30);">﻿Mọi thắc mắc xin vui lòng liên hệ với chúng tôi qua email: <a href="mailto:cskh@localhost" target="_blank">cskh@localhost</a> để được giải đáp!</span>
+                      <div><span style="font-size: 14px;color: rgb(29, 29, 30);">﻿Mọi thắc mắc xin vui lòng liên hệ với chúng tôi qua email: <a href="mailto:{{ $shopInfo['email'] }}" target="_blank">{{ $shopInfo['email'] }}</a> để được giải đáp!</span>
                       </div>
                       <div><span style="color: rgb(29, 29, 30);">﻿</span>
                       </div>
@@ -356,7 +356,7 @@
                             <table border="0" cellpadding="0" cellspacing="0" role="presentation" align="left">
                              <tr>
                               <td valign="top" class="pc-font-alt" style="mso-line-height: exactly;line-height: 143%;letter-spacing: -0.2px;font-family: Arial, Helvetica;font-size: 14px;font-weight: normal;color: #ffffff;">
-                               <div><span>99 Nguyễn Du, Bến Thành, Quận 1, TP.Hồ Chí Minh</span>
+                               <div><span>{{ $shopInfo['address'] }}</span>
                                </div>
                               </td>
                              </tr>
@@ -502,7 +502,7 @@
                                <div class="pc-font-alt" style="line-height: 143%;font-family: Arial, Helvetica;font-size: 14px;font-weight: 500;color: #1595e7;text-align: left;text-align-last: left;">
                                 <div><span style="font-weight: 700;font-style: normal;color: rgb(255, 255, 255);">Website:</span><span> </span><a href="{{config('app.url')}}" target="_blank" style="text-decoration: none; color: #1595e7; line-height: 1;"><span style="text-decoration: underline;color: rgb(255, 255, 255);">{{ config('app.url') }}</span></a><span>﻿</span>
                                 </div>
-                                <div><span style="color: #ffffff;">Hotline: 0369.469.525﻿</span>
+                                <div><span style="color: #ffffff;">Hotline: {{ $shopInfo['phone_display'] }}﻿</span>
                                 </div>
                                </div>
                               </td>

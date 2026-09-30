@@ -73,7 +73,12 @@
                         <div class="accordion-body">
                             <div class="row">
                                 <div class="col-lg-6 mb-3">
-                                    <div class="mb-2"><b>Lý do:</b> {{ $return->reasonLabel() }}</div>
+                                    <div class="mb-2">
+                                        <b>Lý do:</b> {{ $return->reasonLabel() }}
+                                        <span class="badge bg-label-{{ $return->shopAtFault() ? 'danger' : 'secondary' }} ms-1">
+                                            {{ $return->shopAtFault() ? 'Lỗi cửa hàng' : 'Lỗi người mua' }}
+                                        </span>
+                                    </div>
                                     @if ($return->description)
                                         <div class="mb-2"><b>Mô tả:</b> {{ $return->description }}</div>
                                     @endif
@@ -97,6 +102,18 @@
                                         <span class="text-muted small">
                                             (đã trừ phần mã giảm giá của các dòng này{{ $traMotPhan ? ', không hoàn phí vận chuyển vì đơn vẫn được giao' : ', gồm cả phí vận chuyển' }})
                                         </span>
+                                    </div>
+                                    <div class="mb-2 small">
+                                        <b>Phí vận đơn trả:</b>
+                                        @if ($return->return_shipping_fee === null)
+                                            0đ <span class="text-muted">&middot; chưa có vận đơn</span>
+                                        @elseif ($return->shopAtFault())
+                                            {{ number_format((int) $return->return_shipping_fee, 0, ',', '.') }}đ &middot;
+                                            <span class="text-muted">cửa hàng chịu vì lỗi thuộc về cửa hàng</span>
+                                        @else
+                                            {{ number_format((int) $return->return_shipping_fee, 0, ',', '.') }}đ &middot;
+                                            <span class="text-muted">đã trừ vào tiền phải hoàn ở trên</span>
+                                        @endif
                                     </div>
 
                                     @if ($anh = OrderReturns::imageUrls($return))
@@ -169,9 +186,13 @@
                                                     <div class="input-group">
                                                         <input type="text" class="form-control" name="return_shipping_code"
                                                             placeholder="Hoặc gắn mã đã tạo trên GHN" value="{{ old('return_shipping_code') }}">
+                                                        <input type="number" class="form-control" name="return_shipping_fee" min="0"
+                                                            placeholder="Phí (đ)" value="{{ old('return_shipping_fee') }}" style="max-width: 130px;">
                                                         <button class="btn btn-outline-primary" type="submit">Lưu</button>
                                                     </div>
-                                                    @error('return_shipping_code') <small class="text-danger">{{ $message }}</small> @enderror
+                                                    @error('return_shipping_code') <small class="text-danger d-block">{{ $message }}</small> @enderror
+                                                    @error('return_shipping_fee') <small class="text-danger d-block">{{ $message }}</small> @enderror
+                                                    <div class="form-text">Phí chỉ dùng để trừ vào tiền hoàn khi lỗi thuộc về người mua.</div>
                                                 </form>
                                             @endif
 

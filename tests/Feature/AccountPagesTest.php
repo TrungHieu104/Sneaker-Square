@@ -63,6 +63,32 @@ class AccountPagesTest extends TestCase
             ->assertSee($this->customer->email);
     }
 
+    public function test_lich_su_vi_tren_dien_thoai_co_so_tien_va_so_du(): void
+    {
+        $wallets = app(WalletService::class);
+        $wallets->credit($wallets->for($this->customer), 2_000_000, WalletTransactionModel::TYPE_ADJUSTMENT, 'Nạp sẵn cho bài kiểm thử');
+
+        $html = $this->actingAs($this->customer)->get(route('user.wallet'))->assertOk()->getContent();
+
+        // The table keeps its columns only from tablet width up; on a phone
+        // the amount pushed off screen was the reason for the list.
+        preg_match('#<ul class="wallet-list d-md-none">(.*?)</ul>#s', $html, $danhSach);
+        $this->assertNotEmpty($danhSach);
+        $this->assertStringContainsString('+2.000.000 đ', $danhSach[1]);
+        $this->assertStringContainsString('Số dư 2.000.000 đ', $danhSach[1]);
+    }
+
+    public function test_menu_tai_khoan_tren_dien_thoai_co_muc_thong_tin_tai_khoan(): void
+    {
+        $html = $this->actingAs($this->customer)->get(route('thong-tin-tai-khoan.index'))->assertOk()->getContent();
+
+        preg_match('#<li class="d-md-none">(.*?)</li>#s', $html, $muc);
+        $this->assertNotEmpty($muc);
+        $this->assertStringContainsString('href="'.route('thong-tin-tai-khoan.index').'"', $muc[1]);
+        $this->assertStringContainsString('aria-current="page"', $muc[1]);
+        $this->assertStringContainsString('Tài khoản', $muc[1]);
+    }
+
     public function test_trang_don_hang_mo_duoc_khi_co_don_da_hoan_thanh(): void
     {
         $product = $this->makeProduct(slug: 'giay-tai-khoan');
@@ -122,6 +148,25 @@ class AccountPagesTest extends TestCase
 
         $this->assertStringContainsString(route('orderBill.checkout', $order->order_code), $tatCa);
         $this->assertStringContainsString(url('/in-don-hang/'.$order->order_code), $tatCa);
+    }
+
+    public function test_anh_va_ten_san_pham_trong_don_dan_toi_trang_san_pham(): void
+    {
+        $product = $this->makeProduct(slug: 'giay-bam-duoc');
+        $order = app(PlaceOrderAction::class)->execute(
+            $this->customer,
+            [$this->cartLine($product, 1)],
+            null,
+            $this->makeAddress($this->customer),
+            ['payment' => 'cod', 'note_customer' => null],
+        );
+        $order->forceFill(['order_status' => OrderStatus::Cancelled])->save();
+
+        $html = $this->actingAs($this->customer)->get(route('user.order'))->assertOk()->getContent();
+        $link = 'href="'.route('product.detail', 'giay-bam-duoc').'"';
+
+        // Once in "Tất cả" and once in "Đã huỷ", for the image and the name each.
+        $this->assertSame(4, substr_count($html, $link));
     }
 
     public function test_the_don_hang_in_dung_trang_thai_that_cua_don(): void

@@ -11,6 +11,7 @@ use App\Models\ProductModel;
 use App\Models\ProductQuantityModel;
 use App\Models\UserModel;
 use App\Models\WalletTransactionModel;
+use App\Services\Payment\OrderPayments;
 use App\Services\CartPricingService;
 use App\Services\Shipping\ShippingUnavailable;
 use App\Services\ShippingService;
@@ -85,6 +86,11 @@ class PlaceOrderAction
             $order->order_total = $summary['total'];
             $order->order_payment = $meta['payment'];
             $order->order_payment_status = 0;
+            // The stock is held from here; a gateway order that is never paid
+            // gives it back when this passes.
+            $order->order_payment_due_at = in_array($meta['payment'], OrderPayments::GATEWAYS, true)
+                ? OrderPayments::newDeadline()
+                : null;
             $order->order_date = Carbon::now('Asia/Ho_Chi_Minh')->format('Y/m/d');
             $order->note_customer = $meta['note_customer'] ?? null;
             $order->coupon_id = $summary['coupon']->coupon_id ?? null;

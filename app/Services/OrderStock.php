@@ -29,6 +29,16 @@ class OrderStock
     }
 
     /**
+     * The coupon only, for goods that are gone rather than back on the shelf.
+     */
+    public function releaseCouponOf(OrderModel $order): void
+    {
+        if ($order->coupon_id) {
+            $this->releaseCoupon((int) $order->coupon_id);
+        }
+    }
+
+    /**
      * The goods only. A customer returning a completed order used the coupon
      * on a sale that happened, so the coupon stays spent.
      */

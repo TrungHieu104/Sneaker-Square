@@ -77,14 +77,8 @@
                                 $reviewCount = $detailProduct->getReviewCount();
                             @endphp
                             <div class="d-flex align-items-center gap-2 mb-3">
-                                <div class="text-warning fs-5">
-                                    @for ($i = 1; $i <= 5; $i++)
-                                        @if ($i <= round($avgRating))
-                                            <i class="fas fa-star"></i>
-                                        @else
-                                            <i class="far fa-star"></i>
-                                        @endif
-                                    @endfor
+                                <div class="fs-5">
+                                    @include('components.rating_stars', ['rating' => $avgRating])
                                 </div>
                                 <span class="fw-bold fs-6" style="color: #ffc107;">({{ $avgRating }}/5)</span>
                                 <span class="text-muted">|</span>

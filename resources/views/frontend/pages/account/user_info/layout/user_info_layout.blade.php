@@ -154,20 +154,81 @@
             background: var(--color-orange);
         }
 
-        /* The narrow column leaves room for the icon only, so the row centres
-           on it once `.menu-info` is hidden by the site-wide breakpoint. */
-        @media (max-width: 768px) {
-            .account-nav__me,
-            .account-nav__link {
-                justify-content: center;
-                gap: 0;
-                padding-inline: 8px;
+        .account-nav__short {
+            display: none;
+        }
+
+        /* Phones: the menu sits above the page as a row of icon and label that
+           scrolls sideways, so the page underneath gets the full width. */
+        @media (max-width: 767.98px) {
+            .account-nav {
+                border-radius: 8px;
             }
 
-            /* This block is pushed after main.css, so the site-wide
-               `.menu-info { display: none }` loses on source order alone. */
-            .account-nav__me-text {
+            .account-nav__me {
+                padding: 14px 16px;
+            }
+
+            .account-nav__me.is-current {
+                background: none;
+            }
+
+            .account-nav__me.is-current .account-nav__name {
+                color: var(--color-secondary);
+            }
+
+            .account-nav__me.is-current::before {
                 display: none;
+            }
+
+            .account-nav__list {
+                display: flex;
+                gap: 0;
+                padding: 0 4px;
+                overflow-x: auto;
+                scrollbar-width: none;
+            }
+
+            .account-nav__list::-webkit-scrollbar {
+                display: none;
+            }
+
+            .account-nav__list li {
+                flex: 1 0 auto;
+            }
+
+            .account-nav__link {
+                flex-direction: column;
+                gap: 2px;
+                padding: 10px 6px 8px;
+                font-size: 12px;
+                white-space: nowrap;
+                border-bottom: 2px solid transparent;
+            }
+
+            .account-nav__link i {
+                font-size: 20px;
+            }
+
+            .account-nav__link:hover,
+            .account-nav__link.is-current {
+                background: none;
+            }
+
+            .account-nav__link.is-current {
+                border-bottom-color: var(--color-orange);
+            }
+
+            .account-nav__link.is-current::before {
+                display: none;
+            }
+
+            .account-nav__label {
+                display: none;
+            }
+
+            .account-nav__short {
+                display: inline;
             }
         }
 
@@ -185,21 +246,21 @@
     @php
         $me = auth()->user();
         $mucTaiKhoan = [
-            ['route' => 'user.update_pass', 'icon' => 'bx bxs-key', 'label' => 'Mật khẩu'],
-            ['route' => 'user.delivery', 'icon' => 'bx bx-current-location', 'label' => 'Địa chỉ giao hàng'],
-            ['route' => 'user.order', 'icon' => 'bx bx-cart', 'label' => 'Đơn hàng'],
-            ['route' => 'user.wallet', 'icon' => 'bx bx-wallet', 'label' => 'Ví của tôi'],
+            ['route' => 'user.update_pass', 'icon' => 'bx bx-key', 'label' => 'Mật khẩu', 'short' => 'Mật khẩu'],
+            ['route' => 'user.delivery', 'icon' => 'bx bx-map', 'label' => 'Địa chỉ giao hàng', 'short' => 'Địa chỉ'],
+            ['route' => 'user.order', 'icon' => 'bx bx-cart', 'label' => 'Đơn hàng', 'short' => 'Đơn hàng'],
+            ['route' => 'user.wallet', 'icon' => 'bx bx-wallet', 'label' => 'Ví của tôi', 'short' => 'Ví'],
         ];
     @endphp
     <div class="container-fluid px-md-5 px-3 my-md-5 my-3">
         <div class="row">
-            <div class="col-md-3 col-3">
+            <div class="col-md-3 col-12">
                 <nav class="account-nav" aria-label="Tài khoản của tôi">
                     <a class="account-nav__me {{ url()->current() === route('thong-tin-tai-khoan.index') ? 'is-current' : '' }}"
                         href="{{ route('thong-tin-tai-khoan.index') }}">
                         <img class="account-nav__avatar" src="{{ $me->user_img }}"
                             onerror="this.src='/uploads/img_error3.png'" alt="">
-                        <span class="account-nav__me-text menu-info">
+                        <span class="account-nav__me-text">
                             <span class="account-nav__name">
                                 <span>{{ $me->name }}</span>
                                 @if ($me->email_verified_at !== null)
@@ -215,20 +276,30 @@
                         </span>
                     </a>
                     <ul class="account-nav__list">
+                        {{-- On a phone the name above is no longer a tab, so the profile gets one. --}}
+                        @php $hoSo = url()->current() === route('thong-tin-tai-khoan.index'); @endphp
+                        <li class="d-md-none">
+                            <a class="account-nav__link {{ $hoSo ? 'is-current' : '' }}"
+                                href="{{ route('thong-tin-tai-khoan.index') }}" @if ($hoSo) aria-current="page" @endif>
+                                <i class="bx bx-user"></i>
+                                <span>Tài khoản</span>
+                            </a>
+                        </li>
                         @foreach ($mucTaiKhoan as $muc)
                             @php $dangMo = url()->current() === route($muc['route']); @endphp
                             <li>
                                 <a class="account-nav__link {{ $dangMo ? 'is-current' : '' }}"
                                     href="{{ route($muc['route']) }}" @if ($dangMo) aria-current="page" @endif>
                                     <i class="{{ $muc['icon'] }}"></i>
-                                    <span class="menu-info">{{ $muc['label'] }}</span>
+                                    <span class="account-nav__label">{{ $muc['label'] }}</span>
+                                    <span class="account-nav__short">{{ $muc['short'] }}</span>
                                 </a>
                             </li>
                         @endforeach
                     </ul>
                 </nav>
             </div>
-            <div class="col-md-9 col-9 ps-md-5 ps-2 pe-md-5 pe-0 py-md-5 py-3 page-user">
+            <div class="col-md-9 col-12 ps-md-5 pe-md-5 py-md-5 p-2 mt-3 mt-md-0 page-user">
                 <div class="tab-content" id="myTabContent">
                     @yield('content_user')
                 </div>

@@ -7,7 +7,6 @@ use App\Http\Controllers\Backend\ProductAdminController;
 use App\Http\Controllers\Backend\ImageController;
 use App\Http\Controllers\Backend\CommentAdminController;
 use App\Http\Controllers\Backend\ProductQuantityController;
-use App\Http\Controllers\Backend\ContactAdminController;
 use App\Http\Controllers\Backend\MenusAdminController;
 use App\Http\Controllers\Backend\FaqAdminController;
 use App\Http\Controllers\Backend\ProductCateController;
@@ -36,6 +35,7 @@ use App\Http\Controllers\Frontend\UserController;
 use App\Http\Controllers\Frontend\WishListController;
 use App\Http\Controllers\Frontend\DeliveryInfoController;
 use App\Http\Controllers\Frontend\SearchController;
+use App\Http\Controllers\Frontend\OrderPaymentController;
 use App\Http\Controllers\Frontend\PaymentCallbackController;
 use App\Http\Controllers\Frontend\WalletController;
 use Illuminate\Support\Facades\Route;
@@ -140,6 +140,7 @@ Route::group(['middleware' => 'web'], function () {
     Route::get('/tim-kiem-bai-viet', [BlogController::class, 'search'])->name('news.search');
 
     // Route Policy
+    Route::get('/chinh-sach/tra-hang-hoan-tien', [HomeController::class, 'returnPolicy'])->name('policy.return');
     Route::get('/chinh-sach/{faq_slug}', [HomeController::class, 'faqDetail'])->name('faq.detail');
 
     // Route Authorization
@@ -170,6 +171,8 @@ Route::group(['middleware' => 'web'], function () {
         Route::post('/dia-chi-default', [DeliveryInfoController::class, 'deliInfoDefault'])->name('deliInfoDefault');
         Route::get('thong-tin-don-hang',[UserController::class ,'userOrder'])->name('user.order');
         Route::post('da-nhan-hang',[UserController::class ,'successOrder'])->name('success.order');
+        Route::post('/don-hang/{order_code}/thanh-toan', [OrderPaymentController::class, 'pay'])->name('order.pay');
+        Route::patch('/don-hang/{order_code}/phuong-thuc-thanh-toan', [OrderPaymentController::class, 'change'])->name('order.change_payment');
         Route::patch('/yeu-cau-tra-hang/{order_code}',[UserController::class ,'returnOrder'])->name('return.order');
         Route::patch('/huy-yeu-cau-tra-hang/{order_code}',[UserController::class ,'cancelReturn'])->name('return.cancel');
         Route::get('vi-cua-toi', [WalletController::class, 'index'])->name('user.wallet');
@@ -331,14 +334,6 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     Route::post('/insert_permission', [AuthAdminController::class, 'insert_per_permission']);
 
     // Thông tin liên hệ
-    Route::resource('info-contact', (ContactAdminController::class))->middleware('permission:Quản trị Thông tin');
-    Route::get('/info-contacts/trashed', [ContactAdminController::class, 'trashed'])->name('info_contact.trashed')->middleware('permission:Quản trị Thông tin');
-    Route::delete('/info-contact/soft-delete/{id}', [ContactAdminController::class, 'softDelete'])->name('info_contact.softDelete')->middleware('permission:Quản trị Thông tin');
-    Route::get('/info-contact/restore/{id}', [ContactAdminController::class, 'restore'])->name('info_contact.restore')->middleware('permission:Quản trị Thông tin');
-    Route::get('/info-contacts/restore-all', [ContactAdminController::class, 'restoreAll'])->name('info_contact.restoreAll')->middleware('permission:Quản trị Thông tin');
-    Route::get('/info-contact/delete/{id}', [ContactAdminController::class, 'forceDelete'])->name('info_contact.delete')->middleware('permission:Quản trị Thông tin');
-    Route::get('/info-contacts/delete-all', [ContactAdminController::class, 'deleteAll'])->name('info_contact.delete.all')->middleware('permission:Quản trị Thông tin');
-    Route::post('/info-status/{id}', [ContactAdminController::class, 'status'])->name('info.status');
 
     // Mã khuyến mãi
     Route::resource('coupon', (CouponAdminController::class))->middleware('permission:Quản trị Mã giảm giá');
@@ -370,7 +365,6 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     // Đơn hàng
     Route::resource('order', (OrderAdminController::class))->middleware('permission:Quản trị Đơn hàng');
     Route::get('/order/{encryptedOrderId}/edit', [OrderAdminController::class, 'edit'])->name('orders.edit')->middleware('permission:Quản trị Đơn hàng');
-    Route::post('/update-order-qty', [OrderAdminController::class, 'update_order_qty'])->name('update.order')->middleware('permission:Quản trị Đơn hàng');
     Route::get('/order-print/{encryptedOrderId}',[OrderAdminController::class,'printOrder'])->name('order.print')->middleware('permission:Quản trị Đơn hàng');
     Route::post('/exportorder-csv', [OrderAdminController::class,'exportorder_scv'])->name('exportorder.scv');
     Route::patch('/order/{order_id}/ma-van-don', [OrderAdminController::class, 'updateShippingCode'])->name('order.shipping_code')->middleware('permission:Quản trị Đơn hàng');
@@ -379,6 +373,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     Route::post('/order/{order_id}/huy-ban-giao', [OrderAdminController::class, 'undoHandover'])->name('order.undo_handover')->middleware('permission:Quản trị Đơn hàng');
     Route::post('/order/{order_id}/duyet-huy', [OrderAdminController::class, 'approveCancel'])->name('order.approve_cancel')->middleware('permission:Quản trị Đơn hàng');
     Route::post('/order/{order_id}/tu-choi-huy', [OrderAdminController::class, 'rejectCancel'])->name('order.reject_cancel')->middleware('permission:Quản trị Đơn hàng');
+    Route::post('/order/{order_id}/huy-don', [OrderAdminController::class, 'cancelByShop'])->name('order.cancel_by_shop')->middleware('permission:Quản trị Đơn hàng');
     // Server-sent events: the page is written to when GHN's callback lands, so
     // nothing on the client polls.
     Route::get('/order/{order_id}/hanh-trinh-stream', [OrderAdminController::class, 'shipmentStream'])->name('order.shipment_stream')->middleware('permission:Quản trị Đơn hàng');
@@ -403,8 +398,11 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
         Route::post('/goi-that', [GhnSimulatorController::class, 'real'])->name('real');
         Route::post('/tu-hoan-thanh', [GhnSimulatorController::class, 'autoComplete'])->name('auto_complete');
     });
-    Route::get('/cau-hinh', [ShopSettingController::class, 'edit'])->name('setting.edit')->middleware('permission:Quản trị Đơn hàng');
+    // One page, two owners: the order rules belong to whoever runs orders,
+    // the shop's address and phone to whoever ran the old info page.
+    Route::get('/cau-hinh', [ShopSettingController::class, 'edit'])->name('setting.edit')->middleware('permission:Quản trị Đơn hàng|Quản trị Thông tin');
     Route::put('/cau-hinh', [ShopSettingController::class, 'update'])->name('setting.update')->middleware('permission:Quản trị Đơn hàng');
+    Route::put('/cau-hinh/chung', [ShopSettingController::class, 'updateGeneral'])->name('setting.update_general')->middleware('permission:Quản trị Thông tin');
 
     // Hình ảnh Slide
     Route::resource('promotion', (PromotionAdminController::class))->middleware('permission:Quản trị Slide');

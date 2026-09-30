@@ -28,6 +28,7 @@
 .menu-navbar .menu-logo {
     height: 65px;
     width: 65px;
+    flex: none;
 }
 
 .menu-navbar .menu-logo img {
@@ -41,6 +42,7 @@
 
 .menu-navbar .menu-data ul.menu-parent li.menu-item a.menu-link {
     font-size: 15px;
+    white-space: nowrap;
     color: var(--color-secondary);
     font-weight: 500;
     text-transform: uppercase;

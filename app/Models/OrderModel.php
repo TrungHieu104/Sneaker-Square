@@ -50,20 +50,31 @@ class OrderModel extends Model
     /**
      * Orders that count as a real sale.
      *
-     * Cash on delivery counts as soon as it is placed; a gateway order counts
-     * only once the payment settled. The dashboard spelled this pair of
-     * conditions out three times over, in full, each time.
+     * Cash on delivery counts as soon as it is placed, paid or not: the
+     * customer owes the money from that moment and the courier collects it
+     * later. A gateway order counts only once the payment settled, because
+     * until then nobody has promised anything. The dashboard spelled this
+     * pair of conditions out three times over, in full, each time.
      */
     public function scopeConfirmedSale(Builder $query): Builder
     {
         return $query->where(function (Builder $query) {
-            $query->where(function (Builder $cod) {
-                $cod->where('order_payment', 'cod')->where('order_payment_status', 0);
-            })->orWhere(function (Builder $gateway) {
-                $gateway->whereIn('order_payment', ['payUrl', 'redirect', 'wallet'])
-                    ->where('order_payment_status', 1);
-            });
+            $query->where('order_payment', self::PAY_ON_DELIVERY)
+                ->orWhere(function (Builder $gateway) {
+                    $gateway->whereIn('order_payment', ['payUrl', 'redirect', 'wallet'])
+                        ->where('order_payment_status', 1);
+                });
         });
+    }
+
+    /**
+     * The courier collects this one at the door.
+     */
+    public const PAY_ON_DELIVERY = 'cod';
+
+    public function isCashOnDelivery(): bool
+    {
+        return $this->order_payment === self::PAY_ON_DELIVERY;
     }
 
     public function User()
@@ -87,6 +98,7 @@ class OrderModel extends Model
         'order_delivered_at' => 'datetime',
         'order_completed_at' => 'datetime',
         'order_payment_time' => 'datetime',
+        'order_payment_due_at' => 'datetime',
         'order_status' => OrderStatus::class,
         'order_refund_required' => 'boolean',
     ];
@@ -97,7 +109,7 @@ class OrderModel extends Model
     public function paymentLabel(): string
     {
         return match ($this->order_payment) {
-            'cod' => 'Thanh toán khi nhận hàng',
+            self::PAY_ON_DELIVERY => 'Thanh toán khi nhận hàng',
             'payUrl' => 'Thanh toán qua MoMo',
             'redirect' => 'Thanh toán qua VNPay',
             'wallet' => 'Thanh toán bằng SPay',
@@ -119,7 +131,7 @@ class OrderModel extends Model
                 : 'Đã thanh toán';
         }
 
-        return $this->order_payment === 'cod' ? 'Thu khi giao hàng' : 'Chưa thanh toán';
+        return $this->isCashOnDelivery() ? 'Thu khi giao hàng' : 'Chưa thanh toán';
     }
 
     public function statusLogs()
@@ -253,6 +265,19 @@ class OrderModel extends Model
     }
 
     /**
+     * Whether whoever carries the parcel has already been told how much to
+     * collect at the door. That amount is fixed when the parcel is booked or
+     * handed over, so money paid online after that point cannot settle the
+     * order: the customer would still be asked for cash on delivery.
+     */
+    public function collectsAtDoor(): bool
+    {
+        return (int) $this->order_payment_status !== 1
+            && ($this->order_shipping_code !== null
+                || ! $this->hasStatus(OrderStatus::New, OrderStatus::Confirmed, OrderStatus::Cancelled));
+    }
+
+    /**
      * Whether the parcel is GHN's to carry. A cancelled parcel leaves the
      * order free to be sent some other way, so it does not count.
      */
@@ -347,11 +372,19 @@ class OrderModel extends Model
      */
     public function canRequestReturn(): bool
     {
-        if (! $this->hasStatus(OrderStatus::Completed, OrderStatus::PartiallyReturned)) {
+        if (! $this->hasStatus(OrderStatus::Completed)) {
             return false;
         }
 
-        if ($this->activeReturn()->exists() || $this->returnableQuantities() === []) {
+        // One order, one return. The shop pays a courier to collect, so a
+        // second trip for the same order is a second loss; the customer is
+        // told to put everything in the one request. A refused or cancelled
+        // request moved nothing and spent nothing, so it does not count.
+        if ($this->orderReturns()->whereIn('status', OrderReturnModel::SETTLED)->exists()) {
+            return false;
+        }
+
+        if ($this->activeReturn()->exists()) {
             return false;
         }
 

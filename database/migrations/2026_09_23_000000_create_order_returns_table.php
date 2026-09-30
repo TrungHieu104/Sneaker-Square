@@ -19,6 +19,7 @@ return new class extends Migration
             $table->text('reject_reason')->nullable();
             $table->string('return_shipping_code', 50)->nullable()->unique();
             $table->string('return_shipping_status', 50)->nullable();
+            $table->unsignedInteger('return_shipping_fee')->nullable();
             $table->unsignedInteger('refund_amount')->nullable();
             $table->dateTime('decided_at')->nullable();
             $table->dateTime('received_at')->nullable();

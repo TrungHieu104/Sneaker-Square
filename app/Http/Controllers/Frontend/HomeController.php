@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
+use App\Services\ShopSettings;
 use Illuminate\Http\Request;
 use App\Models\CategoryModel as Category;
 use App\Models\ProductModel as Product;
 use App\Models\NewsModel as News;
 use App\Models\CateNewsModel as CateNews;
-use App\Models\ContactModel as Contact;
 use App\Models\ContactFormModel;
 use App\Http\Requests\Frontend\ContactFormRequest;
 use App\Mail\ContactMail;
@@ -36,7 +36,7 @@ class HomeController extends Controller
         ->whereDate('promotion_start', '<=', date("Y-m-d"))
         ->whereDate('promotion_end', '>', date("Y-m-d"))
         ->get();
-        $contact = Contact::where('contact_hidden',1)->limit(1)->get();
+        $contact = app(\App\Services\ShopSettings::class)->storefrontContact();
         $faq = Faq::where('faq_hidden',1)->where('faq_about',0)->orderBy('faq_id','desc')->get();
         $data = Menu::where('menu_hidden',1)->orderBy('menu_position','asc')->get();
         $catePro = Category::where('cate_hidden', 1)->where('cate_parent_id', 1)->orderBy('cate_sort', 'DESC')->get();
@@ -100,10 +100,24 @@ class HomeController extends Controller
 
     public function contact()
     {
-        $contact = Contact::where('contact_hidden',1)->limit(1)->get();
+        $contact = app(\App\Services\ShopSettings::class)->storefrontContact();
         return view('frontend.pages.contact',compact('contact'));
     }
  
+    /**
+     * The return policy, written from the settings the shop actually runs on
+     * rather than from a page somebody has to remember to edit.
+     */
+    public function returnPolicy()
+    {
+        $settings = app(ShopSettings::class);
+
+        return view('frontend.pages.return_policy', [
+            'soNgayTra' => $settings->returnDays(),
+            'soNgayTuHoanTat' => $settings->autoCompleteDays(),
+        ]);
+    }
+
     public function faqDetail(string $faqSlug = '')
     {
         $faqId = Faq::where('faq_slug', $faqSlug)->value('faq_id');

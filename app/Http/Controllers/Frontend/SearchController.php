@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Frontend;
 use App\Models\NewsModel;
 use App\Models\ProductModel;
 use App\Models\PromotionModel as Promotion;
-use App\Models\ContactModel as Contact;
 use App\Models\FaqModel as Faq;
 use App\Models\MenuModel as Menu;
 use Illuminate\Http\Request;
@@ -20,7 +19,7 @@ class SearchController extends Controller
     {
         $keyword = $request->input('keyword');
         $slide = Promotion::where('cate_slide_id', 1)->where('promotion_hidden', 1)->get();
-        $contact = Contact::where('contact_hidden', 1)->limit(1)->get();
+        $contact = app(\App\Services\ShopSettings::class)->storefrontContact();
         $faq = Faq::where('faq_hidden',1)->where('faq_about',0)->orderBy('faq_id','desc')->get();
         $data = Menu::where('menu_hidden', 1)->orderBy('menu_position', 'asc')->get();
         $menu = $this->data_tree($data);

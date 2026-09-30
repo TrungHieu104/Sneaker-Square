@@ -240,7 +240,7 @@
             <b><u>Lưu ý:</u></b> <i class="text-danger">(*)</i></i> Là số tiền cần phải thanh toán <br>
             Đây là email tự động. Vui lòng không trả lời email này. <br>
             <a href="{{ config('app.url') }}/in-don-hang/{{$order_code}}" target="_blank">Bấm vào đây</a> để xuất hóa đơn. <br>
-            Hotline: 0123456789 <br>
+            Hotline: {{ $shopInfo['phone_display'] }} <br>
             <a href="{{ config('app.url') }}/" target="_blank">{{ config('app.url') }}/</a>
         </div>
 

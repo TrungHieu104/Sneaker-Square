@@ -29,9 +29,10 @@ use Illuminate\Support\Facades\Storage;
  * rows every time. Each step locks the order and checks the step before it, so
  * a double click or two admins at once change nothing twice.
  *
- * An order can go through this more than once — the second pair can come back
- * next week, and a refused request can be argued again — but never twice at
- * the same time. Every step here works on the order's one open request.
+ * An order collects several requests but only ever one return: a refusal or a
+ * cancellation costs the shop nothing and may be argued again, while a request
+ * the shop approved sends a courier out and spends the order's one trip. Every
+ * step here works on the order's one open request.
  */
 class OrderReturns
 {
@@ -53,6 +54,10 @@ class OrderReturns
 
             if ($fresh->activeReturn()->exists()) {
                 throw new ReturnNotAllowed('Đơn hàng đang có một yêu cầu trả hàng chờ xử lý.');
+            }
+
+            if ($fresh->orderReturns()->whereIn('status', OrderReturnModel::SETTLED)->exists()) {
+                throw new ReturnNotAllowed('Đơn hàng này đã được duyệt trả hàng một lần rồi, mỗi đơn chỉ trả được một lần.');
             }
 
             if (! $fresh->canRequestReturn()) {
@@ -215,12 +220,8 @@ class OrderReturns
 
             $con = (int) ($conLai[$lineId] ?? 0);
 
-            if ($con === 0) {
-                throw new ReturnNotAllowed('"'.$line->pro_name.'" đã được gửi trả hết trong yêu cầu trước.');
-            }
-
             if ($quantity > $con) {
-                throw new ReturnNotAllowed('Số lượng trả của "'.$line->pro_name.'" vượt quá số còn lại có thể trả ('.$con.').');
+                throw new ReturnNotAllowed('Số lượng trả của "'.$line->pro_name.'" vượt quá số đã mua ('.$con.').');
             }
 
             $chosen[$lineId] = $quantity;

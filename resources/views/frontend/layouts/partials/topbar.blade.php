@@ -31,7 +31,7 @@
             @endif
             <span class="top-right_line"></span>
             @foreach($contact as $data)
-                <a href="tel:0369469525">Hotline: {{ ''.substr($data->contact_phone, 0, 4).' '.substr($data->contact_phone, 4, 3).' '.substr($data->contact_phone, 7) }}</a>
+                <a href="tel:{{ $data->contact_phone }}">Hotline: {{ ''.substr($data->contact_phone, 0, 4).' '.substr($data->contact_phone, 4, 3).' '.substr($data->contact_phone, 7) }}</a>
             @endforeach
         </div>
     </div>

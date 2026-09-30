@@ -47,6 +47,12 @@ class VnPayGateway implements PaymentGateway
             'vnp_BankCode' => 'NCB',
         ];
 
+        // Without it VNPay keeps a link payable on its own clock, well after
+        // the order behind it may have been cancelled and its stock released.
+        if ($charge->expiresAt) {
+            $input['vnp_ExpireDate'] = $charge->expiresAt->copy()->setTimezone('Asia/Ho_Chi_Minh')->format('YmdHis');
+        }
+
         ksort($input);
 
         $query = http_build_query($input);

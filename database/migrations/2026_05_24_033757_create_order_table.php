@@ -27,6 +27,7 @@ return new class extends Migration
             $table->string('order_payment',50);
             $table->boolean('order_payment_status');
             $table->dateTime('order_payment_time')->nullable();
+            $table->dateTime('order_payment_due_at')->nullable();
             $table->longText('order_payment_url')->nullable();
             $table->boolean('order_delivery_status')->default(0);
             $table->date('order_expected_delivery')->nullable();

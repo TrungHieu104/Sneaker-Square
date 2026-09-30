@@ -168,12 +168,14 @@
                             <span class="align-middle">Thông tin</span>
                         </a>
                     </li>
+                    @canany(['Quản trị Đơn hàng', 'Quản trị Thông tin'])
                     <li>
-                        <a class="dropdown-item" href="{{route('info-contact.index')}}">
+                        <a class="dropdown-item" href="{{route('setting.edit')}}">
                             <i class="bx bx-cog me-2"></i>
                             <span class="align-middle">Cài đặt</span>
                         </a>
                     </li>
+                    @endcanany
                     <li>
                         <div class="dropdown-divider"></div>
                     </li>

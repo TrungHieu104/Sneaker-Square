@@ -9,7 +9,6 @@ use App\Http\Requests\Frontend\Authuser\RegisterRequest;
 use App\Http\Requests\Frontend\Authuser\ResetpassRequets;
 use App\Mail\RegisterMail;
 use App\Mail\ResetPassword;
-use App\Models\ContactModel as Contact;
 use App\Models\PromotionModel as Promotion;
 use App\Models\FaqModel as Faq;
 use App\Models\CateNewsModel as CateNews;
@@ -29,7 +28,7 @@ class AuthUserController extends Controller
     public function __construct()
     {
         $slide = Promotion::where('cate_slide_id',1)->where('promotion_hidden',1)->get();
-        $contact = Contact::where('contact_hidden',1)->limit(1)->get();
+        $contact = app(\App\Services\ShopSettings::class)->storefrontContact();
         $faq = Faq::where('faq_hidden',1)->where('faq_about',0)->orderBy('faq_id','desc')->get();
         $cateNews = CateNews::withCount('getNewsInCate')->where('cate_news_hidden',1)
         -> orderBy('cate_news_sort', 'asc')

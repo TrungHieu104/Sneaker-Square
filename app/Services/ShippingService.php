@@ -221,6 +221,8 @@ class ShippingService
         // callback for the cancelled parcel still finds its own history.
         $return->return_shipping_code = null;
         $return->return_shipping_status = 'cancel';
+        // A parcel nobody carried is a cost nobody owes.
+        $return->return_shipping_fee = null;
         $return->save();
         $this->pulse->mark((int) $return->order_id);
     }
@@ -269,6 +271,7 @@ class ShippingService
                 'weight' => (int) ($muc->line?->product?->pro_weight ?? self::MINIMUM_WEIGHT),
             ])->all(),
             note: 'Hàng trả lại của đơn '.$order->order_code,
+            senderPaysCarriage: false,
             from: new ShipmentSender(
                 name: (string) $order->order_name,
                 phone: (string) $order->order_phone,
@@ -280,6 +283,8 @@ class ShippingService
 
         $return->return_shipping_code = $booking->code;
         $return->return_shipping_status = null;
+        // Kept so the refund can charge the buyer for carriage they caused.
+        $return->return_shipping_fee = $booking->fee;
         $return->save();
         $this->pulse->mark((int) $order->order_id);
 

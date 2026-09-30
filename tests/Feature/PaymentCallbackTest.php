@@ -9,6 +9,8 @@ use App\Models\CouponModel;
 use App\Models\OrderModel;
 use App\Models\ProductModel;
 use App\Models\UserModel;
+use App\Services\Payment\OrderPayments;
+use App\Services\Wallet\WalletService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\Support\ShopFixtures;
@@ -140,6 +142,20 @@ class PaymentCallbackTest extends TestCase
         return $params;
     }
 
+    /**
+     * Lets the payment window close, then runs the job that cancels what is left.
+     */
+    private function expireOverdue(): void
+    {
+        $this->travel(OrderPayments::windowMinutes() + 1)->minutes();
+        $this->artisan('orders:expire-unpaid')->assertExitCode(0);
+    }
+
+    private function walletBalanceOf(OrderModel $order): int
+    {
+        return app(WalletService::class)->for((int) $order->user_id)->balance;
+    }
+
     // ------------------------------------------------- forged callbacks
 
     public function test_ma_don_hang_khong_du_de_danh_dau_da_thanh_toan(): void
@@ -267,28 +283,39 @@ class PaymentCallbackTest extends TestCase
         Mail::assertQueued(ConfirmOrder::class, 1);
     }
 
-    public function test_tien_ve_sau_khi_don_da_huy_thi_ghi_nhan_nhung_khong_mo_lai_don(): void
+    public function test_tien_ve_sau_khi_don_da_huy_thi_hoan_vao_vi(): void
     {
         $order = $this->placeOrder(price: 1_000_000, quantity: 2, stock: 10);
+        $this->expireOverdue();
 
-        $this->get(route('process.checkout', $this->vnpayCallback($order, '24')));
-
-        $cancelled = OrderModel::find($order->order_id);
-        $this->assertSame(OrderStatus::Cancelled, $cancelled->order_status);
+        $this->assertSame(OrderStatus::Cancelled, $order->fresh()->order_status);
         $this->assertSame(10, $this->stockOf(ProductModel::firstOrFail()), 'Hàng đã trả về kho khi hủy');
 
         Mail::fake();
         $this->get(route('process.checkout', $this->vnpayCallback($order, '00')));
 
-        $paid = OrderModel::find($order->order_id);
+        $paid = $order->fresh();
 
-        $this->assertSame(1, (int) $paid->order_payment_status, 'Tiền đã về thì phải ghi nhận để còn hoàn lại');
         $this->assertSame(OrderStatus::Cancelled, $paid->order_status, 'Đơn vẫn là đã hủy');
+        $this->assertSame((int) $order->order_total, $this->walletBalanceOf($order), 'Tiền về muộn phải vào ví, không nằm treo');
         $this->assertSame(10, $this->stockOf(ProductModel::firstOrFail()), 'Không được trừ kho lần nữa');
         Mail::assertNothingQueued();
     }
 
-    public function test_huy_thanh_toan_hoan_lai_ton_kho_va_luot_ma_giam_gia(): void
+    public function test_huy_o_cong_thanh_toan_khong_huy_don(): void
+    {
+        $order = $this->placeOrder(quantity: 2, stock: 10);
+
+        // Backing out of the gateway is not giving up on the order: the
+        // customer is sent back to it to try again or pay another way.
+        $this->get(route('process.checkout', $this->vnpayCallback($order, responseCode: '24')))
+            ->assertRedirect(route('orderBill.checkout', $order->order_code));
+
+        $this->assertSame(OrderStatus::New, $order->fresh()->order_status);
+        $this->assertSame(8, $this->stockOf(ProductModel::first()), 'Hàng vẫn được giữ cho khách');
+    }
+
+    public function test_qua_han_thanh_toan_hoan_lai_ton_kho_va_luot_ma_giam_gia(): void
     {
         $coupon = CouponModel::create([
             'coupon_name' => 'Giảm 10%',
@@ -307,27 +334,21 @@ class PaymentCallbackTest extends TestCase
         $this->assertSame(8, $this->stockOf($product), 'Đặt hàng phải trừ kho trước đã');
         $this->assertSame(4, (int) $coupon->fresh()->coupon_quantity);
 
-        // The cart is already gone by this point — which is exactly why restoring
-        // stock from the session could never have worked.
-        session()->forget('cart');
+        $this->expireOverdue();
 
-        $this->get(route('process.checkout', $this->vnpayCallback($order, responseCode: '24')))
-            ->assertRedirect(route('failed.checkout'));
-
-        $this->assertSame(10, $this->stockOf($product), 'Hủy thanh toán phải hoàn lại tồn kho');
+        $this->assertSame(10, $this->stockOf($product), 'Quá hạn thanh toán phải hoàn lại tồn kho');
         $this->assertSame(OrderStatus::Cancelled, $order->fresh()->order_status);
         $this->assertSame(5, (int) $coupon->fresh()->coupon_quantity, 'Lượt dùng mã giảm giá phải được trả lại');
         $this->assertSame(0, (int) $coupon->fresh()->coupon_used);
     }
 
-    public function test_huy_hai_lan_khong_hoan_kho_hai_lan(): void
+    public function test_het_han_chay_hai_lan_khong_hoan_kho_hai_lan(): void
     {
-        $order = $this->placeOrder(quantity: 2, stock: 10);
+        $this->placeOrder(quantity: 2, stock: 10);
         $product = ProductModel::first();
-        $params = $this->vnpayCallback($order, responseCode: '24');
 
-        $this->get(route('process.checkout', $params));
-        $this->get(route('process.checkout', $params));
+        $this->expireOverdue();
+        $this->artisan('orders:expire-unpaid')->assertExitCode(0);
 
         $this->assertSame(10, $this->stockOf($product), 'Tồn kho chỉ được hoàn đúng một lần');
     }
@@ -411,17 +432,13 @@ class PaymentCallbackTest extends TestCase
     public function test_tra_tien_cho_don_da_huy_thi_khong_ve_trang_thanh_cong(): void
     {
         $order = $this->placeOrder();
-
-        $this->get(route('process.checkout', $this->vnpayCallback($order, responseCode: '24')))
-            ->assertRedirect(route('failed.checkout'));
+        $this->expireOverdue();
 
         $this->get(route('process.checkout', $this->vnpayCallback($order)))
-            ->assertRedirect(route('failed.checkout'));
+            ->assertRedirect(route('orderBill.checkout', $order->order_code));
 
-        $order->refresh();
-        $this->assertSame(OrderStatus::Cancelled, $order->order_status);
-        $this->assertSame(1, (int) $order->order_payment_status, 'Tiền vẫn phải được ghi nhận để còn hoàn lại');
-        $this->assertStringContainsString('hoàn lại', session('message'));
+        $this->assertSame(OrderStatus::Cancelled, $order->fresh()->order_status);
+        $this->assertStringContainsString('hoàn vào SPay', session('message'));
     }
 
     public function test_tra_tien_cho_don_binh_thuong_van_ve_trang_thanh_cong(): void

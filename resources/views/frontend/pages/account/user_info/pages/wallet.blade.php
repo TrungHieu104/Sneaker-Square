@@ -195,9 +195,9 @@
                     <div class="text-muted">Dùng để thanh toán đơn hàng hoặc rút về ngân hàng.</div>
                 </div>
                 <div class="col-md-5 col-12 d-flex gap-2 justify-content-md-end">
-                    <button type="button" class="custom-btn bgc-o text-white" data-bs-toggle="modal"
+                    <button type="button" class="custom-btn bgc-o text-white flex-fill flex-md-grow-0" data-bs-toggle="modal"
                         data-bs-target="#napTien">Nạp tiền</button>
-                    <button type="button" class="border grey-hover border-1 custom-btn text-dark" data-bs-toggle="modal"
+                    <button type="button" class="border grey-hover border-1 custom-btn text-dark flex-fill flex-md-grow-0" data-bs-toggle="modal"
                         data-bs-target="#rutTien" @disabled($wallet->balance < WalletWithdrawalModel::MIN_AMOUNT)>Rút tiền</button>
                 </div>
             </div>
@@ -233,8 +233,8 @@
                         </div>
                     </div>
                 @else
-                    <div class="mb-3 p-4 bg-white">
-                        <div class="table-responsive">
+                    <div class="mb-3 p-md-4 p-0 bg-white">
+                        <div class="table-responsive d-none d-md-block">
                             <table class="table align-middle mb-0">
                                 <thead>
                                     <tr class="text-muted">
@@ -267,8 +267,21 @@
                                 </tbody>
                             </table>
                         </div>
+                        {{-- Four columns do not fit a phone: the amounts ended up off screen. --}}
+                        <ul class="wallet-list d-md-none">
+                            @foreach ($transactions as $giaoDich)
+                                <li>
+                                    <span class="wallet-list__title">{{ $giaoDich->typeLabel() }}</span>
+                                    <span @class(['wallet-list__amount', 'text-success' => $giaoDich->isCredit(), 'is-debit' => ! $giaoDich->isCredit()])>{{ $giaoDich->signedAmount() }}</span>
+                                    <span class="wallet-list__meta">
+                                        {{ $giaoDich->created_at?->format('H:i d/m/Y') }}@if ($giaoDich->description) &middot; {{ $giaoDich->description }}@endif
+                                    </span>
+                                    <span class="wallet-list__side">Số dư {{ number_format($giaoDich->balance_after, 0, ',', '.') }} đ</span>
+                                </li>
+                            @endforeach
+                        </ul>
                         @if ($transactions->hasPages())
-                            <div class="mt-3">
+                            <div class="mt-3 px-3 pb-3 px-md-0 pb-md-0">
                                 {{ $transactions->links('frontend.layouts.partials.pagination') }}
                             </div>
                         @endif
@@ -289,8 +302,8 @@
                         </div>
                     </div>
                 @else
-                    <div class="mb-3 p-4 bg-white">
-                        <div class="table-responsive">
+                    <div class="mb-3 p-md-4 p-0 bg-white">
+                        <div class="table-responsive d-none d-md-block">
                             <table class="table align-middle mb-0">
                                 <thead>
                                     <tr class="text-muted">
@@ -324,6 +337,18 @@
                                 </tbody>
                             </table>
                         </div>
+                        <ul class="wallet-list d-md-none">
+                            @foreach ($withdrawals as $yeuCau)
+                                <li>
+                                    <span class="wallet-list__title">{{ $yeuCau->bank_name }}</span>
+                                    <span class="wallet-list__amount">{{ number_format($yeuCau->amount, 0, ',', '.') }} đ</span>
+                                    <span class="wallet-list__meta">
+                                        {{ $yeuCau->created_at->format('H:i d/m/Y') }} &middot; {{ $yeuCau->bank_account }} &middot; {{ $yeuCau->account_holder }}@if ($yeuCau->note) &middot; {{ $yeuCau->note }}@endif
+                                    </span>
+                                    <span class="wallet-list__side">{{ $yeuCau->statusLabel() }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
                     </div>
                 @endif
             </div>

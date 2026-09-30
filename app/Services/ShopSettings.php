@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\SettingModel;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -25,6 +26,34 @@ class ShopSettings
     public const RETURN_DAYS = 'orders.return_days';
 
     public const DEFAULT_RETURN_DAYS = 7;
+
+    public const PAYMENT_WINDOW = 'orders.payment_window_minutes';
+
+    public const DEFAULT_PAYMENT_WINDOW = 30;
+
+    /**
+     * Below five minutes a customer who is sent to their banking app and back
+     * loses the order on the way; above a day, stock sits behind orders
+     * nobody is going to pay for.
+     */
+    public const MIN_PAYMENT_WINDOW = 5;
+
+    public const MAX_PAYMENT_WINDOW = 1440;
+
+    /**
+     * The shop's own details as the storefront prints them, keyed by the
+     * form field that edits each one.
+     *
+     * @var array<string, string>
+     */
+    public const SHOP_INFO = [
+        'address' => 'shop.address',
+        'phone' => 'shop.phone',
+        'email' => 'shop.email',
+        'map_embed' => 'shop.map_embed',
+        'fanpage_embed' => 'shop.fanpage_embed',
+        'chat_embed' => 'shop.chat_embed',
+    ];
 
     /**
      * Days after the carrier reports a parcel delivered before the order is
@@ -58,6 +87,87 @@ class ShopSettings
     public function setReturnDays(int $days): void
     {
         $this->put(self::RETURN_DAYS, (string) $days);
+    }
+
+    /**
+     * How long a gateway order holds its stock waiting to be paid.
+     */
+    public function paymentWindowMinutes(): int
+    {
+        $minutes = (int) $this->get(self::PAYMENT_WINDOW, (string) self::DEFAULT_PAYMENT_WINDOW);
+
+        return max(self::MIN_PAYMENT_WINDOW, min(self::MAX_PAYMENT_WINDOW, $minutes));
+    }
+
+    public function setPaymentWindowMinutes(int $minutes): void
+    {
+        $this->put(self::PAYMENT_WINDOW, (string) $minutes);
+    }
+
+    /**
+     * @return array<string, string> keyed as SHOP_INFO is
+     */
+    public function shopInfo(): array
+    {
+        $info = [];
+
+        foreach (self::SHOP_INFO as $field => $key) {
+            $info[$field] = (string) $this->get($key, '');
+        }
+
+        return $info;
+    }
+
+    /**
+     * The same details for a page or an email to print, with the phone split
+     * into groups the way people read a number aloud: 0369 469 525.
+     *
+     * @return array<string, string> SHOP_INFO's keys plus `phone_display`
+     */
+    public function shopInfoForDisplay(): array
+    {
+        $info = $this->shopInfo();
+        $digits = $info['phone'];
+
+        $info['phone_display'] = strlen($digits) === 10
+            ? substr($digits, 0, 4).' '.substr($digits, 4, 3).' '.substr($digits, 7)
+            : $digits;
+
+        return $info;
+    }
+
+    /**
+     * @param  array<string, ?string>  $info  keyed as SHOP_INFO is
+     */
+    public function setShopInfo(array $info): void
+    {
+        foreach (self::SHOP_INFO as $field => $key) {
+            if (array_key_exists($field, $info)) {
+                $this->put($key, (string) $info[$field]);
+            }
+        }
+    }
+
+    /**
+     * The shop's details in the shape the storefront layouts were written
+     * for: a list of rows, each with the old contact table's column names.
+     * They loop over it, so a missing address prints nothing rather than
+     * failing the page.
+     *
+     * @return Collection<int, object>
+     */
+    public function storefrontContact(): Collection
+    {
+        $info = $this->shopInfo();
+
+        return collect([(object) [
+            'contact_address' => $info['address'],
+            'contact_phone' => $info['phone'],
+            'contact_email' => $info['email'],
+            'map_link' => $info['map_embed'],
+            'fanpage_link' => $info['fanpage_embed'],
+            'tawk_link' => $info['chat_embed'],
+        ]]);
     }
 
     private function get(string $key, ?string $default = null): ?string

@@ -4,6 +4,7 @@ namespace App\Services\Wallet;
 
 use App\Models\OrderModel;
 use App\Models\OrderReturnModel;
+use App\Models\PaymentAttemptModel;
 use App\Models\UserModel;
 use App\Models\WalletModel;
 use App\Models\WalletTransactionModel;
@@ -38,6 +39,13 @@ class WalletService
      * than one batch, and each batch is paid for once.
      */
     public const REF_RETURN_REFUND = 'return_refund';
+
+    /**
+     * Keyed on the gateway attempt, not the order: an order can be paid by
+     * only one attempt, and every other attempt that took money is handed
+     * back once, however often the gateway repeats itself.
+     */
+    public const REF_PAYMENT_ATTEMPT = 'payment_attempt';
 
     public const REF_TOPUP = 'topup';
 
@@ -144,6 +152,39 @@ class WalletService
                 $description,
                 self::REF_ORDER_REFUND,
                 (int) $order->order_id,
+            );
+
+            return true;
+        });
+    }
+
+    /**
+     * Hands back money a gateway took for an order that could not use it:
+     * the order was already paid another way, or was cancelled before the
+     * payment arrived.
+     *
+     * @return bool whether this call is the one that paid the money back
+     */
+    public function refundAttempt(PaymentAttemptModel $attempt, int $userId, string $description): bool
+    {
+        if ((int) $attempt->amount <= 0) {
+            return false;
+        }
+
+        return (bool) DB::transaction(function () use ($attempt, $userId, $description) {
+            $wallet = $this->for($userId);
+
+            if ($this->alreadyRecorded($wallet, self::REF_PAYMENT_ATTEMPT, (int) $attempt->attempt_id)) {
+                return false;
+            }
+
+            $this->credit(
+                $wallet,
+                (int) $attempt->amount,
+                WalletTransactionModel::TYPE_REFUND,
+                $description,
+                self::REF_PAYMENT_ATTEMPT,
+                (int) $attempt->attempt_id,
             );
 
             return true;

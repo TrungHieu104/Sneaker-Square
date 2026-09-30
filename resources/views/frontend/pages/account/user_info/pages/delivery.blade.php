@@ -2,15 +2,14 @@
 @section('content_user')
     <div>
         <h3 class="mb-2">Địa chỉ của tôi</h3>
-        <div class="mb-3 p-4 bg-white">
-            <div class="row">
-                <div class="col-md-6 col-4">
-                    <h4>Địa chỉ</h4>
+        <div class="mb-3 p-md-4 p-3 bg-white">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h4 class="mb-0">Địa chỉ</h4>
                 </div>
-                <div class="col-md-6 col-8 d-flex justify-content-end">
-                    <button class="btn-address text-white" data-bs-toggle="modal" data-bs-target="#addAddress"><i
-                            class='bx bx-plus pe-2 text-white'></i>Thêm địa
-                        chỉ mới</button>
+                <div class="col-auto d-flex justify-content-end">
+                    <button class="btn-address text-white text-nowrap" data-bs-toggle="modal" data-bs-target="#addAddress"><i
+                            class='bx bx-plus pe-2 text-white'></i>Thêm địa chỉ mới</button>
                     <!-- Modal -->
                     <div class="modal fade" id="addAddress" tabindex="-1" aria-labelledby="addAddressLabel"
                         aria-hidden="true">
@@ -165,8 +164,8 @@
                             <input type="text" value="1" hidden name="info_default">
                             <input type="text" hidden name="info_id" value="{{ $dl->info_id }}">
                             <div class="col-md-8 col-12">
-                                <p><b>{{ $dl->info_name }}</b> | <b>{{ $dl->info_phone }}</Span></b>|
-                                    <b>{{ $dl->info_email }}</Span></b>
+                                <p><b>{{ $dl->info_name }}</b> | <b>{{ $dl->info_phone }}</b><span class="d-none d-md-inline">|</span>
+                                    <b class="d-block d-md-inline">{{ $dl->info_email }}</b>
                                 <p>
 
                                     <span>{{ $dl->info_address }}, </span> <br>
@@ -177,7 +176,7 @@
                                         định</span>
                                 @endif
                             </div>
-                            <div class="col-md-4 col-12 m-auto">
+                            <div class="col-md-4 col-12 m-auto address-actions">
                                 <div class="d-flex justify-content-end gap-2">
                                     <a class="" href="#" data-bs-toggle="modal"
                                         data-bs-target="#updateInfo{{ $dl->info_id }}">Cập nhật</a>

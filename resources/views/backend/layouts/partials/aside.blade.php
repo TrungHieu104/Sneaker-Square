@@ -353,15 +353,6 @@
             </ul>
         </li>
         @endcan
-        @can('Quản trị Thông tin')
-        <li class="menu-item {{(url()->current() == route('info-contact.index') 
-            || url()->current() == route('info_contact.trashed') || url()->current() == route('info-contact.create')) ? 'active' : ''}}">
-            <a href="{{route('info-contact.index')}}" class="menu-link">
-                <i class='menu-icon bx bxs-contact'></i>
-                <div data-i18n="Extended UI">Thông tin</div>
-            </a>
-        </li>
-        @endcan
         @can('Quản trị FAQ')
         <li class="menu-item {{(url()->current() == route('faq.index') || url()->current() == route('faq.create') || url()->current() == route('faq.trashed')) ? 'active' : ''}}">
             <a href="{{route('faq.index')}}" class="menu-link">
@@ -378,14 +369,14 @@
             </a>
         </li>
         @endcan
-        @can('Quản trị Đơn hàng')
+        @canany(['Quản trị Đơn hàng', 'Quản trị Thông tin'])
         <li class="menu-item {{(url()->current() == route('setting.edit')) ? 'active' : ''}}">
             <a href="{{route('setting.edit')}}" class="menu-link">
                 <i class='bx bx-cog menu-icon'></i>
                 <div data-i18n="Extended UI">Cấu hình hệ thống</div>
             </a>
         </li>
-        @endcan
+        @endcanany
         <!-- Misc -->
         <li class="menu-header small text-uppercase"><span class="menu-header-text">Hỗ trợ</span></li>
         <li class="menu-item {{(url()->current() == route('support')) ? 'active' : ''}}">

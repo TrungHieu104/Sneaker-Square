@@ -9,6 +9,9 @@
     @if ($order->hasStatus(\App\Enums\OrderStatus::CancelRequested))
         @include('backend.pages.order.partials.cancel_request_panel', ['order' => $order])
     @endif
+    @if ($order->hasStatus(\App\Enums\OrderStatus::New, \App\Enums\OrderStatus::Confirmed, \App\Enums\OrderStatus::ReadyToShip))
+        @include('backend.pages.order.partials.shop_cancel_panel', ['order' => $order])
+    @endif
     @if ($order->orderReturns->isNotEmpty())
         @include('backend.pages.order.partials.return_panel', ['order' => $order])
     @endif
@@ -25,14 +28,14 @@
                         @if($order->hasStatus(\App\Enums\OrderStatus::New))
                             <input type="hidden" name="action" value="confirm">
                             <button type="submit" class="btn btn-success px-5 text-white">Xác nhận</button>
-                        @elseif($order->hasStatus(\App\Enums\OrderStatus::Returned) && ! $order->orderReturn)
-                            <input type="hidden" name="action" value="refund">
-                            <button type="submit" class="btn btn-danger px-5 text-white">Xác nhận hoàn tiền</button>
                         {{-- Handing the parcel over by hand and sending it through GHN are the
                              two ways out of the warehouse, and taking one closes the other. --}}
                         @elseif($order->hasStatus(\App\Enums\OrderStatus::Confirmed) && ! $order->usesGhn())
                             <input type="hidden" name="action" value="handover">
                             <button type="submit" class="btn btn-warning px-5 text-white">Bàn giao vận chuyển</button>
+                        @elseif($order->hasStatus(\App\Enums\OrderStatus::Delivering) && $order->isHandedOverManually())
+                            <input type="hidden" name="action" value="delivered">
+                            <button type="submit" class="btn btn-success px-5 text-white">Đã giao hàng</button>
                         @else
                             <a href="{{route('order.index')}}" class="btn px-5 text-white btn-warning"><i class='bx bx-arrow-back' ></i></a>
                         @endif

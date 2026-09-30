@@ -2,7 +2,7 @@
 @section('content_user')
     <div>
         <div class="mb-3 bg-white">
-            <ul class="nav nav-underline d-flex justify-content-evenly align-items-center" id="v-pills-tab" role="tablist"
+            <ul class="nav nav-underline d-flex justify-content-evenly align-items-center order-tabs" id="v-pills-tab" role="tablist"
                 aria-orientation="vertical">
                 <li class="nav-item">
                     <button type="button" class="nav-link d-flex align-items-center h-60 active" id="v-pills-all-tab"
@@ -71,10 +71,10 @@
                     @foreach ($all_order as $all_order_data)
                         <div class="mb-3 p-3 bg-white all_order">
                             <div class="row">
-                                <div class="col-4 text-start">
-                                    # Mã đơn hàng - {{ $all_order_data->order_code }}
+                                <div class="col text-start text-nowrap">
+                                    #<span class="d-none d-md-inline"> Mã đơn hàng - </span>{{ $all_order_data->order_code }}
                                 </div>
-                                <div class="col-8 text-end">
+                                <div class="col-auto text-end">
                                     @include('components.order_status_line', ['order' => $all_order_data])
                                 </div>
                             </div>
@@ -87,12 +87,12 @@
                                             ->first();
                                     @endphp
                                     <div class="row">
-                                        <div class="col-md-2 col-12 m-auto">
-                                            <img class="img__cart" src="{{ $pro->pro_img }}" alt="{{ $pro->pro_name }}">
+                                        <div class="col-md-2 col-3 m-md-auto">
+                                            <a href="{{ route('product.detail', $pro->pro_slug) }}"><img class="img__cart" src="{{ $pro->pro_img }}" alt="{{ $pro->pro_name }}"></a>
                                         </div>
-                                        <div class="col-md-8 col-12 m-auto">
-                                            <h4 class=" fs-6 text mt-md-0 mt-3 pro-name">
-                                                {{ $all_order_detail_data->pro_name }}</h4>
+                                        <div class="col-md-8 col-9 m-md-auto">
+                                            <h4 class=" fs-6 text mt-0 pro-name">
+                                                <a class="order-pro-link" href="{{ route('product.detail', $pro->pro_slug) }}">{{ $all_order_detail_data->pro_name }}</a></h4>
                                             @if ($all_order_detail_data->size !== null)
                                                 <div>
                                                     <b>Size: </b> <span>{{ $all_order_detail_data->size }}</span>
@@ -106,7 +106,7 @@
                                             <p>x {{ $all_order_detail_data->quantity }}</p>
                                             @if ($all_order_data->hasStatus(\App\Enums\OrderStatus::Completed) && $pro)
                                                 <div class="mt-2">
-                                                    <a href="{{ route('product.detail', $pro->pro_slug) }}#review-section" class="btn btn-sm btn-outline-warning text-warning fw-bold px-3 py-1" style="font-size: 13px; border-color: #ffc107;">
+                                                    <a href="{{ route('product.detail', $pro->pro_slug) }}#review-section" class="btn btn-sm btn-outline-warning fw-bold px-3 py-1" style="font-size: 13px;">
                                                         <i class="fas fa-star"></i> Đánh giá sản phẩm
                                                     </a>
                                                 </div>
@@ -122,7 +122,7 @@
                                 @endif
                             @endforeach
                             <div class="row p-1 d-flex justify-content-between">
-                                <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3">
+                                <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3 order-actions">
                                     @if ($all_order_data->hasStatus(\App\Enums\OrderStatus::New))
                                         {{-- An order the customer left at the gateway has no bill to print yet. --}}
                                         @unless ($all_order_data->isAwaitingPayment())
@@ -213,10 +213,10 @@
                     @foreach ($wait_payment as $wait_payment_data)
                         <div class="mb-3 p-3 bg-white">
                             <div class="row">
-                                <div class="col-4 text-start">
-                                    # Mã đơn hàng - {{ $wait_payment_data->order_code }}
+                                <div class="col text-start text-nowrap">
+                                    #<span class="d-none d-md-inline"> Mã đơn hàng - </span>{{ $wait_payment_data->order_code }}
                                 </div>
-                                <div class="col-8 text-end">
+                                <div class="col-auto text-end">
                                     @include('components.order_status_line', ['order' => $wait_payment_data])
                                 </div>
                             </div>
@@ -229,13 +229,13 @@
                                             ->first();
                                     @endphp
                                     <div class="row">
-                                        <div class="col-md-2 col-12 m-auto">
-                                            <img class="img__cart" src="{{ $pro->pro_img }}"
-                                                alt="{{ $pro->pro_name }}">
+                                        <div class="col-md-2 col-3 m-md-auto">
+                                            <a href="{{ route('product.detail', $pro->pro_slug) }}"><img class="img__cart" src="{{ $pro->pro_img }}"
+                                                alt="{{ $pro->pro_name }}"></a>
                                         </div>
-                                        <div class="col-md-8 col-12 m-auto">
-                                            <h4 class=" fs-6 text mt-md-0 mt-3 pro-name">
-                                                {{ $all_order_detail_data->pro_name }}</h4>
+                                        <div class="col-md-8 col-9 m-md-auto">
+                                            <h4 class=" fs-6 text mt-0 pro-name">
+                                                <a class="order-pro-link" href="{{ route('product.detail', $pro->pro_slug) }}">{{ $all_order_detail_data->pro_name }}</a></h4>
                                             @if ($all_order_detail_data->size !== null)
                                                 <div>
                                                     <b>Size: </b> <span>{{ $all_order_detail_data->size }}</span>
@@ -293,10 +293,10 @@
                     @foreach ($wait_confirm as $wait_confirm_data)
                         <div class="mb-3 p-3 bg-white">
                             <div class="row">
-                                <div class="col-4 text-start">
-                                    # Mã đơn hàng - {{ $wait_confirm_data->order_code }}
+                                <div class="col text-start text-nowrap">
+                                    #<span class="d-none d-md-inline"> Mã đơn hàng - </span>{{ $wait_confirm_data->order_code }}
                                 </div>
-                                <div class="col-8 text-end">
+                                <div class="col-auto text-end">
                                     @include('components.order_status_line', ['order' => $wait_confirm_data])
                                 </div>
                             </div>
@@ -309,13 +309,13 @@
                                             ->first();
                                     @endphp
                                     <div class="row">
-                                        <div class="col-md-2 col-12 m-auto">
-                                            <img class="img__cart" src="{{ $pro->pro_img }}"
-                                                alt="{{ $pro->pro_name }}">
+                                        <div class="col-md-2 col-3 m-md-auto">
+                                            <a href="{{ route('product.detail', $pro->pro_slug) }}"><img class="img__cart" src="{{ $pro->pro_img }}"
+                                                alt="{{ $pro->pro_name }}"></a>
                                         </div>
-                                        <div class="col-md-8 col-12 m-auto">
-                                            <h4 class=" fs-6 text mt-md-0 mt-3 pro-name">
-                                                {{ $all_order_detail_data->pro_name }}</h4>
+                                        <div class="col-md-8 col-9 m-md-auto">
+                                            <h4 class=" fs-6 text mt-0 pro-name">
+                                                <a class="order-pro-link" href="{{ route('product.detail', $pro->pro_slug) }}">{{ $all_order_detail_data->pro_name }}</a></h4>
                                             @if ($all_order_detail_data->size !== null)
                                                 <div>
                                                     <b>Size: </b> <span>{{ $all_order_detail_data->size }}</span>
@@ -338,7 +338,7 @@
                                 @endif
                             @endforeach
                             <div class="row p-1 d-flex justify-content-between">
-                                <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3">
+                                <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3 order-actions">
                                 <div class="mt-md-0 mt-2 col-md-4 col-12">
                                     <a class="border grey-hover border-1 mx-2 custom-btn text-dark btn w-100" target="_blank"
                                         href="{{ url('/in-don-hang/' . $wait_confirm_data->order_code) }}">In đơn hàng</a>
@@ -379,10 +379,10 @@
                     @foreach ($delivery_order as $delivery_order_data)
                         <div class="mb-3 p-3 bg-white">
                             <div class="row">
-                                <div class="col-4 text-start">
-                                    # Mã đơn hàng - {{ $delivery_order_data->order_code }}
+                                <div class="col text-start text-nowrap">
+                                    #<span class="d-none d-md-inline"> Mã đơn hàng - </span>{{ $delivery_order_data->order_code }}
                                 </div>
-                                <div class="col-8 text-end">
+                                <div class="col-auto text-end">
                                     @include('components.order_status_line', ['order' => $delivery_order_data])
                                 </div>
                             </div>
@@ -395,13 +395,13 @@
                                             ->first();
                                     @endphp
                                     <div class="row">
-                                        <div class="col-md-2 col-12 m-auto">
-                                            <img class="img__cart" src="{{ $pro->pro_img }}"
-                                                alt="{{ $pro->pro_name }}">
+                                        <div class="col-md-2 col-3 m-md-auto">
+                                            <a href="{{ route('product.detail', $pro->pro_slug) }}"><img class="img__cart" src="{{ $pro->pro_img }}"
+                                                alt="{{ $pro->pro_name }}"></a>
                                         </div>
-                                        <div class="col-md-8 col-12 m-auto">
-                                            <h4 class=" fs-6 text mt-md-0 mt-3 pro-name">
-                                                {{ $all_order_detail_data->pro_name }}</h4>
+                                        <div class="col-md-8 col-9 m-md-auto">
+                                            <h4 class=" fs-6 text mt-0 pro-name">
+                                                <a class="order-pro-link" href="{{ route('product.detail', $pro->pro_slug) }}">{{ $all_order_detail_data->pro_name }}</a></h4>
                                             @if ($all_order_detail_data->size !== null)
                                                 <div>
                                                     <b>Size: </b> <span>{{ $all_order_detail_data->size }}</span>
@@ -424,7 +424,7 @@
                                 @endif
                             @endforeach
                             <div class="row p-1 d-flex justify-content-between">
-                                <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3">
+                                <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3 order-actions">
                                     @if (! $delivery_order_data->isAwaitingReceipt())
                                     <div class="mt-md-0 mt-2 col-md-4 col-12">
                                         <button disabled
@@ -481,10 +481,10 @@
                     @foreach ($success_order as $success_order_data)
                         <div class="mb-3 p-3 bg-white">
                             <div class="row">
-                                <div class="col-4 text-start">
-                                    # Mã đơn hàng - {{ $success_order_data->order_code }}
+                                <div class="col text-start text-nowrap">
+                                    #<span class="d-none d-md-inline"> Mã đơn hàng - </span>{{ $success_order_data->order_code }}
                                 </div>
-                                <div class="col-8 text-end">
+                                <div class="col-auto text-end">
                                     @include('components.order_status_line', ['order' => $success_order_data])
                                 </div>
                             </div>
@@ -497,13 +497,13 @@
                                             ->first();
                                     @endphp
                                     <div class="row">
-                                        <div class="col-md-2 col-12 m-auto">
-                                            <img class="img__cart" src="{{ $pro->pro_img }}"
-                                                alt="{{ $pro->pro_name }}">
+                                        <div class="col-md-2 col-3 m-md-auto">
+                                            <a href="{{ route('product.detail', $pro->pro_slug) }}"><img class="img__cart" src="{{ $pro->pro_img }}"
+                                                alt="{{ $pro->pro_name }}"></a>
                                         </div>
-                                        <div class="col-md-8 col-12 m-auto">
-                                            <h4 class=" fs-6 text mt-md-0 mt-3 pro-name">
-                                                {{ $all_order_detail_data->pro_name }}</h4>
+                                        <div class="col-md-8 col-9 m-md-auto">
+                                            <h4 class=" fs-6 text mt-0 pro-name">
+                                                <a class="order-pro-link" href="{{ route('product.detail', $pro->pro_slug) }}">{{ $all_order_detail_data->pro_name }}</a></h4>
                                             @if ($all_order_detail_data->size !== null)
                                                 <div>
                                                     <b>Size: </b> <span>{{ $all_order_detail_data->size }}</span>
@@ -517,7 +517,7 @@
                                             <p>x {{ $all_order_detail_data->quantity }}</p>
                                             @if ($success_order_data->hasStatus(\App\Enums\OrderStatus::Completed) && $pro)
                                                 <div class="mt-2">
-                                                    <a href="{{ route('product.detail', $pro->pro_slug) }}#review-section" class="btn btn-sm btn-outline-warning text-warning fw-bold px-3 py-1" style="font-size: 13px; border-color: #ffc107;">
+                                                    <a href="{{ route('product.detail', $pro->pro_slug) }}#review-section" class="btn btn-sm btn-outline-warning fw-bold px-3 py-1" style="font-size: 13px;">
                                                         <i class="fas fa-star"></i> Đánh giá sản phẩm
                                                     </a>
                                                 </div>
@@ -533,7 +533,7 @@
                                 @endif
                             @endforeach
                             <div class="row p-1 d-flex justify-content-between">
-                                <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3">
+                                <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3 order-actions">
                                     {{-- <button >Đã nhận hàng</button> --}}
 
                                     <form class="ms-md-0 ms-2 col-md-4 col-12" action="{{ route('success.order') }}" method="post">
@@ -584,10 +584,10 @@
                     @foreach ($cancel_order as $cancel_order_data)
                         <div class="mb-3 p-3 bg-white">
                             <div class="row">
-                                <div class="col-4 text-start">
-                                    # Mã đơn hàng - {{ $cancel_order_data->order_code }}
+                                <div class="col text-start text-nowrap">
+                                    #<span class="d-none d-md-inline"> Mã đơn hàng - </span>{{ $cancel_order_data->order_code }}
                                 </div>
-                                <div class="col-8 text-end">
+                                <div class="col-auto text-end">
                                     @include('components.order_status_line', ['order' => $cancel_order_data])
                                 </div>
                             </div>
@@ -600,13 +600,13 @@
                                             ->first();
                                     @endphp
                                     <div class="row">
-                                        <div class="col-md-2 col-12 m-auto">
-                                            <img class="img__cart" src="{{ $pro->pro_img }}"
-                                                alt="{{ $pro->pro_name }}">
+                                        <div class="col-md-2 col-3 m-md-auto">
+                                            <a href="{{ route('product.detail', $pro->pro_slug) }}"><img class="img__cart" src="{{ $pro->pro_img }}"
+                                                alt="{{ $pro->pro_name }}"></a>
                                         </div>
-                                        <div class="col-md-8 col-12 m-auto">
-                                            <h4 class=" fs-6 text mt-md-0 mt-3 pro-name">
-                                                {{ $all_order_detail_data->pro_name }}</h4>
+                                        <div class="col-md-8 col-9 m-md-auto">
+                                            <h4 class=" fs-6 text mt-0 pro-name">
+                                                <a class="order-pro-link" href="{{ route('product.detail', $pro->pro_slug) }}">{{ $all_order_detail_data->pro_name }}</a></h4>
                                             @if ($all_order_detail_data->size !== null)
                                                 <div>
                                                     <b>Size: </b> <span>{{ $all_order_detail_data->size }}</span>
@@ -629,7 +629,7 @@
                                 @endif
                             @endforeach
                             <div class="row p-1 d-flex justify-content-between">
-                            <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3">
+                            <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3 order-actions">
                                 <div class="mt-md-0 mt-2 col-md-4 col-12">
                                     <a class="border grey-hover border-1 mx-2 custom-btn text-dark "
                                         href="{{ route('orderBill.checkout', $cancel_order_data->order_code) }}">Chi
@@ -666,10 +666,10 @@
                     @foreach ($return_order as $return_order_data)
                         <div class="mb-3 p-3 bg-white">
                             <div class="row">
-                                <div class="col-4 text-start">
-                                    # Mã đơn hàng - {{ $return_order_data->order_code }}
+                                <div class="col text-start text-nowrap">
+                                    #<span class="d-none d-md-inline"> Mã đơn hàng - </span>{{ $return_order_data->order_code }}
                                 </div>
-                                <div class="col-8 text-end">
+                                <div class="col-auto text-end">
                                     @include('components.order_status_line', ['order' => $return_order_data])
                                 </div>
                             </div>
@@ -682,13 +682,13 @@
                                             ->first();
                                     @endphp
                                     <div class="row">
-                                        <div class="col-md-2 col-12 m-auto">
-                                            <img class="img__cart" src="{{ $pro->pro_img }}"
-                                                alt="{{ $pro->pro_name }}">
+                                        <div class="col-md-2 col-3 m-md-auto">
+                                            <a href="{{ route('product.detail', $pro->pro_slug) }}"><img class="img__cart" src="{{ $pro->pro_img }}"
+                                                alt="{{ $pro->pro_name }}"></a>
                                         </div>
-                                        <div class="col-md-8 col-12 m-auto">
-                                            <h4 class=" fs-6 text mt-md-0 mt-3 pro-name">
-                                                {{ $all_order_detail_data->pro_name }}</h4>
+                                        <div class="col-md-8 col-9 m-md-auto">
+                                            <h4 class=" fs-6 text mt-0 pro-name">
+                                                <a class="order-pro-link" href="{{ route('product.detail', $pro->pro_slug) }}">{{ $all_order_detail_data->pro_name }}</a></h4>
                                             @if ($all_order_detail_data->size !== null)
                                                 <div>
                                                     <b>Size: </b> <span>{{ $all_order_detail_data->size }}</span>
@@ -711,7 +711,7 @@
                                 @endif
                             @endforeach
                             <div class="row p-1 d-flex justify-content-between">
-                                <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3">
+                                <div class="col-12 row col-md-8 d-md-flex d-block order-md-1 order-2 mt-md-0 mt-3 order-actions">
                                 <div class="mt-md-0 mt-2 col-md-4 col-12">
                                     <a class="border grey-hover border-1 mx-2 custom-btn text-dark btn w-100"
                                             href="{{ route('orderBill.checkout', $return_order_data->order_code) }}">Chi

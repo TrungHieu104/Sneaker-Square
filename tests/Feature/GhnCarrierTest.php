@@ -207,7 +207,7 @@ class GhnCarrierTest extends TestCase
         );
     }
 
-    private function bookAndCapture(?ShipmentSender $from): void
+    private function bookAndCapture(?ShipmentSender $from, bool $benGuiTraPhi = true): void
     {
         config(['services.ghn.create_orders' => true]);
         Http::fake([
@@ -229,6 +229,7 @@ class GhnCarrierTest extends TestCase
             codAmount: 0,
             items: [['name' => 'Giày', 'quantity' => 1, 'weight' => 1000]],
             from: $from,
+            senderPaysCarriage: $benGuiTraPhi,
         ));
     }
 
@@ -252,6 +253,27 @@ class GhnCarrierTest extends TestCase
             && $request['from_ward_code'] === '20110'
             && $request['to_district_id'] === 3695
             && $request['cod_amount'] === 0);
+    }
+
+    public function test_van_don_giao_di_thi_shop_tra_cuoc_voi_tu_cach_ben_gui(): void
+    {
+        $this->bookAndCapture(null);
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/shipping-order/create')
+            && $request['payment_type_id'] === 1);
+    }
+
+    public function test_van_don_tra_hang_khong_thu_cuoc_cua_khach_o_cua(): void
+    {
+        $this->bookAndCapture(
+            new ShipmentSender('Nguyễn Văn A', '0912345678', '780 Bình Giã', 1442, '20110'),
+            benGuiTraPhi: false,
+        );
+
+        // Bên gửi ở chiều này là nhà khách: khai 1 là shipper thu tiền tại cửa,
+        // trong khi tiền hoàn đã tính phần khách phải chịu rồi.
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/shipping-order/create')
+            && $request['payment_type_id'] === 2);
     }
 
     public function test_ghn_tra_ve_success_nhung_tu_choi_tung_van_don_thi_van_la_loi(): void

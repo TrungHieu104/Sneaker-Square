@@ -90,11 +90,16 @@ class ReturnAdminController extends Controller
     public function shippingCode(Request $request, string $order_id): RedirectResponse
     {
         $data = $request->validate(
-            ['return_shipping_code' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9]+$/', 'unique:order_returns,return_shipping_code', 'unique:order,order_shipping_code']],
+            [
+                'return_shipping_code' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9]+$/', 'unique:order_returns,return_shipping_code', 'unique:order,order_shipping_code'],
+                'return_shipping_fee' => ['nullable', 'integer', 'min:0', 'max:1000000'],
+            ],
             [
                 'return_shipping_code.required' => 'Vui lòng nhập mã vận đơn.',
                 'return_shipping_code.regex' => 'Mã vận đơn chỉ gồm chữ và số.',
                 'return_shipping_code.unique' => 'Mã vận đơn này đã được dùng.',
+                'return_shipping_fee.integer' => 'Phí vận đơn trả phải là số.',
+                'return_shipping_fee.max' => 'Phí vận đơn trả tối đa :max đ.',
             ],
         );
 
@@ -110,6 +115,7 @@ class ReturnAdminController extends Controller
 
         $return->return_shipping_code = strtoupper($data['return_shipping_code']);
         $return->return_shipping_status = null;
+        $return->return_shipping_fee = $data['return_shipping_fee'] ?? null;
         $return->save();
 
         return $this->back($order, 'success', 'Đã gắn mã vận đơn trả hàng.');

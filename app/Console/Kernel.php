@@ -13,9 +13,12 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
-        $schedule->command('order-detele')->withoutOverlapping()->daily();
         $schedule->command('app:generate-sitemap')->daily();
         $schedule->command('orders:auto-complete')->withoutOverlapping()->hourly();
+        // Every minute because the payment window is counted in minutes: an
+        // hourly run would hold an abandoned order's stock for up to an hour
+        // past the deadline the customer was shown.
+        $schedule->command('orders:expire-unpaid')->withoutOverlapping()->everyMinute();
         $schedule->command('wallet:doi-soat')->withoutOverlapping()->dailyAt('03:00');
         $schedule->call(function() {
             \Illuminate\Support\Facades\Artisan::call('cache:clear');

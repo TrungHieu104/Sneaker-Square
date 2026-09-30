@@ -282,7 +282,7 @@ class OrderReturnTest extends TestCase
 
     // ------------------------------------------- nhiều lượt trả trên một đơn
 
-    public function test_tra_mot_phan_xong_van_tra_duoc_phan_con_lai(): void
+    public function test_tra_xong_mot_lan_thi_het_quyen_tra(): void
     {
         $order = $this->makeCompletedOrder(quantity: 3);
         $dong = OrderDetailModel::where('order_id', $order->order_id)->firstOrFail();
@@ -292,16 +292,13 @@ class OrderReturnTest extends TestCase
 
         $order = $order->fresh();
         $this->assertSame(OrderStatus::PartiallyReturned, $order->order_status);
-        $this->assertSame([$dong->order_details_id => 2], $order->returnableQuantities());
 
+        // Hai đôi còn lại vẫn ở nhà khách, nhưng chuyến xe của đơn này đã đi.
+        $this->assertFalse($order->canRequestReturn());
         $this->requestReturn($order, ['items' => [$dong->order_details_id => 2]])
-            ->assertSessionHas('iconMessage', 'success');
+            ->assertSessionHas('iconMessage', 'error');
 
-        $this->runThroughRefund($order);
-
-        // Everything has now gone home, whether it went in one parcel or two.
-        $this->assertSame(OrderStatus::Returned, $order->fresh()->order_status);
-        $this->assertSame([], $order->fresh()->returnableQuantities());
+        $this->assertSame(1, OrderReturnModel::count());
     }
 
     public function test_khong_tra_duoc_qua_so_luong_con_lai(): void
@@ -316,25 +313,6 @@ class OrderReturnTest extends TestCase
             ->assertSessionHas('iconMessage', 'error');
 
         $this->assertSame(1, OrderReturnItemModel::query()->count());
-    }
-
-    public function test_hai_lan_hoan_tien_deu_vao_vi_khach(): void
-    {
-        $order = $this->makeCompletedOrder(quantity: 2);
-        $order->forceFill(['order_payment_status' => 1])->save();
-        $dong = OrderDetailModel::where('order_id', $order->order_id)->firstOrFail();
-
-        $this->requestReturn($order, ['items' => [$dong->order_details_id => 1]]);
-        $this->runThroughRefund($order, 100_000);
-
-        $this->requestReturn($order->fresh(), ['items' => [$dong->order_details_id => 1]]);
-        $this->runThroughRefund($order, 150_000);
-
-        // Keyed on the order, the second refund would have been mistaken for a
-        // repeat of the first and silently paid nothing.
-        $vi = app(WalletService::class)->for($this->customer);
-        $this->assertSame(250_000, (int) $vi->balance);
-        $this->assertSame(2, WalletTransactionModel::where('reference_type', WalletService::REF_RETURN_REFUND)->count());
     }
 
     public function test_khach_huy_yeu_cau_thi_gui_lai_duoc(): void
@@ -584,7 +562,10 @@ class OrderReturnTest extends TestCase
         $this->admin('returns.book', $order)->assertSessionHas('iconMessage', 'success');
 
         $booked = end($this->carrier->booked);
-        $this->assertSame($order->order_code.'-TH', $booked->reference);
+        $yeuCau = OrderReturnModel::firstOrFail();
+        // GHN keeps client_order_code unique per shop, so the request's own id
+        // is what lets one order send a second parcel home.
+        $this->assertSame($order->order_code.'-TH'.$yeuCau->return_id, $booked->reference);
         $this->assertSame((int) $order->order_district_id, $booked->from->districtId);
         $this->assertSame(3695, $booked->toDistrictId);
         $this->assertSame(0, $booked->codAmount);
@@ -609,6 +590,137 @@ class OrderReturnTest extends TestCase
         $this->assertSame(1_000_000, $booked->insuranceValue);
         $this->assertCount(1, $booked->items);
         $this->assertSame(1, $booked->items[0]['quantity']);
+    }
+
+    public function test_van_don_tra_hang_khong_de_shipper_thu_cuoc_cua_khach(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->bookReturnFor($order, 'sai_size');
+
+        // Khách đã bị trừ cước vào tiền hoàn rồi, thu thêm ở cửa là thu hai lần.
+        $this->assertFalse(end($this->carrier->booked)->senderPaysCarriage);
+    }
+
+    // ------------------------------------------------- phí gửi trả theo lỗi
+
+    /**
+     * @return array{0: OrderReturnModel, 1: int}  the request and the booked fee
+     */
+    private function bookReturnFor(OrderModel $order, string $reason): array
+    {
+        $this->requestReturn($order, ['reason' => $reason]);
+        $this->admin('returns.approve', $order);
+        $this->admin('returns.book', $order);
+
+        $return = OrderReturnModel::orderByDesc('return_id')->firstOrFail();
+
+        return [$return, (int) $return->return_shipping_fee];
+    }
+
+    public function test_loi_cua_hang_thi_cua_hang_chiu_phi_gui_tra(): void
+    {
+        $order = $this->makeCompletedOrder();
+        [$return, $phi] = $this->bookReturnFor($order, 'loi_san_pham');
+
+        $this->assertGreaterThan(0, $phi, 'Vận đơn trả phải ghi lại phí');
+        $this->assertTrue($return->shopAtFault());
+        $this->assertSame(0, $return->buyerBorneShipping());
+
+        $khongTruPhi = $return->refundDue();
+        $return->reason = 'sai_size';
+        $this->assertSame($khongTruPhi - $phi, $return->refundDue(), 'Cùng đơn đó, lỗi khách thì phải trừ phí');
+    }
+
+    public function test_loi_nguoi_mua_thi_tru_phi_gui_tra_vao_tien_hoan(): void
+    {
+        $order = $this->makeCompletedOrder();
+        [$return, $phi] = $this->bookReturnFor($order, 'sai_size');
+
+        $this->assertGreaterThan(0, $phi);
+        $this->assertSame($phi, $return->buyerBorneShipping());
+
+        $this->admin('returns.receive', $order);
+        $this->admin('returns.refund', $order, ['refund_amount' => $return->fresh()->refundDue()]);
+
+        // Trả cả đơn nên được hoàn tiền hàng cộng phí giao đi, trừ phí gửi trả.
+        $tienHang = (int) OrderDetailModel::where('order_id', $order->order_id)
+            ->selectRaw('SUM(price * quantity) as t')->value('t');
+        $mongDoi = $tienHang + (int) $order->order_delivery_fee - $phi;
+
+        $this->assertSame($mongDoi, (int) OrderReturnModel::firstOrFail()->refund_amount);
+        $this->assertSame($mongDoi, app(WalletService::class)->for($this->customer)->balance);
+    }
+
+    public function test_chua_co_van_don_thi_khong_tru_phi_nao(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->requestReturn($order, ['reason' => 'sai_size']);
+
+        // Nhận hàng tận nơi, không qua vận đơn: không ai mất tiền cước.
+        $return = OrderReturnModel::firstOrFail();
+        $this->assertNull($return->return_shipping_fee);
+        $this->assertSame(0, $return->buyerBorneShipping());
+    }
+
+    public function test_huy_van_don_tra_thi_bo_luon_phi(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->bookReturnFor($order, 'sai_size');
+
+        $this->admin('returns.cancel_shipment', $order);
+
+        $this->assertNull(OrderReturnModel::firstOrFail()->return_shipping_fee);
+    }
+
+    public function test_gan_ma_thu_cong_luu_duoc_phi(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->requestReturn($order, ['reason' => 'sai_size']);
+        $this->admin('returns.approve', $order);
+
+        $this->admin('returns.shipping_code', $order, [
+            'return_shipping_code' => 'LTRA77',
+            'return_shipping_fee' => 25000,
+        ], 'patch');
+
+        $this->assertSame(25000, (int) OrderReturnModel::firstOrFail()->return_shipping_fee);
+    }
+
+    public function test_ma_van_don_tra_mang_so_hieu_yeu_cau(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->requestReturn($order);
+        $this->admin('returns.reject', $order, ['reject_reason' => 'Ảnh chưa rõ']);
+        $this->requestReturn($order->fresh());
+        $this->admin('returns.approve', $order);
+        $this->admin('returns.book', $order);
+
+        $duocDuyet = OrderReturnModel::orderByDesc('return_id')->firstOrFail();
+        $biTuChoi = OrderReturnModel::orderBy('return_id')->firstOrFail();
+
+        // Mã mang số hiệu yêu cầu nên callback tìm đúng yêu cầu đã đặt vận đơn,
+        // không rơi vào yêu cầu bị từ chối nằm trước nó trong bảng.
+        $this->assertSame($order->order_code.'-TH'.$duocDuyet->return_id, $duocDuyet->reference());
+        $this->assertNotSame($biTuChoi->reference(), $duocDuyet->reference());
+        $this->assertSame(
+            $duocDuyet->return_id,
+            OrderReturnModel::forReference($duocDuyet->reference())?->return_id,
+        );
+    }
+
+    public function test_ma_van_don_kieu_cu_tim_ve_yeu_cau_dang_chay(): void
+    {
+        $order = $this->makeCompletedOrder();
+        $this->requestReturn($order);
+        $this->admin('returns.reject', $order, ['reject_reason' => 'Ảnh chưa rõ']);
+        $this->requestReturn($order->fresh());
+
+        $dangChay = OrderReturnModel::orderByDesc('return_id')->firstOrFail();
+
+        $this->assertSame(
+            $dangChay->return_id,
+            OrderReturnModel::forReference($order->order_code.'-TH')?->return_id,
+        );
     }
 
     public function test_chua_duyet_thi_khong_tao_duoc_van_don_tra_hang(): void
@@ -733,10 +845,65 @@ class OrderReturnTest extends TestCase
             ->assertSee('Lý do từ chối: Sản phẩm đã qua sử dụng');
     }
 
+    public function test_tra_xong_mot_lan_thi_mat_nut_gui_yeu_cau(): void
+    {
+        $order = $this->makeCompletedOrder(quantity: 2);
+        $dong = OrderDetailModel::where('order_id', $order->order_id)->firstOrFail();
+
+        $moNut = '/data-bs-toggle="modal"\s+data-bs-target="#returnOrder"/';
+        $trang = route('orderBill.checkout', $order->order_code);
+
+        $this->assertMatchesRegularExpression(
+            $moNut,
+            $this->actingAs($this->customer)->get($trang)->getContent(),
+        );
+
+        $this->requestReturn($order, ['items' => [$dong->order_details_id => 1]]);
+        $this->admin('returns.approve', $order);
+        $this->admin('returns.receive', $order);
+        $this->admin('returns.refund', $order, [
+            'refund_amount' => OrderReturnModel::firstOrFail()->refundDue(),
+        ]);
+
+        // Đôi còn lại vẫn ở nhà khách nhưng đơn đã dùng hết lượt trả của mình.
+        $this->assertDoesNotMatchRegularExpression(
+            $moNut,
+            $this->actingAs($this->customer)->get($trang)->getContent(),
+        );
+    }
+
+    public function test_o_gui_yeu_cau_dan_sang_trang_chinh_sach(): void
+    {
+        $order = $this->makeCompletedOrder();
+
+        $this->actingAs($this->customer)
+            ->get(route('orderBill.checkout', $order->order_code))
+            ->assertOk()
+            ->assertSee('Bạn có thể gửi yêu cầu đến hết', false)
+            ->assertSee(route('policy.return'), false)
+            // Chọn lý do nào thì ai chịu phí, nói ngay tại chỗ chọn.
+            ->assertSee('data-fault="khach"', false)
+            ->assertSee('cửa hàng chịu phí gửi trả', false);
+    }
+
+    public function test_trang_chinh_sach_tra_hang_doc_cau_hinh_that(): void
+    {
+        $this->actingAs($this->makeOrderAdminOnce())
+            ->put(route('setting.update'), ['auto_complete_days' => 5, 'return_days' => 10, 'payment_window_minutes' => 30]);
+
+        $this->get(route('policy.return'))
+            ->assertOk()
+            ->assertSee('10 ngày', false)
+            ->assertSee('5 ngày', false)
+            // Bảng ai chịu phí dựng từ chính danh sách lý do trong mã nguồn.
+            ->assertSee('Sản phẩm lỗi, hư hỏng')
+            ->assertSee('Sai size, không vừa');
+    }
+
     public function test_admin_cau_hinh_so_ngay_tra_hang(): void
     {
         $this->actingAs($this->makeOrderAdminOnce())
-            ->put(route('setting.update'), ['auto_complete_days' => 7, 'return_days' => 15]);
+            ->put(route('setting.update'), ['auto_complete_days' => 7, 'return_days' => 15, 'payment_window_minutes' => 30]);
 
         $this->assertSame(15, app(ShopSettings::class)->returnDays());
     }

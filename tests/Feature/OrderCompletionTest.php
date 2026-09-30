@@ -325,6 +325,25 @@ class OrderCompletionTest extends TestCase
         $this->assertSame(0, DB::table('statistical')->count());
     }
 
+    public function test_don_chua_ban_giao_van_chuyen_thi_khong_hien_nut_da_nhan_hang(): void
+    {
+        $order = $this->makeShippedOrder();
+        $trang = route('orderBill.checkout', $order->order_code);
+
+        foreach ([OrderStatus::New, OrderStatus::Confirmed, OrderStatus::ReadyToShip] as $chuaDi) {
+            $order->forceFill(['order_status' => $chuaDi])->save();
+
+            $this->actingAs($this->customer)->get($trang)->assertOk()
+                ->assertDontSee('Đã nhận\n', false)
+                ->assertDontSee('btn-order">Đã nhận', false);
+        }
+
+        $this->ghn('delivering');
+
+        $this->actingAs($this->customer)->get($trang)->assertOk()
+            ->assertSee('btn-order">Đã nhận', false);
+    }
+
     public function test_nut_da_nhan_hang_chi_bam_duoc_khi_ghn_bao_da_giao(): void
     {
         $order = $this->makeShippedOrder();
@@ -336,6 +355,44 @@ class OrderCompletionTest extends TestCase
 
         $this->ghn('delivered', '2026-09-20T05:00:00.000Z');
         $this->actingAs($this->customer)->get($trang)->assertOk()->assertSee($formXacNhan, false);
+    }
+
+    public function test_ghn_bao_da_giao_thi_don_cod_thanh_da_thanh_toan(): void
+    {
+        $order = $this->makeShippedOrder();
+        $order->forceFill(['order_payment' => 'cod', 'order_payment_status' => 0])->save();
+
+        $this->ghn('delivered', '2026-09-20T03:00:00.000Z');
+
+        $fresh = $order->fresh();
+        $this->assertSame(1, (int) $fresh->order_payment_status, 'Shipper giao được nghĩa là đã thu được tiền');
+        $this->assertSame('2026-09-20', $fresh->order_payment_time->toDateString());
+    }
+
+    public function test_don_da_tra_qua_cong_thanh_toan_giu_nguyen_moc_tra_tien(): void
+    {
+        $order = $this->makeShippedOrder();
+        $moc = now()->subDays(3);
+        $order->forceFill([
+            'order_payment' => 'redirect',
+            'order_payment_status' => 1,
+            'order_payment_time' => $moc,
+        ])->save();
+
+        $this->ghn('delivered', '2026-09-20T03:00:00.000Z');
+
+        // Tiền về từ hôm đặt, không phải hôm shipper giao.
+        $this->assertSame($moc->toDateTimeString(), $order->fresh()->order_payment_time->toDateTimeString());
+    }
+
+    public function test_don_cod_da_giao_van_nam_trong_danh_sach_don_that(): void
+    {
+        $order = $this->makeShippedOrder();
+        $order->forceFill(['order_payment' => 'cod', 'order_payment_status' => 0])->save();
+
+        $this->ghn('delivered', '2026-09-20T03:00:00.000Z');
+
+        $this->assertSame(1, OrderModel::confirmedSale()->where('order_id', $order->order_id)->count());
     }
 
     // --------------------------------------------------- tự động hoàn thành
@@ -425,8 +482,8 @@ class OrderCompletionTest extends TestCase
     public function test_admin_luu_so_ngay_tu_hoan_thanh(): void
     {
         $this->actingAs($this->makeOrderAdmin())
-            ->put(route('setting.update'), ['auto_complete_days' => 5, 'return_days' => 7])
-            ->assertRedirect(route('setting.edit'));
+            ->put(route('setting.update'), ['auto_complete_days' => 5, 'return_days' => 7, 'payment_window_minutes' => 30])
+            ->assertRedirect(route('setting.edit').'#tab-don-hang');
 
         $this->assertSame(5, app(ShopSettings::class)->autoCompleteDays());
     }
@@ -444,7 +501,10 @@ class OrderCompletionTest extends TestCase
 
     public function test_trang_cau_hinh_chia_tab_don_hang_va_chung(): void
     {
-        $this->actingAs($this->makeOrderAdmin())
+        $admin = $this->makeOrderAdmin();
+        $admin->givePermissionTo(Permission::findOrCreate('Quản trị Thông tin', 'web'));
+
+        $this->actingAs($admin)
             ->get(route('setting.edit'))
             ->assertSee('data-bs-target="#tab-don-hang"', false)
             ->assertSee('data-bs-target="#tab-chung"', false);
@@ -477,7 +537,7 @@ class OrderCompletionTest extends TestCase
     public function test_so_ngay_khong_hop_le_bi_tu_choi(mixed $value): void
     {
         $this->actingAs($this->makeOrderAdmin())
-            ->put(route('setting.update'), ['auto_complete_days' => $value, 'return_days' => 7])
+            ->put(route('setting.update'), ['auto_complete_days' => $value, 'return_days' => 7, 'payment_window_minutes' => 30])
             ->assertSessionHasErrors('auto_complete_days');
 
         $this->assertSame(7, app(ShopSettings::class)->autoCompleteDays());
@@ -579,25 +639,5 @@ class OrderCompletionTest extends TestCase
         $this->ghn('cancel');
 
         $this->assertSame(0, (int) $order->fresh()->order_delivery_status);
-    }
-
-    public function test_xac_nhan_hoan_tien_tru_doanh_thu_da_ghi_mot_lan(): void
-    {
-        $order = $this->makeShippedOrder();
-        $this->ghn('delivered');
-        $this->confirmReceived($order);
-        $this->assertGreaterThan(0, (int) DB::table('statistical')->value('sales'));
-
-        // The customer asks for a refund; the shop confirms it, then again.
-        $order->fresh()->forceFill(['order_status' => OrderStatus::Returned])->save();
-        $admin = $this->makeOrderAdmin();
-        foreach ([1, 2] as $lan) {
-            $this->actingAs($admin)->put(route('order.update', $order->order_id), ['note' => '', 'action' => 'refund']);
-        }
-
-        $row = DB::table('statistical')->first();
-        $this->assertSame(0, (int) $row->sales);
-        $this->assertSame(0, (int) $row->profit);
-        $this->assertSame(0, (int) $order->fresh()->order_revenue_counted);
     }
 }

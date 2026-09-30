@@ -110,11 +110,18 @@ class GhnCarrier implements ShippingCarrier
     private const NO_INSPECTION = 'KHONGCHOXEMHANG';
 
     /**
-     * `payment_type_id` 2 means the receiver pays the shipping fee. The shop
-     * already charged it at checkout, so the fee is settled between the shop
-     * and GHN, not at the door — that is what cod_amount is separately for.
+     * Who settles the carriage with GHN: 1 is the sender, 2 the receiver.
+     *
+     * Never the customer either way. On an order going out the shop is the
+     * sender and has already charged carriage at checkout; on a parcel coming
+     * back the shop is the receiver, and billing the sender there would have
+     * the shipper collect cash at the customer's door — money the refund
+     * already accounts for. What the customer owes is decided when the refund
+     * is computed, not at the door.
      */
-    private const SHOP_PAYS = 1;
+    private const SENDER_PAYS = 1;
+
+    private const RECEIVER_PAYS = 2;
 
     public function book(ShipmentOrder $order): ShipmentBooking
     {
@@ -126,7 +133,7 @@ class GhnCarrier implements ShippingCarrier
         $from = $order->from;
 
         $data = $this->post('/shiip/public-api/v2/shipping-order/create', [
-            'payment_type_id' => self::SHOP_PAYS,
+            'payment_type_id' => $order->senderPaysCarriage ? self::SENDER_PAYS : self::RECEIVER_PAYS,
             'required_note' => self::NO_INSPECTION,
             'client_order_code' => $order->reference,
             'from_name' => $from ? $from->name : (string) config('services.ghn.from_name'),

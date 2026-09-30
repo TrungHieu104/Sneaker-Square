@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers\Frontend;
 
-use App\Actions\CancelOrderAction;
 use App\Actions\ConfirmPaymentAction;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\OrderModel;
+use App\Models\PaymentAttemptModel;
 use App\Models\WalletTopupModel;
 use App\Services\OrderMailer;
 use App\Services\Payment\InvalidPaymentCallbackException;
+use App\Services\Payment\OrderPayments;
 use App\Services\Payment\PaymentCallback;
 use App\Services\Payment\PaymentGatewayManager;
 use App\Services\Payment\PaymentOutcome;
@@ -33,7 +34,7 @@ class PaymentCallbackController extends Controller
     public function __construct(
         private readonly PaymentGatewayManager $gateways,
         private readonly ConfirmPaymentAction $confirmPayment,
-        private readonly CancelOrderAction $cancelOrder,
+        private readonly OrderPayments $payments,
         private readonly OrderMailer $mailer,
         private readonly WalletTopups $topups,
     ) {
@@ -67,24 +68,31 @@ class PaymentCallbackController extends Controller
             return $this->backToWallet($callback);
         }
 
+        $order = $this->payments->orderForCode($callback->orderCode);
+
         if ($callback->outcome === PaymentOutcome::Failed || $callback->outcome === PaymentOutcome::Cancelled) {
-            return redirect()->route('failed.checkout');
+            return $this->backToOrder($order);
         }
 
-        // The gateway saying "paid" is not the same as the order having gone
-        // through: money can arrive for an order a failed callback already
-        // cancelled, and showing that customer the success page tells them they
-        // have an order they do not have.
-        $order = OrderModel::where('order_code', $callback->orderCode)->first();
+        // The gateway saying "paid" is not the same as this payment having
+        // paid for the order: it may have arrived after the order was paid
+        // another way, or cancelled for running out of time. Either way the
+        // money went to the wallet, and the success page would be a lie.
+        $attempt = PaymentAttemptModel::where('code', $callback->orderCode)->first();
+        $handedBack = $attempt?->status === PaymentAttemptModel::REFUNDED
+            || ($order && ! $attempt && ($order->hasStatus(OrderStatus::Cancelled) || $order->collectsAtDoor()));
 
-        if ($order && $order->hasStatus(OrderStatus::Cancelled)) {
-            Session::flash('iconMessage', 'error');
-            Session::flash(
+        if ($order && $handedBack) {
+            Session::flash('iconMessage', 'warning');
+
+            return redirect()->route('orderBill.checkout', $order->order_code)->with(
                 'message',
-                'Đơn hàng đã bị hủy trước khi thanh toán được ghi nhận. Khoản tiền này sẽ được hoàn lại, vui lòng liên hệ cửa hàng.'
+                match (true) {
+                    $order->hasStatus(OrderStatus::Cancelled) => 'Đơn hàng đã bị huỷ trước khi tiền về. Khoản vừa thanh toán đã được hoàn vào SPay của bạn.',
+                    $order->collectsAtDoor() => 'Đơn hàng đã được giao cho đơn vị vận chuyển để thu tiền khi nhận hàng. Khoản vừa thanh toán đã được hoàn vào SPay của bạn.',
+                    default => 'Đơn hàng đã được thanh toán trước đó. Khoản vừa thanh toán đã được hoàn vào SPay của bạn.',
+                },
             );
-
-            return redirect()->route('failed.checkout');
         }
 
         return redirect()->route('success.checkout');
@@ -137,11 +145,10 @@ class PaymentCallbackController extends Controller
 
             case PaymentOutcome::Cancelled:
             case PaymentOutcome::Failed:
-                $order = OrderModel::where('order_code', $callback->orderCode)->first();
-
-                if ($order) {
-                    $this->cancelOrder->execute($order);
-                }
+                // Not a reason to cancel: the customer backed out of one
+                // attempt and may well pay on the next, or another way. The
+                // order lapses on its own when its window closes.
+                $this->payments->markFailed($callback->orderCode);
                 break;
 
             case PaymentOutcome::Pending:
@@ -162,6 +169,27 @@ class PaymentCallbackController extends Controller
             // Authorised but not captured: the wallet waits for the settlement.
             PaymentOutcome::Pending => null,
         };
+    }
+
+    /**
+     * A payment that did not go through lands the customer on their order,
+     * where they can try again or pay another way, rather than on a dead end.
+     */
+    private function backToOrder(?OrderModel $order): RedirectResponse
+    {
+        if (! $order || ! $this->payments->canChangeMethod($order)) {
+            return redirect()->route('failed.checkout');
+        }
+
+        $deadline = $this->payments->deadlineFor($order);
+
+        Session::flash('iconMessage', 'warning');
+
+        return redirect()->route('orderBill.checkout', $order->order_code)->with(
+            'message',
+            'Thanh toán chưa hoàn tất. Bạn có thể thanh toán lại hoặc đổi phương thức'
+                .($deadline ? ' trước '.$deadline->format('H:i d/m/Y') : '').'.',
+        );
     }
 
     private function backToWallet(PaymentCallback $callback): RedirectResponse

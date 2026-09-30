@@ -165,7 +165,7 @@
     <!-- / Content -->
 
     <div class="buy-now">
-        <a href="tel:039469525" class="btn btn-danger btn-buy-now">Hỗ trợ</a>
+        <a href="tel:{{ $shopInfo['phone'] }}" class="btn btn-danger btn-buy-now">Hỗ trợ</a>
     </div>
 
     <!-- build:js assets/vendor/js/core.js -->

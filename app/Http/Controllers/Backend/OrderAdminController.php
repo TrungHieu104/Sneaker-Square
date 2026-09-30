@@ -7,10 +7,8 @@ use App\Http\Requests\Backend\ShippingCodeRequest;
 use App\Services\Shipping\ShipmentPulse;
 use App\Services\Shipping\ShippingUnavailable;
 use App\Services\ShippingService;
-use App\Services\OrderRevenue;
 use App\Actions\CancelOrderAction;
 use App\Enums\OrderStatus;
-use Illuminate\Support\Facades\DB;
 use App\Models\OrderDetailModel;
 use App\Models\OrderModel;
 use App\Models\OrderStatusLogModel;
@@ -19,8 +17,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Crypt;
-use App\Models\StatisticModel;
-use App\Models\ProductModel;
 use App\Models\UserModel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\App;
@@ -455,7 +451,7 @@ class OrderAdminController extends Controller
      * number posted from the browser: the page no longer gets to say what the
      * order becomes, only which button was pressed.
      */
-    public function update(Request $request, string $order_id, OrderRevenue $revenue)
+    public function update(Request $request, string $order_id)
     {
         $order = OrderModel::find($order_id);
 
@@ -470,7 +466,7 @@ class OrderAdminController extends Controller
         $refusal = match ((string) $request->input('action', '')) {
             'confirm' => $this->confirmOrder($order),
             'handover' => $this->handOverManually($order),
-            'refund' => $this->confirmRefund($order, $revenue),
+            'delivered' => $this->markDeliveredManually($order),
             default => $this->saveNoteOnly($order),
         };
 
@@ -525,24 +521,27 @@ class OrderAdminController extends Controller
     }
 
     /**
-     * The shop has sent the money back for a parcel that came home. Revenue is
-     * booked when the customer has the goods, so this is the one place here
-     * that takes it back out.
+     * The shop's own courier reports the parcel delivered, which is what GHN's
+     * `delivered` callback does for a GHN parcel. Without it such an order
+     * waits on the customer's button forever and never auto-completes.
      */
-    private function confirmRefund(OrderModel $order, OrderRevenue $revenue): ?RedirectResponse
+    private function markDeliveredManually(OrderModel $order): ?RedirectResponse
     {
-        if (! $order->hasStatus(OrderStatus::Returned) || $order->orderReturn) {
+        if (! $order->hasStatus(OrderStatus::Delivering) || ! $order->isHandedOverManually()) {
             Session::flash('iconMessage', 'error');
 
-            return back()->with('message', 'Đơn này không ở trạng thái chờ hoàn tiền!');
+            return back()->with('message', 'Chỉ đơn cửa hàng tự giao và đang giao mới xác nhận đã giao được!');
         }
 
-        $order->order_refund_required = false;
-        $order->moveTo(OrderStatus::Cancelled, OrderStatusLogModel::ACTOR_ADMIN, 'Xác nhận đã hoàn tiền cho khách');
+        $order->order_delivered_at ??= now();
 
-        DB::transaction(function () use ($order, $revenue) {
-            $revenue->reverse(OrderModel::where('order_id', $order->order_id)->lockForUpdate()->first());
-        });
+        // The courier hands a cash parcel over only against the money.
+        if ($order->isCashOnDelivery() && (int) $order->order_payment_status !== 1) {
+            $order->order_payment_status = 1;
+            $order->order_payment_time = now();
+        }
+
+        $order->moveTo(OrderStatus::Delivered, OrderStatusLogModel::ACTOR_ADMIN, 'Shipper của cửa hàng đã giao hàng');
 
         return null;
     }
@@ -604,70 +603,55 @@ class OrderAdminController extends Controller
     }
 
     /**
+     * The shop calls the order off itself: out of stock, or a customer who
+     * cannot be reached. Only while the goods are still in the warehouse; a
+     * booked parcel is released first, and GHN refuses once it has picked up.
+     */
+    public function cancelByShop(Request $request, string $order_id, CancelOrderAction $cancel, ShippingService $shipping)
+    {
+        $order = OrderModel::find($order_id);
+
+        if ($order == null || ! $order->hasStatus(OrderStatus::New, OrderStatus::Confirmed, OrderStatus::ReadyToShip)) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', 'Chỉ huỷ được đơn còn ở kho, chưa giao cho đơn vị vận chuyển!');
+        }
+
+        $reason = trim((string) $request->validate([
+            'shop_cancel_reason' => ['required', 'string', 'max:255'],
+        ], [
+            'shop_cancel_reason.required' => 'Nhập lý do huỷ để khách biết.',
+            'shop_cancel_reason.max' => 'Lý do huỷ tối đa 255 ký tự.',
+        ])['shop_cancel_reason']);
+
+        if ($order->order_shipping_code) {
+            try {
+                $shipping->cancelBooking($order);
+            } catch (ShippingUnavailable $e) {
+                Session::flash('iconMessage', 'error');
+
+                return back()->with('message', 'Không huỷ được vận đơn GHN: '.$e->getMessage());
+            }
+        }
+
+        $order = $order->fresh();
+        $order->order_cancel_reason = $reason;
+        $order->save();
+
+        $cancel->execute($order, allowPaid: true, actor: OrderStatusLogModel::ACTOR_ADMIN, note: 'Cửa hàng huỷ đơn: '.$reason);
+
+        Session::flash('iconMessage', 'success');
+
+        return back()->with('message', 'Đã huỷ đơn.');
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
     {
         //
     }
-    public function update_order_qty(Request $request){
-        $data = $request->all();
-        $order = OrderModel::find($data['order_id']);
-        $order->order_status = $data['order_status'];
-        $order->save();
-
-        $order_date = $order->order_date;
-        $statistic = StatisticModel::where('order_date',$order_date)->get();
-        if($statistic){
-            $statistic_count = $statistic->count();
-        } else {
-            $statistic_count = 0;
-        }
-        if($order->order_status==1){
-            $total_order = 0;
-            $sales = 0;
-            $profit = 0;
-            $quantity = 0;
-            foreach($data['order_product_id'] as $key => $pro_id){
-                $product = ProductModel::find($pro_id);
-                $product_quantity = $product->product_quantity;
-                $product_sold = $product->product_sold;
-
-                $product_price = $product->product_price;
-                $now = Carbon::now('Asia/Ho Chi Minh')->toDateString();
-                foreach($data['quantity'] as $key2 => $qty){
-                    if($key == $key2){
-                        $pro_remain = $product_quantity - $qty;
-                        $product->product_quantity = $pro_remain;
-                        $product->product_sold = $product_sold + $qty;
-                        $product->save();
-                        $quantity+=$qty;
-                        $total_order+=1;
-                        $sales+=$product_price*$qty;
-                        $profit = $sales-1000;
-                    }
-
-                }
-            }
-            if($statistic_count>0){
-                $statistic_update = StatisticModel::where('order_date',$order_date)->first();
-                $statistic_update->sales = $statistic_update->sales + $sales;
-                $statistic_update->profit = $statistic_update->profit + $profit;
-                $statistic_update->quantity = $statistic_update->quantity + $quantity;
-                $statistic_update->total_order = $statistic_update->total_order + $total_order;
-                $statistic_update->save();
-            }else{
-                $statistic_new = new StatisticModel();
-                $statistic_new->order_date = $order_date;
-                $statistic_new->sales = $sales;
-                $statistic_new->profit = $profit;
-                $statistic_new->quantity = $quantity;
-                $statistic_new->total_order = $total_order;
-                $statistic_new->save();
-            }
-        }
-    }
-
     public function exportorder_scv(){
         return Excel::download(new ExportOrder() , 'Đơn hàng.xlsx');
     }
