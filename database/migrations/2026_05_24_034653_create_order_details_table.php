@@ -23,7 +23,6 @@ return new class extends Migration
             $table->foreign('order_id')->references('order_id')->on('order')->onDelete('cascade')->onUpdate('cascade');
             $table->unsignedBigInteger('pro_id');
             $table->foreign('pro_id')->references('pro_id')->on('products')->onDelete('no action')->onUpdate('cascade');
-            // $table->primary(['order_id', 'pro_id']);
 
         });
     }

@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 
-// use Illuminate\Support\Facades\View;
 class TagsAdminController extends Controller
 {
     /**
@@ -24,14 +23,7 @@ class TagsAdminController extends Controller
 
     public function index(Request $request)
     {
-        $orderBy = $request->input('sort-by', 'tag_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, Tags::class, 'tag_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['tags.tag_content'];
 
@@ -152,18 +144,11 @@ class TagsAdminController extends Controller
 
     public function trashed(Request $request)
     {
-        $orderBy = $request->input('sort-by', 'deleted_at');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, Tags::class, 'deleted_at');
         $keyword = $request->input('keyword');
         $searchableFields = ['tags.tag_content'];
 
-        $tagTrash = $this->performSearch(Tags::onlyTrashed($orderBy, $orderType), $keyword, $searchableFields)->paginate(10)->withQueryString();
+        $tagTrash = $this->performSearch(Tags::onlyTrashed()->orderBy($orderBy, $orderType), $keyword, $searchableFields)->paginate(10)->withQueryString();
 
         return view('backend.pages.blog.tags.tag_trash', compact('tagTrash', 'orderBy', 'orderType'));
     }

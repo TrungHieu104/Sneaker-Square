@@ -2,93 +2,51 @@
 
 namespace App\Exports;
 
+use App\Exports\Sheets\ListingSheet;
 use App\Models\CouponModel;
 use Carbon\Carbon;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Color;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Illuminate\Support\Collection;
 
-class ExportCoupon implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping, WithStyles
+class ExportCoupon extends ListingSheet
 {
-    private $count = 1;
-
-    public function collection()
+    protected function heading(): string
     {
-        $data = CouponModel::get();
-
-        return $data;
+        return 'Danh sách mã giảm giá | Sneaker Square';
     }
 
-    public function headings(): array
+    protected function numberHeader(): string
+    {
+        return 'STT';
+    }
+
+    protected function columns(): array
     {
         return [
-            [
-                'Danh sách mã giảm giá | Sneaker Square',
-            ],
-            [
-                'STT',
-                'Tiêu đề',
-                'Mã CODE',
-                'Số lượng',
-                'Ngày khởi tạo',
-                'Ngày bắt đầu',
-                'Ngày kết thúc',
-                'Điều kiện giảm giá',
-                'Số giảm',
-                'Tình trạng',
-            ],
+            'Tiêu đề', 'Mã CODE', 'Số lượng', 'Ngày khởi tạo', 'Ngày bắt đầu',
+            'Ngày kết thúc', 'Điều kiện giảm giá', 'Số giảm', 'Tình trạng',
         ];
     }
 
-    public function styles(Worksheet $sheet)
+    protected function records(): Collection
     {
-        $sheet->mergeCells('A1:J1');
-        $sheet->getStyle('A1:J1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        return CouponModel::get();
+    }
+
+    protected function row(mixed $coupon): array
+    {
+        $byAmount = (int) $coupon->coupon_condition === 1;
+        $today = Carbon::now()->toDateString();
 
         return [
-            2 => [
-                'font' => [
-                    // 'color' => new Color(Color::COLOR_BLACK),
-                    'bold' => true,
-                ],
-                'fill' => [
-                    'fillType' => Fill::FILL_SOLID,
-                    'startColor' => [
-                        'argb' => 'FFC0C0C0',
-                    ],
-                ],
-            ],
+            $coupon->coupon_name,
+            $coupon->coupon_code,
+            $coupon->coupon_quantity,
+            Carbon::parse($coupon->coupon_date)->format('d-m-Y'),
+            Carbon::parse($coupon->coupon_start)->format('d-m-Y'),
+            Carbon::parse($coupon->coupon_end)->format('d-m-Y'),
+            $byAmount ? 'Giảm theo tiền' : 'Giảm theo %',
+            $byAmount ? number_format($coupon->coupon_value, 0, ',', '.').'đ' : $coupon->coupon_value.'%',
+            Carbon::parse($coupon->coupon_end)->toDateString() >= $today ? 'Còn hạn' : 'Hết hạn',
         ];
-    }
-
-    public function map($row): array
-    {
-        $today = Carbon::now('Asia/Ho_Chi_Minh')->format('Y/m/d');
-        $result = [
-            $this->count++,
-            $row->coupon_name,
-            $row->coupon_code,
-            $row->coupon_quantity,
-            Carbon::parse($row->coupon_date)->format('d-m-Y'),
-            Carbon::parse($row->coupon_start)->format('d-m-Y'),
-            Carbon::parse($row->coupon_end)->format('d-m-Y'),
-            ($row->coupon_condition == 1) ? 'Giảm theo tiền' : 'Giảm theo %',
-            ($row->coupon_condition == 1) ? number_format($row->coupon_value, 0, ',', '.').'đ' : ($row->coupon_value).'%',
-            (date('Y-m-d', strtotime($row->coupon_end)) >= date('Y-m-d', strtotime($today))) ?
-
-               'Còn hạn'
-
-            :
-                'Hết hạn',
-
-        ];
-
-        return $result;
     }
 }

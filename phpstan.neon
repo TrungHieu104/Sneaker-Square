@@ -1,0 +1,9 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+    # Raised one level at a time, each only once the code passes it with no
+    # baseline. The road to level 5 is in docs/ky-thuat/no-ky-thuat.md.
+    level: 2

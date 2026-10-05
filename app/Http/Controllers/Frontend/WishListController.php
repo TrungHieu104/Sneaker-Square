@@ -3,40 +3,18 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
-use App\Models\FaqModel as Faq;
-use App\Models\MenuModel as Menu;
-use App\Models\PromotionModel as Promotion;
+use App\Http\Controllers\Frontend\Concerns\SharesStorefrontLayout;
 use App\Models\WishListModel;
-use App\Services\ShopSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\View;
 
 class WishListController extends Controller
 {
+    use SharesStorefrontLayout;
+
     public function __construct()
     {
-        $slide = Promotion::where('cate_slide_id', 1)->where('promotion_hidden', 1)->get();
-        $contact = app(ShopSettings::class)->storefrontContact();
-        $faq = Faq::where('faq_hidden', 1)->where('faq_about', 0)->orderBy('faq_id', 'desc')->get();
-        $data = Menu::where('menu_hidden', 1)->orderBy('menu_position', 'asc')->get();
-        $menu = $this->data_tree($data);
-        View::share(compact('slide', 'contact', 'faq', 'menu'));
-    }
-
-    public function data_tree($data, $parent_id = 0, $level = 0)
-    {
-        $result = [];
-        foreach ($data as $item) {
-            if ($item['menu_parent_id'] == $parent_id) {
-                $item['level'] = $level;
-                $result[] = $item;
-                $child = $this->data_tree($data, $item['menu_id'], $level + 1);
-                $result = array_merge($result, $child);
-            }
-        }
-
-        return $result;
+        $this->shareStorefrontLayout();
     }
 
     public function index()

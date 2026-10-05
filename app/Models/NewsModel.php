@@ -7,6 +7,8 @@ use App\Models\TagsModel as Tags;
 use App\Models\UserModel as User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class NewsModel extends Model
@@ -46,17 +48,20 @@ class NewsModel extends Model
         'news_hot' => 0,
     ];
 
-    public function getCateNews()
+    /** @return BelongsTo<CateNews, $this> */
+    public function getCateNews(): BelongsTo
     {
         return $this->belongsTo(CateNews::class, 'cate_news_id', 'cate_news_id');
     }
 
-    public function getTags()
+    /** @return BelongsToMany<Tags, $this> */
+    public function getTags(): BelongsToMany
     {
         return $this->belongsToMany(Tags::class, 'news_by_tags', 'news_id', 'tag_id');
     }
 
-    public function getUser()
+    /** @return BelongsTo<User, $this> */
+    public function getUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');
     }

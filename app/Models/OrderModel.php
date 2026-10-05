@@ -7,6 +7,9 @@ use App\Services\ShopSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -81,22 +84,26 @@ class OrderModel extends Model
         return $this->order_payment === self::PAY_ON_DELIVERY;
     }
 
-    public function User()
+    /** @return BelongsTo<UserModel, $this> */
+    public function User(): BelongsTo
     {
         return $this->belongsTo(UserModel::class, 'user_id', 'user_id');
     }
 
-    public function orderDetail()
+    /** @return HasMany<OrderDetailModel, $this> */
+    public function orderDetail(): HasMany
     {
         return $this->hasMany(OrderDetailModel::class, 'order_id');
     }
 
-    public function Coupon()
+    /** @return BelongsTo<CouponModel, $this> */
+    public function Coupon(): BelongsTo
     {
         return $this->belongsTo(CouponModel::class, 'coupon_id');
     }
 
-    public function Product()
+    /** @return HasMany<ProductModel, $this> */
+    public function Product(): HasMany
     {
         return $this->hasMany(ProductModel::class, 'pro_id');
     }
@@ -141,7 +148,8 @@ class OrderModel extends Model
         return $this->isCashOnDelivery() ? 'Thu khi giao hàng' : 'Chưa thanh toán';
     }
 
-    public function statusLogs()
+    /** @return HasMany<OrderStatusLogModel, $this> */
+    public function statusLogs(): HasMany
     {
         return $this->hasMany(OrderStatusLogModel::class, 'order_id', 'order_id')->orderByDesc('created_at');
     }
@@ -306,8 +314,10 @@ class OrderModel extends Model
 
     /**
      * Every return the customer has opened on this order, newest first.
+     *
+     * @return HasMany<OrderReturnModel, $this>
      */
-    public function orderReturns()
+    public function orderReturns(): HasMany
     {
         return $this->hasMany(OrderReturnModel::class, 'order_id', 'order_id')->latest('return_id');
     }
@@ -315,8 +325,10 @@ class OrderModel extends Model
     /**
      * The newest request. Kept as a singular relation because every screen
      * that shows "the" return means the one the customer is looking at now.
+     *
+     * @return HasOne<OrderReturnModel, $this>
      */
-    public function orderReturn()
+    public function orderReturn(): HasOne
     {
         return $this->hasOne(OrderReturnModel::class, 'order_id', 'order_id')->latestOfMany('return_id');
     }
@@ -325,8 +337,10 @@ class OrderModel extends Model
      * The one the shop still has work to do on, if any. Only one may be open
      * at a time, which is what lets the admin screens act on an order rather
      * than on a request id.
+     *
+     * @return HasOne<OrderReturnModel, $this>
      */
-    public function activeReturn()
+    public function activeReturn(): HasOne
     {
         return $this->hasOne(OrderReturnModel::class, 'order_id', 'order_id')
             ->whereIn('status', OrderReturnModel::OPEN)
@@ -419,8 +433,10 @@ class OrderModel extends Model
     /**
      * Oldest first, by the time the carrier stamped rather than the time the
      * callback arrived: GHN retries and reorders.
+     *
+     * @return HasMany<ShipmentEventModel, $this>
      */
-    public function shipmentEvents()
+    public function shipmentEvents(): HasMany
     {
         return $this->hasMany(ShipmentEventModel::class, 'order_id', 'order_id')->orderBy('happened_at');
     }

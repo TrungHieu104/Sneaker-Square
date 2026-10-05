@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\View;
 
 class FaqAdminController extends Controller
 {
+    private const SLUG_SUFFIX = '.html';
+
+    private const FAQ_LIST_URL = 'admin/faq';
+
+    private const FAQ_NOT_FOUND = 'Không tồn tại nội dung!';
+
     /**
      * Display a listing of the resource.
      */
@@ -26,14 +32,7 @@ class FaqAdminController extends Controller
     public function index(Request $request)
     {
         $perpage = 10;
-        $orderBy = $request->input('sort-by', 'faq_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, FaqModel::class, 'faq_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['faq_name'];
 
@@ -78,8 +77,8 @@ class FaqAdminController extends Controller
         $name = ($request->has('name')) ? $arr['name'] : '';
         $author = ($request->has('author')) ? $arr['author'] : '';
         $slug = ($request->has('slug')) ? $arr['slug'] : '';
-        if (! empty($slug) && substr($slug, -5) !== '.html') {
-            $slug .= '.html';
+        if (! empty($slug) && substr($slug, -5) !== self::SLUG_SUFFIX) {
+            $slug .= self::SLUG_SUFFIX;
         }
         $key = ($request->has('key')) ? $arr['key'] : '';
         $faq_des = ($request->has('faq-des')) ? $arr['faq-des'] : '';
@@ -98,7 +97,7 @@ class FaqAdminController extends Controller
         $faq->save();
         Session::flash('iconMessage', 'success');
 
-        return redirect('admin/faq')->with('message', 'Thêm thành công');
+        return redirect(self::FAQ_LIST_URL)->with('message', 'Thêm thành công');
     }
 
     /**
@@ -121,7 +120,7 @@ class FaqAdminController extends Controller
                 $request->session();
                 Session::flash('iconMessage', 'info');
 
-                return redirect('admin/faq')->with('message', 'Không tồn tại chính sách');
+                return redirect(self::FAQ_LIST_URL)->with('message', 'Không tồn tại chính sách');
             }
 
             return view('backend.pages.faq.faq_edit', compact('faq'));
@@ -130,7 +129,7 @@ class FaqAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/faq')->with('message', 'Không tồn tại nội dung!');
+            return redirect(self::FAQ_LIST_URL)->with('message', self::FAQ_NOT_FOUND);
         }
     }
 
@@ -143,8 +142,8 @@ class FaqAdminController extends Controller
         $name = ($request->has('name')) ? $arr['name'] : '';
         $editor = ($request->has('editor')) ? $arr['editor'] : '';
         $slug = ($request->has('slug')) ? $arr['slug'] : '';
-        if (! empty($slug) && substr($slug, -5) !== '.html') {
-            $slug .= '.html';
+        if (! empty($slug) && substr($slug, -5) !== self::SLUG_SUFFIX) {
+            $slug .= self::SLUG_SUFFIX;
         }
         $key = ($request->has('key')) ? $arr['key'] : '';
         $faq_des = ($request->has('faq-des')) ? $arr['faq-des'] : '';
@@ -175,26 +174,6 @@ class FaqAdminController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    // public function destroy(string $encryptedFaqId, Request $request)
-    // {
-    //     try {
-    //         $faq_id = Crypt::decrypt($encryptedFaqId);
-    //         $faq = FaqModel::find($faq_id);
-    //         if ($faq==null) {
-    //             $request->session();
-    //             Session::flash('iconMessage', 'info');
-    //             redirect()->back()->with('message', 'Không tồn tại thông tin liên hệ');
-    //         }
-    //         $faq->delete();
-    //         Session::flash('iconMessage', 'success');
-    //         return redirect('/admin/faq')->with('message', 'Xóa thành công');
-    //     } catch (DecryptException $e) {
-    //         $request->session();
-    //         Session::flash('iconMessage', 'info');
-    //         return redirect('admin/faq')->with('message', 'Không tồn tại nội dung!');
-    //     }
-    // }
-
     public function softDelete(Request $request, string $encryptedFaqId)
     {
         try {
@@ -213,21 +192,14 @@ class FaqAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/faq')->with('message', 'Không tồn tại nội dung!');
+            return redirect(self::FAQ_LIST_URL)->with('message', self::FAQ_NOT_FOUND);
         }
     }
 
     public function trashed(Request $request)
     {
         $perpages = 10;
-        $orderBy = $request->input('sort-by', 'faq_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, FaqModel::class, 'faq_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['faq_name'];
 
@@ -256,7 +228,7 @@ class FaqAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/faq')->with('message', 'Không tồn tại nội dung!');
+            return redirect(self::FAQ_LIST_URL)->with('message', self::FAQ_NOT_FOUND);
         }
     }
 
@@ -293,7 +265,7 @@ class FaqAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/faq')->with('message', 'Không tồn tại nội dung!');
+            return redirect(self::FAQ_LIST_URL)->with('message', self::FAQ_NOT_FOUND);
         }
     }
 

@@ -20,9 +20,9 @@ return new class extends Migration
             $table->boolean('promotion_hidden')->default(1);
             $table->unsignedInteger('promotion_sort');
             $table->string('promotion_content', 255);
-            $table->timestamp('promotion_date', $precision = 0);
-            $table->date('promotion_start', $precision = 0);
-            $table->date('promotion_end', $precision = 0);
+            $table->timestamp('promotion_date', 0);
+            $table->date('promotion_start');
+            $table->date('promotion_end');
             $table->string('promotion_note', 2000)->nullable();
             $table->unsignedInteger('cate_slide_id')->nullable();
             $table->foreign('cate_slide_id')->references('cate_slide_id')->on('cate_slide')->onDelete('restrict')->onUpdate('cascade');

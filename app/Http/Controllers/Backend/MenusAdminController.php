@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\View;
 
 class MenusAdminController extends Controller
 {
+    private const MENU_LIST_URL = 'admin/menus';
+
     /**
      * Display a listing of the resource.
      */
@@ -107,7 +109,7 @@ class MenusAdminController extends Controller
 
         Session::flash('iconMessage', 'success');
 
-        return redirect('admin/menus')->with('message', 'Thêm thành công');
+        return redirect(self::MENU_LIST_URL)->with('message', 'Thêm thành công');
     }
 
     /**
@@ -128,7 +130,7 @@ class MenusAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/menus')->with('message', 'Không tồn tại menu');
+            return redirect(self::MENU_LIST_URL)->with('message', 'Không tồn tại menu');
         }
         $data = MenuModel::orderBy('menu_position', 'asc')->get();
         $menu = $this->menu_tree($data);
@@ -146,7 +148,7 @@ class MenusAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/menus')->with('message', 'Không tồn tại menu');
+            return redirect(self::MENU_LIST_URL)->with('message', 'Không tồn tại menu');
         }
         $name = $request->input('name', '');
         $slug = $request->input('slug', '');
@@ -163,28 +165,12 @@ class MenusAdminController extends Controller
 
         Session::flash('iconMessage', 'success');
 
-        return redirect('admin/menus')->with('message', 'Chỉnh sửa thành công!');
+        return redirect(self::MENU_LIST_URL)->with('message', 'Chỉnh sửa thành công!');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    // public function destroy(Request $request,string $id)
-    // {
-    //     $menu = MenuModel::find($id);
-    //     if ($menu==null) {
-    //         $request->session();
-    //         Session::flash('iconMessage', 'info');
-    //         redirect()->back()->with('message', 'Không tồn tại thông tin!');
-    //     }
-    //     if ($menu->menu_parent_id == null && $menu->children()->count() > 0) {
-    //         Session::flash('iconMessage', 'info');
-    //         return redirect()->back()->with('message', 'Không thể xóa menu cha!');
-    //     }
-    //     $menu->delete();
-    //     Session::flash('iconMessage', 'success');
-    //     return redirect('/admin/menus')->with('message', 'Xóa thành công!');
-    // }
     public function softDelete(Request $request, string $id)
     {
         $menu = MenuModel::find($id);

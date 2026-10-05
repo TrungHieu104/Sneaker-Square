@@ -3,16 +3,14 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Frontend\Concerns\SharesStorefrontLayout;
 use App\Http\Requests\Frontend\Authuser\LoginRequest;
 use App\Http\Requests\Frontend\Authuser\RegisterRequest;
 use App\Http\Requests\Frontend\Authuser\ResetpassRequets;
 use App\Mail\RegisterMail;
 use App\Mail\ResetPassword;
 use App\Models\CateNewsModel as CateNews;
-use App\Models\FaqModel as Faq;
-use App\Models\PromotionModel as Promotion;
 use App\Models\UserModel;
-use App\Services\ShopSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cookie;
@@ -23,15 +21,15 @@ use Illuminate\Support\Str;
 
 class AuthUserController extends Controller
 {
+    use SharesStorefrontLayout;
+
     public function __construct()
     {
-        $slide = Promotion::where('cate_slide_id', 1)->where('promotion_hidden', 1)->get();
-        $contact = app(ShopSettings::class)->storefrontContact();
-        $faq = Faq::where('faq_hidden', 1)->where('faq_about', 0)->orderBy('faq_id', 'desc')->get();
+        $this->shareStorefrontLayout();
         $cateNews = CateNews::withCount('getNewsInCate')->where('cate_news_hidden', 1)
             ->orderBy('cate_news_sort', 'asc')
             ->get();
-        view()->share(compact('slide', 'contact', 'faq', 'cateNews'));
+        view()->share(compact('cateNews'));
     }
 
     public function login()
@@ -117,7 +115,7 @@ class AuthUserController extends Controller
     public function forgotPost(Request $request)
     {
         $user = UserModel::getUsersingle($request->email);
-        $mailDate = Carbon::now('Asia/Ho_Chi_Minh');
+        $mailDate = Carbon::now();
 
         if (! empty($user)) {
             $user->remember_token = Str::random(30);

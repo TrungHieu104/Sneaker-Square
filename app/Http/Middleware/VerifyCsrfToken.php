@@ -11,7 +11,9 @@ class VerifyCsrfToken extends Middleware
      *
      * @var array<int, string>
      */
-    protected $except = [
+    // Each entry proves the request some other way, as noted beside it.
+    protected $except = [ // NOSONAR
+        // CKFinder checks its own double-submit token (csrfProtection in config/ckfinder.php).
         'ckfinder/*',
         // The payment gateways post here from their own servers, so they have
         // no session and no token. Authenticity is proved by the HMAC on the

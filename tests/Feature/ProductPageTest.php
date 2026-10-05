@@ -109,4 +109,18 @@ class ProductPageTest extends TestCase
             ])
             ->assertRedirect('/gio-hang');
     }
+
+    public function test_danh_sach_san_pham_sap_xep_theo_menu(): void
+    {
+        $this->makeProduct(price: 300_000, slug: 'b-giay-trung');
+        $this->makeProduct(price: 900_000, slug: 'a-giay-dat');
+        $this->makeProduct(price: 100_000, slug: 'c-giay-re');
+
+        $order = fn (string $sort) => collect($this->get(route('product.page', ['sort' => $sort]))->viewData('getAllProduct')->items())
+            ->pluck('pro_slug')->all();
+
+        $this->assertSame(['a-giay-dat', 'b-giay-trung', 'c-giay-re'], $order('a-z'));
+        $this->assertSame(['a-giay-dat', 'b-giay-trung', 'c-giay-re'], $order('gia-giam'));
+        $this->assertSame(['c-giay-re', 'b-giay-trung', 'a-giay-dat'], $order('gia-tang'));
+    }
 }

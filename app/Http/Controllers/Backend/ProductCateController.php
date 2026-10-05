@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\View;
 
 class ProductCateController extends Controller
 {
+    private const IMAGE_DIR = 'backend/uploads/product/category/';
+
     /**
      * Display a listing of the resource.
      */
@@ -23,14 +25,7 @@ class ProductCateController extends Controller
 
     public function index(Request $request)
     {
-        $orderBy = $request->input('orderBy', 'updated_at');
-        $orderType = $request->input('orderType', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, Category::class, 'updated_at', byKey: 'orderBy', typeKey: 'orderType');
         $keyword = $request->input('keyword');
         $searchableFields = ['category.cate_name'];
         // The table shows a product count per category; count them in SQL
@@ -96,8 +91,8 @@ class ProductCateController extends Controller
         if ($request->has('cate_img')) {
             $file = $request->file('cate_img');
             $file_name = time().'-'.$file->getClientOriginalName();
-            $file->move(public_path('backend/uploads/product/category/'), $file_name);
-            $cate->cate_img = 'backend/uploads/product/category/'.$file_name;
+            $file->move(public_path(self::IMAGE_DIR), $file_name);
+            $cate->cate_img = self::IMAGE_DIR.$file_name;
         }
         $cate->save();
         Session::flash('iconMessage', 'success');
@@ -156,8 +151,8 @@ class ProductCateController extends Controller
         if ($request->hasFile('cate_img')) {
             $file = $request->file('cate_img');
             $file_name = time().'-'.$file->getClientOriginalName();
-            $file->move(public_path('backend/uploads/product/category/'), $file_name);
-            $cate->cate_img = 'backend/uploads/product/category/'.$file_name;
+            $file->move(public_path(self::IMAGE_DIR), $file_name);
+            $cate->cate_img = self::IMAGE_DIR.$file_name;
         }
         $cate->save();
         Session::flash('iconMessage', 'success');
@@ -180,7 +175,7 @@ class ProductCateController extends Controller
 
         $cate->cate_hidden = $cate_hidden;
         $cate->save();
-        $childCate = Category::where('cate_parent_id', $cateId)
+        Category::where('cate_parent_id', $cateId)
             ->update(['cate_hidden' => $cate_hidden]);
 
         return response()->json(['message' => 'Cập nhật thành công']);
@@ -208,7 +203,7 @@ class ProductCateController extends Controller
             return redirect()->back()->with('message', 'Không thể xóa danh mục đang có sản phẩm!');
         } else {
             $cate->delete();
-            $childCate = Category::where('cate_parent_id', $cateId)
+            Category::where('cate_parent_id', $cateId)
                 ->update(['cate_hidden' => 0]);
             Session::flash('iconMessage', 'success');
 
@@ -221,18 +216,11 @@ class ProductCateController extends Controller
      */
     public function trashed(Request $request)
     {
-        $orderBy = $request->input('orderBy', 'cate_id');
-        $orderType = $request->input('orderType', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, Category::class, 'cate_id', byKey: 'orderBy', typeKey: 'orderType');
         $keyword = $request->input('keyword');
         $searchableFields = ['cate_name'];
 
-        $cateTrash = $this->performSearch(Category::withCount('getProductsInCate')->onlyTrashed($orderBy, $orderType), $keyword, $searchableFields)->paginate(20)->withQueryString();
+        $cateTrash = $this->performSearch(Category::withCount('getProductsInCate')->onlyTrashed()->orderBy($orderBy, $orderType), $keyword, $searchableFields)->paginate(20)->withQueryString();
 
         return view('backend.pages.product.product-cate.product_cate_trash', compact('cateTrash', 'orderBy', 'orderType'));
     }

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\NewsModel as News;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TagsModel extends Model
@@ -30,7 +31,8 @@ class TagsModel extends Model
         'tag_hidden' => 1,
     ];
 
-    public function getNews()
+    /** @return BelongsToMany<News, $this> */
+    public function getNews(): BelongsToMany
     {
         return $this->belongsToMany(News::class, 'news_by_tags', 'tag_id', 'news_id');
     }

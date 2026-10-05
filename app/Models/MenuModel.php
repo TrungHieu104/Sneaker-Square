@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MenuModel extends Model
@@ -20,7 +21,8 @@ class MenuModel extends Model
 
     protected $fillable = ['menu_name', 'menu_link', 'menu_hidden', 'menu_position', 'menu_parent_id'];
 
-    public function children()
+    /** @return HasMany<MenuModel, $this> */
+    public function children(): HasMany
     {
         return $this->hasMany(MenuModel::class, 'menu_parent_id');
     }

@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\View;
 
 class BlogCateController extends Controller
 {
+    private const IMAGE_DIR = '/backend/uploads/blog/';
+
     /**
      * Display a listing of the resource.
      */
@@ -23,14 +25,7 @@ class BlogCateController extends Controller
 
     public function index(Request $request)
     {
-        $orderBy = $request->input('sort-by', 'cate_news_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, CateNews::class, 'cate_news_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['cate_news.cate_news_name'];
 
@@ -83,8 +78,8 @@ class BlogCateController extends Controller
             $file = $request->file('img_blog');
             $extension = $file->getClientOriginalExtension();
             $file_name = time().'.'.$extension;
-            $file->move(public_path('/backend/uploads/blog/'), $file_name);
-            $cates->cate_news_img = '/backend/uploads/blog/'.$file_name;
+            $file->move(public_path(self::IMAGE_DIR), $file_name);
+            $cates->cate_news_img = self::IMAGE_DIR.$file_name;
 
         }
         $cates->save();
@@ -143,8 +138,8 @@ class BlogCateController extends Controller
             $file = $request->file('img_blog');
             $extension = $file->getClientOriginalExtension();
             $file_name = time().'.'.$extension;
-            $file->move(public_path('/backend/uploads/blog/'), $file_name);
-            $cateb->cate_news_img = '/backend/uploads/blog/'.$file_name;
+            $file->move(public_path(self::IMAGE_DIR), $file_name);
+            $cateb->cate_news_img = self::IMAGE_DIR.$file_name;
         }
         $cateb->save();
         Session::flash('iconMessage', 'success');
@@ -177,18 +172,11 @@ class BlogCateController extends Controller
 
     public function trashed(Request $request)
     {
-        $orderBy = $request->input('sort-by', 'deleted_at');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, CateNews::class, 'deleted_at');
         $keyword = $request->input('keyword');
         $searchableFields = ['cate_news.cate_news_name'];
 
-        $cateBTrash = $this->performSearch(CateNews::onlyTrashed($orderBy, $orderType), $keyword, $searchableFields)->paginate(5)->withQueryString();
+        $cateBTrash = $this->performSearch(CateNews::onlyTrashed()->orderBy($orderBy, $orderType), $keyword, $searchableFields)->paginate(5)->withQueryString();
 
         return view('backend.pages.blog.blog_cate.blog_cate_trash', compact('cateBTrash', 'orderBy', 'orderType'));
     }

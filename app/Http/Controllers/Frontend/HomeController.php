@@ -3,16 +3,15 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Frontend\Concerns\SharesStorefrontLayout;
 use App\Http\Requests\Frontend\ContactFormRequest;
 use App\Mail\ContactMail;
 use App\Models\CategoryModel as Category;
 use App\Models\CateSlideModel as CateSlide;
 use App\Models\ContactFormModel;
 use App\Models\FaqModel as Faq;
-use App\Models\MenuModel as Menu;
 use App\Models\NewsModel as News;
 use App\Models\ProductModel as Product;
-use App\Models\PromotionModel as Promotion;
 use App\Services\ShopSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -21,41 +20,26 @@ use Illuminate\Support\Facades\View;
 
 class HomeController extends Controller
 {
+    use SharesStorefrontLayout;
+
     public function __construct()
     {
+        $this->shareStorefrontLayout();
+
+        // The home page shows only the promotions running today, from every
+        // slide group, where other pages fall back to the first group.
         $slide = CateSlide::join('promotion', function ($join) {
             $join->on('cate_slide.cate_slide_id', '=', 'promotion.cate_slide_id')
                 ->where('cate_slide.cate_slide_hidden', 1)
                 ->where('promotion.promotion_hidden', 1);
-
-            //  ->where('promotion.cate_slide_id', 1);
         })
             ->select('cate_slide.*', 'promotion.*')
             ->orderBy('promotion_sort', 'asc')
             ->whereDate('promotion_start', '<=', date('Y-m-d'))
             ->whereDate('promotion_end', '>', date('Y-m-d'))
             ->get();
-        $contact = app(ShopSettings::class)->storefrontContact();
-        $faq = Faq::where('faq_hidden', 1)->where('faq_about', 0)->orderBy('faq_id', 'desc')->get();
-        $data = Menu::where('menu_hidden', 1)->orderBy('menu_position', 'asc')->get();
         $catePro = Category::where('cate_hidden', 1)->where('cate_parent_id', 1)->orderBy('cate_sort', 'DESC')->get();
-        $menu = $this->data_tree($data);
-        View::share(compact('slide', 'contact', 'faq', 'menu', 'catePro'));
-    }
-
-    public function data_tree($data, $parent_id = 0, $level = 0)
-    {
-        $result = [];
-        foreach ($data as $item) {
-            if ($item['menu_parent_id'] == $parent_id) {
-                $item['level'] = $level;
-                $result[] = $item;
-                $child = $this->data_tree($data, $item['menu_id'], $level + 1);
-                $result = array_merge($result, $child);
-            }
-        }
-
-        return $result;
+        View::share(compact('slide', 'catePro'));
     }
 
     public function index(Request $request)

@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\View;
 
 class ImageController extends Controller
 {
+    private const PRODUCT_NOT_FOUND = 'Sản phẩm không tồn tại';
+
     public function __construct(Request $request)
     {
         $keyword = $request->input('keyword');
@@ -64,7 +66,7 @@ class ImageController extends Controller
         if ($proId == null) {
             Session::flash('iconMessage', 'info');
 
-            return redirect()->route('product.index')->with('message', 'Sản phẩm không tồn tại');
+            return redirect()->route('product.index')->with('message', self::PRODUCT_NOT_FOUND);
         }
 
         $allImages = Image::where('pro_id', $proId)
@@ -128,7 +130,7 @@ class ImageController extends Controller
         if ($proId == null) {
             Session::flash('iconMessage', 'info');
 
-            return redirect()->route('product.index')->with('message', 'Sản phẩm không tồn tại');
+            return redirect()->route('product.index')->with('message', self::PRODUCT_NOT_FOUND);
         }
 
         $imgTrash = Image::onlyTrashed()
@@ -164,7 +166,7 @@ class ImageController extends Controller
         if ($proId == null) {
             Session::flash('iconMessage', 'info');
 
-            return redirect()->route('product.index')->with('message', 'Sản phẩm không tồn tại');
+            return redirect()->route('product.index')->with('message', self::PRODUCT_NOT_FOUND);
         }
 
         Image::onlyTrashed()
@@ -201,7 +203,7 @@ class ImageController extends Controller
         if ($proId == null) {
             Session::flash('iconMessage', 'info');
 
-            return redirect()->route('product.index')->with('message', 'Sản phẩm không tồn tại');
+            return redirect()->route('product.index')->with('message', self::PRODUCT_NOT_FOUND);
         }
 
         Image::onlyTrashed()

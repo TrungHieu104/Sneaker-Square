@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\View;
 
 class BlogAdminController extends Controller
 {
+    private const SLUG_SUFFIX = '.html';
+
+    private const IMAGE_DIR = 'backend/uploads/blog/';
+
     /**
      * Display a listing of the resource.
      */
@@ -26,14 +30,7 @@ class BlogAdminController extends Controller
 
     public function index(Request $request)
     {
-        $orderBy = $request->input('sort-by', 'news_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, News::class, 'news_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['news.news_title'];
 
@@ -46,16 +43,6 @@ class BlogAdminController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function cateNews($id)
-    {
-        $cateNews = CateNews::find($id);
-        if ($cateNews) {
-            return $cateNews->cate_new_name;
-        }
-
-        return false;
-    }
-
     public function create()
     {
         $cateN = CateNews::all();
@@ -107,8 +94,8 @@ class BlogAdminController extends Controller
         $arr = $request->post();
         $date = ($request->has('post_date')) ? $arr['post_date'] : '';
         $slug = ($request->has('slug')) ? $arr['slug'] : '';
-        if (! empty($slug) && substr($slug, -5) !== '.html') {
-            $slug .= '.html';
+        if (! empty($slug) && substr($slug, -5) !== self::SLUG_SUFFIX) {
+            $slug .= self::SLUG_SUFFIX;
         }
         $news = News::create([
             'news_title' => $request->title,
@@ -131,8 +118,8 @@ class BlogAdminController extends Controller
             $file = $request->file('img_blog');
             $extension = $file->getClientOriginalExtension();
             $file_name = time().'.'.$extension;
-            $file->move(public_path('backend/uploads/blog/'), $file_name);
-            $news->news_img = 'backend/uploads/blog/'.$file_name;
+            $file->move(public_path(self::IMAGE_DIR), $file_name);
+            $news->news_img = self::IMAGE_DIR.$file_name;
         }
         $news->save();
         Session::flash('iconMessage', 'success');
@@ -177,8 +164,8 @@ class BlogAdminController extends Controller
         $summarize = ($request->has('summarize')) ? $arr['summarize'] : '';
         $contents = ($request->has('content')) ? $arr['content'] : '';
         $slug = ($request->has('slug')) ? $arr['slug'] : '';
-        if (! empty($slug) && substr($slug, -5) !== '.html') {
-            $slug .= '.html';
+        if (! empty($slug) && substr($slug, -5) !== self::SLUG_SUFFIX) {
+            $slug .= self::SLUG_SUFFIX;
         }
         $hidden = ($request->has('hidden')) ? (int) $arr['hidden'] : '0';
         $hot = ($request->has('hot')) ? (int) $arr['hot'] : '0';
@@ -187,7 +174,6 @@ class BlogAdminController extends Controller
         $seo_title = ($request->has('seo_title')) ? $arr['seo_title'] : '';
         $seo_keywords = ($request->has('seo_keywords')) ? $arr['seo_keywords'] : '';
         $seo_description = ($request->has('seo_description')) ? $arr['seo_description'] : '';
-        // $created_by = ($request->has('created_by'))? $arr['created_by'] : "";
         $post_date = date('Y/m/d', strtotime($date));
         if ($news == null) {
             $request->session();
@@ -206,7 +192,6 @@ class BlogAdminController extends Controller
         $news->news_SEO_title = $seo_title;
         $news->news_meta_keywords = $seo_keywords;
         $news->news_meta_description = $seo_description;
-        // $news->news_created_by = $created_by;
 
         $news->getTags()->sync($request->tags);
 
@@ -214,8 +199,8 @@ class BlogAdminController extends Controller
             $file = $request->file('img_blog');
             $extension = $file->getClientOriginalExtension();
             $file_name = time().'.'.$extension;
-            $file->move(public_path('backend/uploads/blog/'), $file_name);
-            $news->news_img = 'backend/uploads/blog/'.$file_name;
+            $file->move(public_path(self::IMAGE_DIR), $file_name);
+            $news->news_img = self::IMAGE_DIR.$file_name;
 
         }
         $news->save();
@@ -244,18 +229,11 @@ class BlogAdminController extends Controller
     public function trashed(Request $request)
     {
 
-        $orderBy = $request->input('sort-by', 'deleted_at');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, News::class, 'deleted_at');
         $keyword = $request->input('keyword');
         $searchableFields = ['news.news_title'];
 
-        $blogTrash = $this->performSearch(News::onlyTrashed($orderBy, $orderType), $keyword, $searchableFields)->paginate(10)->withQueryString();
+        $blogTrash = $this->performSearch(News::onlyTrashed()->orderBy($orderBy, $orderType), $keyword, $searchableFields)->paginate(10)->withQueryString();
 
         return view('backend.pages.blog.blogs.blog_trash', compact('blogTrash', 'orderBy', 'orderType'));
     }

@@ -25,14 +25,7 @@ class CateSlideAdminController extends Controller
     public function index(Request $request)
     {
         $perpage = 8;
-        $orderBy = $request->input('sort-by', 'cate_slide_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, CateSlideModel::class, 'cate_slide_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['cate_slide_name'];
 
@@ -139,24 +132,6 @@ class CateSlideAdminController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    // public function destroy(Request $request,string $id)
-    // {
-    //     $promotion = PromotionModel::where('cate_slide_id', $id)->count();
-    //     if($promotion>0){
-    //         Session::flash('iconMessage', 'info');
-    //         return redirect('admin/cate-slide')->with('message', 'Không thể xóa danh mục!');
-    //     }
-    //     $cateS = CateSlideModel::find($id);
-    //     if ($cateS==null) {
-    //         $request->session();
-    //         Session::flash('iconMessage', 'info');
-    //         redirect()->back()->with('message', 'Không tồn tại danh mục!');
-    //     }
-    //     $cateS->delete();
-    //     Session::flash('iconMessage', 'success');
-    //     return redirect('/admin/cate-slide')->with('message', 'Xóa thành công');
-    // }
-
     public function softDelete(Request $request, string $id)
     {
         $promotion = PromotionModel::where('cate_slide_id', $id)->count();
@@ -180,14 +155,7 @@ class CateSlideAdminController extends Controller
     public function trashed(Request $request)
     {
         $perpages = 10;
-        $orderBy = $request->input('sort-by', 'cate_slide_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, CateSlideModel::class, 'cate_slide_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['cate_slide_name'];
 

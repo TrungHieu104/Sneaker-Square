@@ -3,47 +3,27 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Frontend\Concerns\SharesStorefrontLayout;
 use App\Models\CateNewsModel as CateNews;
-use App\Models\FaqModel as Faq;
-use App\Models\MenuModel as Menu;
 use App\Models\NewsByTagsModel as NewsByTags;
 use App\Models\NewsModel as News;
-use App\Models\PromotionModel as Promotion;
 use App\Models\TagsModel as Tags;
-use App\Services\ShopSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
 class BlogController extends Controller
 {
+    use SharesStorefrontLayout;
+
     public function __construct()
     {
-        $slide = Promotion::where('cate_slide_id', 1)->where('promotion_hidden', 1)->get();
-        $contact = app(ShopSettings::class)->storefrontContact();
-        $faq = Faq::where('faq_hidden', 1)->where('faq_about', 0)->orderBy('faq_id', 'desc')->get();
+        $this->shareStorefrontLayout();
         // The sidebar prints how many articles each category holds; withCount
         // fetches that number instead of every article row.
         $cateNews = CateNews::withCount('getNewsInCate')->where('cate_news_hidden', 1)
             ->orderBy('cate_news_sort', 'asc')
             ->get();
-        $data = Menu::where('menu_hidden', 1)->orderBy('menu_position', 'asc')->get();
-        $menu = $this->data_tree($data);
-        view()->share(compact('slide', 'contact', 'faq', 'cateNews', 'menu'));
-    }
-
-    public function data_tree($data, $parent_id = 0, $level = 0)
-    {
-        $result = [];
-        foreach ($data as $item) {
-            if ($item['menu_parent_id'] == $parent_id) {
-                $item['level'] = $level;
-                $result[] = $item;
-                $child = $this->data_tree($data, $item['menu_id'], $level + 1);
-                $result = array_merge($result, $child);
-            }
-        }
-
-        return $result;
+        view()->share(compact('cateNews'));
     }
 
     public function index(string $cateNewsSlug = '')
@@ -88,7 +68,6 @@ class BlogController extends Controller
             ->whereDate('post_date', '<=', date('Y-m-d'))
             ->value('news_id');
 
-        $newsIdmt = News::where('news_slug', $newsSlug)->get();
         if (($newsSlug != '') && ($newsId == null)) {
             Session::flash('iconMessage', 'info');
 
@@ -123,13 +102,11 @@ class BlogController extends Controller
             ->groupBy('news_id', 'news_by_tags.tag_id', 'tags.tag_content', 'tags.tag_slug', 'tags.tag_hidden')
             ->get();
 
-        foreach ($newsIdmt as $key => $value) {
-            $meta_desc = $value->news_meta_description;
-            $meta_keywords = $value->news_meta_keywords;
-            $meta_title = $value->news_SEO_title;
-            $img = $value->news_img;
-            $url_canonical = $request->url();
-        }
+        $meta_desc = $detailNews->news_meta_description;
+        $meta_keywords = $detailNews->news_meta_keywords;
+        $meta_title = $detailNews->news_SEO_title;
+        $img = $detailNews->news_img;
+        $url_canonical = $request->url();
 
         return view('frontend.pages.blog.blog_detail', compact('detailNews', 'relatedNews', 'getTags',
             'meta_desc', 'meta_keywords', 'meta_title', 'url_canonical', 'img'));

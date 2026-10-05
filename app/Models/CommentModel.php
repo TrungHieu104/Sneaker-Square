@@ -6,6 +6,7 @@ use App\Models\ProductModel as Product;
 use App\Models\UserModel as User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CommentModel extends Model
@@ -35,12 +36,14 @@ class CommentModel extends Model
         'comment_hidden' => 0,
     ];
 
-    public function getUsers()
+    /** @return BelongsTo<User, $this> */
+    public function getUsers(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 
-    public function getProducts()
+    /** @return BelongsTo<Product, $this> */
+    public function getProducts(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'pro_id', 'pro_id');
     }

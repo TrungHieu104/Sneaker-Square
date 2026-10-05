@@ -26,6 +26,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderAdminController extends Controller
 {
+    private const ORDER_NOT_FOUND = 'Đơn hàng không tồn tại';
+
+    private const ORDER_LIST_URL = 'admin/order';
+
     /**
      * Display a listing of the resource.
      */
@@ -48,28 +52,21 @@ class OrderAdminController extends Controller
     public function index(Request $request)
     {
         $perpage = 30;
-        $orderBy = $request->input('sort-by', 'order_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, OrderModel::class, 'order_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['order_name', 'order_code', 'order_date'];
 
         $sortOption = $request->input('sort', 'default');
         $query = OrderModel::orderBy($orderBy, $orderType)->confirmedSale();
 
-        $thismonth = Carbon::now('Asia/Ho_Chi_minh')->startOfMonth()->toDateString();
-        $start_month = Carbon::now('Asia/Ho_Chi_minh')->subMonth()->startOfMonth()->toDateString();
-        $end_month = Carbon::now('Asia/Ho_Chi_minh')->subMonth()->endOfMonth()->toDateString();
+        $thismonth = Carbon::now()->startOfMonth()->toDateString();
+        $start_month = Carbon::now()->subMonth()->startOfMonth()->toDateString();
+        $end_month = Carbon::now()->subMonth()->endOfMonth()->toDateString();
 
-        $sub7days = Carbon::now('Asia/Ho_Chi_minh')->subDays(7)->toDateString();
-        $sub365days = Carbon::now('Asia/Ho_Chi_minh')->subDays(365)->toDateString();
+        $sub7days = Carbon::now()->subDays(7)->toDateString();
+        $sub365days = Carbon::now()->subDays(365)->toDateString();
 
-        $now = Carbon::now('Asia/Ho_Chi_minh')->toDateString();
+        $now = Carbon::now()->toDateString();
 
         switch ($sortOption) {
             case 'today':
@@ -147,7 +144,7 @@ class OrderAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
+            return redirect(self::ORDER_LIST_URL)->with('message', self::ORDER_NOT_FOUND);
         }
     }
 
@@ -197,7 +194,7 @@ class OrderAdminController extends Controller
                 $request->session();
                 Session::flash('iconMessage', 'info');
 
-                return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
+                return redirect(self::ORDER_LIST_URL)->with('message', self::ORDER_NOT_FOUND);
             }
 
             $orderDetail = OrderDetailModel::with('product')->where('order_id', $order_id)->get();
@@ -208,7 +205,7 @@ class OrderAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
+            return redirect(self::ORDER_LIST_URL)->with('message', self::ORDER_NOT_FOUND);
         }
     }
 
@@ -237,7 +234,7 @@ class OrderAdminController extends Controller
         if ($order == null) {
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
+            return redirect(self::ORDER_LIST_URL)->with('message', self::ORDER_NOT_FOUND);
         }
 
         if (! $order->hasStatus(OrderStatus::Delivering) || ! $order->isHandedOverManually()) {
@@ -287,7 +284,7 @@ class OrderAdminController extends Controller
         if ($order == null) {
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
+            return redirect(self::ORDER_LIST_URL)->with('message', self::ORDER_NOT_FOUND);
         }
 
         if ($refusal = $this->refuseIfHandedOverManually($order) ?? $this->refuseUnlessConfirmed($order)) {
@@ -314,7 +311,7 @@ class OrderAdminController extends Controller
         if ($order == null) {
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
+            return redirect(self::ORDER_LIST_URL)->with('message', self::ORDER_NOT_FOUND);
         }
 
         try {
@@ -343,7 +340,7 @@ class OrderAdminController extends Controller
         if ($order == null) {
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
+            return redirect(self::ORDER_LIST_URL)->with('message', self::ORDER_NOT_FOUND);
         }
 
         if ($refusal = $this->refuseIfHandedOverManually($order) ?? $this->refuseUnlessConfirmed($order)) {
@@ -463,7 +460,7 @@ class OrderAdminController extends Controller
         if ($order == null) {
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
+            return redirect(self::ORDER_LIST_URL)->with('message', self::ORDER_NOT_FOUND);
         }
 
         $order->note_admin = (string) $request->input('note', '');
@@ -481,7 +478,7 @@ class OrderAdminController extends Controller
 
         Session::flash('iconMessage', 'success');
 
-        return redirect('admin/order')->with('message', 'Cảm ơn bạn đã xác nhận');
+        return redirect(self::ORDER_LIST_URL)->with('message', 'Cảm ơn bạn đã xác nhận');
     }
 
     private function saveNoteOnly(OrderModel $order): ?RedirectResponse

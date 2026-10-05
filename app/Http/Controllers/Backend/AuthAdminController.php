@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers\Backend;
 
-use App\Exports\ExportAdminAcont;
-use App\Exports\ExportUserAcount;
+use App\Exports\ExportAccounts;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Backend\AccountRequest;
 use App\Http\Requests\Backend\AccountUpRequest;
@@ -14,6 +13,7 @@ use App\Http\Requests\Backend\UserInfoUpRequest;
 use App\Models\OrderModel;
 use App\Models\UserModel;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +27,16 @@ use Spatie\Permission\Models\Role;
 
 class AuthAdminController extends Controller
 {
+    private const USER_NOT_FOUND = 'Không tồn tại thông tin user';
+
+    private const ACCOUNT_LIST_URL = 'admin/account';
+
+    private const ACCOUNT_NOT_FOUND = 'Không tồn tại tài khoản!';
+
+    private const UPDATED = 'Cập nhập thành công!';
+
+    private const AVATAR_DIR = 'backend/uploads/user/';
+
     public function __construct(Request $request)
     {
         $keyword = $request->input('keyword');
@@ -44,14 +54,7 @@ class AuthAdminController extends Controller
     public function index(Request $request)
     {
         $perpage = 10;
-        $orderBy = $request->input('sort-by', 'user_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, UserModel::class, 'user_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['username', 'email'];
 
@@ -69,14 +72,7 @@ class AuthAdminController extends Controller
     public function listAccountUser(Request $request)
     {
         $perpage = 10;
-        $orderBy = $request->input('sort-by', 'user_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, UserModel::class, 'user_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['name', 'email'];
 
@@ -90,72 +86,70 @@ class AuthAdminController extends Controller
 
     public function loginCheck(LoginRequest $request)
     {
-        $emailUser = $request->input('email');
-        $password = $request->input('password');
+        $login = $request->input('email');
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        if (filter_var($emailUser, FILTER_VALIDATE_EMAIL)) {
-            $checkInfo = [
-                'email' => $emailUser,
-                'password' => $password,
-            ];
-        } else {
-            $checkInfo = [
-                'username' => $emailUser,
-                'password' => $password,
-            ];
-        }
-
-        if (Auth::attempt($checkInfo)) {
+        if (Auth::attempt([$field => $login, 'password' => $request->input('password')])) {
             $user = Auth::user();
+
             if ($user->locked_at !== null && $user->locked_at > now()) {
                 Auth::logout();
-                Session::flash('iconMessage', 'error');
-                $remainingTime = (int) now()->diffInMinutes($user->locked_at, true).' phút '.(int) now()->diffInSeconds($user->locked_at, true) % 60 .' giây';
 
-                return redirect(route('admin.login'))->with('message', 'Vui lòng thử lại sau '.$remainingTime.'!');
+                return $this->backToLogin($this->lockedMessage($user));
             }
 
-            $user->update([
-                'login_attempts' => 0,
-                'locked_at' => null,
-            ]);
+            $user->update(['login_attempts' => 0, 'locked_at' => null]);
 
             return redirect(route('admin.dashboard'));
         }
 
-        $user = UserModel::where('email', $emailUser)->orWhere('username', $emailUser)->first();
-        if ($user) {
-            if ($user->login_attempts >= 5 && $user->locked_at === null) {
-                $user->update([
-                    'locked_at' => now()->addMinutes(5),
-                    'login_attempts' => 0,
-                ]);
-                Session::flash('iconMessage', 'error');
+        $user = UserModel::where('email', $login)->orWhere('username', $login)->first();
 
-                return redirect(route('admin.login'))->with('message', 'Tài khoản của bạn đã bị khóa trong 5 phút. Vui lòng thử lại sau.');
-            } elseif ($user->locked_at !== null) {
-                if ($user->locked_at <= Carbon::now()) {
-                    $user->update([
-                        'locked_at' => null,
-                        'login_attempts' => 0,
-                    ]);
-                } else {
-                    Session::flash('iconMessage', 'error');
-                    $remainingTime = (int) now()->diffInMinutes($user->locked_at, true).' phút '.(int) now()->diffInSeconds($user->locked_at, true) % 60 .' giây';
+        return $this->backToLogin($user ? $this->failedAttempt($user) : 'Sai thông tin đăng nhập!');
+    }
 
-                    return redirect(route('admin.login'))->with('message', 'Vui lòng thử lại sau '.$remainingTime.'!');
-                }
-            } else {
-                $remainingAttempts = 5 - $user->login_attempts;
-                $user->increment('login_attempts');
-                Session::flash('iconMessage', 'error');
+    /**
+     * Counts a wrong password against the account and says what happens next:
+     * the fifth one locks it for five minutes, and a lock that has run out is
+     * lifted.
+     */
+    private function failedAttempt(UserModel $user): string
+    {
+        if ($user->locked_at === null && $user->login_attempts >= 5) {
+            $user->update(['locked_at' => now()->addMinutes(5), 'login_attempts' => 0]);
 
-                return redirect(route('admin.login'))->with('message', 'Sai thông tin đăng nhập. Bạn còn '.$remainingAttempts.' lần thử.');
-            }
+            return 'Tài khoản của bạn đã bị khóa trong 5 phút. Vui lòng thử lại sau.';
         }
+
+        if ($user->locked_at === null) {
+            $remainingAttempts = 5 - $user->login_attempts;
+            $user->increment('login_attempts');
+
+            return 'Sai thông tin đăng nhập. Bạn còn '.$remainingAttempts.' lần thử.';
+        }
+
+        if ($user->locked_at > Carbon::now()) {
+            return $this->lockedMessage($user);
+        }
+
+        $user->update(['locked_at' => null, 'login_attempts' => 0]);
+
+        return 'Sai thông tin đăng nhập!';
+    }
+
+    private function lockedMessage(UserModel $user): string
+    {
+        $minutes = (int) now()->diffInMinutes($user->locked_at, true);
+        $seconds = (int) now()->diffInSeconds($user->locked_at, true) % 60;
+
+        return 'Vui lòng thử lại sau '.$minutes.' phút '.$seconds.' giây!';
+    }
+
+    private function backToLogin(string $message): RedirectResponse
+    {
         Session::flash('iconMessage', 'error');
 
-        return redirect(route('admin.login'))->with('message', 'Sai thông tin đăng nhập!');
+        return redirect(route('admin.login'))->with('message', $message);
     }
 
     /**
@@ -213,7 +207,7 @@ class AuthAdminController extends Controller
                 $request->session();
                 Session::flash('iconMessage', 'info');
 
-                return redirect('admin/account')->with('message', 'Không tồn tại thông tin user');
+                return redirect(self::ACCOUNT_LIST_URL)->with('message', self::USER_NOT_FOUND);
             }
 
             return view('backend.pages.account.info.info_user', compact('info', 'role'));
@@ -222,7 +216,7 @@ class AuthAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/dashboard')->with('message', 'Không tồn tại tài khoản!');
+            return redirect('admin/dashboard')->with('message', self::ACCOUNT_NOT_FOUND);
         }
     }
 
@@ -235,7 +229,7 @@ class AuthAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/account')->with('message', 'Không tồn tại thông tin user');
+            return redirect(self::ACCOUNT_LIST_URL)->with('message', self::USER_NOT_FOUND);
         }
 
         return view('backend.pages.account.admin.admin_edit', compact('userAdmin', 'role'));
@@ -260,13 +254,12 @@ class AuthAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/account-user')->with('message', 'Không tồn tại tài khoản!');
+            return redirect('admin/account-user')->with('message', self::ACCOUNT_NOT_FOUND);
         }
     }
 
     public function updateUser(Request $request, string $id)
     {
-        // $id = Crypt::decrypt($encryptedUserId);
         $arr = $request->post();
         $hid = ($request->has('hid')) ? (int) $arr['hid'] : '0';
         $regis = UserModel::find($id);
@@ -274,13 +267,13 @@ class AuthAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/account')->with('message', 'Không tồn tại thông tin user');
+            return redirect(self::ACCOUNT_LIST_URL)->with('message', self::USER_NOT_FOUND);
         }
         $regis->user_status = $hid;
         $regis->save();
         Session::flash('iconMessage', 'success');
 
-        return redirect(route('account.user'))->with('message', 'Cập nhập thành công!');
+        return redirect(route('account.user'))->with('message', self::UPDATED);
     }
 
     /**
@@ -288,7 +281,6 @@ class AuthAdminController extends Controller
      */
     public function update(AccountUpRequest $request, string $id)
     {
-        // $id = Crypt::decrypt($encryptedUserId);
         $arr = $request->post();
         $name = ($request->has('name')) ? $arr['name'] : '';
         $username = ($request->has('username')) ? $arr['username'] : '';
@@ -299,7 +291,7 @@ class AuthAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/account')->with('message', 'Không tồn tại thông tin user');
+            return redirect(self::ACCOUNT_LIST_URL)->with('message', self::USER_NOT_FOUND);
         }
         $regis->name = $name;
         $regis->username = $username;
@@ -309,13 +301,13 @@ class AuthAdminController extends Controller
             $file = $request->file('img');
             $extension = $file->getClientOriginalExtension();
             $file_name = time().'.'.$extension;
-            $file->move(public_path('backend/uploads/user/'), $file_name);
-            $regis->user_img = 'backend/uploads/user/'.$file_name;
+            $file->move(public_path(self::AVATAR_DIR), $file_name);
+            $regis->user_img = self::AVATAR_DIR.$file_name;
         }
         $regis->save();
         Session::flash('iconMessage', 'success');
 
-        return redirect(route('account.index'))->with('message', 'Cập nhập thành công!');
+        return redirect(route('account.index'))->with('message', self::UPDATED);
     }
 
     public function updateInfo(UserInfoUpRequest $request, string $id)
@@ -324,29 +316,27 @@ class AuthAdminController extends Controller
         $name = ($request->has('name')) ? $arr['name'] : '';
         $username = ($request->has('username')) ? $arr['username'] : '';
         $email = ($request->has('email')) ? $arr['email'] : '';
-        // $newpass = ($request->has('new-pass'))? $arr['new-pass']:"";
         $regis = UserModel::find($id);
         if ($regis == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/account')->with('message', 'Không tồn tại thông tin user');
+            return redirect(self::ACCOUNT_LIST_URL)->with('message', self::USER_NOT_FOUND);
         }
         $regis->name = $name;
         $regis->username = $username;
         $regis->email = $email;
-        // $regis->password = $newpass;
         if ($request->has('img')) {
             $file = $request->file('img');
             $extension = $file->getClientOriginalExtension();
             $file_name = time().'.'.$extension;
-            $file->move(public_path('backend/uploads/user/'), $file_name);
-            $regis->user_img = 'backend/uploads/user/'.$file_name;
+            $file->move(public_path(self::AVATAR_DIR), $file_name);
+            $regis->user_img = self::AVATAR_DIR.$file_name;
         }
         $regis->save();
         Session::flash('iconMessage', 'success');
 
-        return redirect()->back()->with('message', 'Cập nhập thành công!');
+        return redirect()->back()->with('message', self::UPDATED);
     }
 
     public function updatePassword(InfoPassUpRequest $request)
@@ -398,7 +388,7 @@ class AuthAdminController extends Controller
 
         if (isset($data['permission']) && is_array($data['permission']) && count($data['permission']) > 0) {
             $user = UserModel::find($id);
-            $role_id = $user->roles->first()->id;
+            $role_id = $user->roles->pluck('id')->first();
 
             $role = Role::find($role_id);
             $role->syncPermissions($data['permission']);
@@ -435,7 +425,7 @@ class AuthAdminController extends Controller
 
                 return redirect(route('account.index'))->with('message', 'Không tồn tại user!');
             }
-            $name_roles = $user->roles->first() ? $user->roles->first()->name : null;
+            $name_roles = $user->getRoleNames()->first();
 
             if ($name_roles === null) {
                 $request->session();
@@ -451,7 +441,7 @@ class AuthAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/account')->with('message', 'Thông tin người dùng không tồn tại!');
+            return redirect(self::ACCOUNT_LIST_URL)->with('message', 'Thông tin người dùng không tồn tại!');
         }
     }
 
@@ -464,7 +454,7 @@ class AuthAdminController extends Controller
                 $request->session();
                 Session::flash('iconMessage', 'info');
 
-                return redirect(route('account.index'))->with('message', 'Không tồn tại tài khoản!');
+                return redirect(route('account.index'))->with('message', self::ACCOUNT_NOT_FOUND);
             }
             $all_column_roles = $user->roles->first();
             $role = Role::orderBy('id', 'DESC')->get();
@@ -475,66 +465,19 @@ class AuthAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('admin/account')->with('message', 'Không tồn tại tài khoản!');
+            return redirect(self::ACCOUNT_LIST_URL)->with('message', self::ACCOUNT_NOT_FOUND);
         }
-    }
-
-    public function impersonate($id)
-    {
-        $user = UserModel::find($id);
-        if ($user) {
-            Session::put('impersonate', $user->id);
-        }
-
-        return redirect('/admin');
     }
 
     public function exportus_scv()
     {
-        return Excel::download(new ExportUserAcount, 'Khách hàng.xlsx');
+        return Excel::download(ExportAccounts::customers(), 'Khách hàng.xlsx');
     }
 
     public function exportad_scv()
     {
-        return Excel::download(new ExportAdminAcont, 'Quản trị.xlsx');
+        return Excel::download(ExportAccounts::admins(), 'Quản trị.xlsx');
     }
-
-    // public function softDelete(Request $request, string $encryptedUserId)
-    // {
-    //     $id = Crypt::decrypt($encryptedUserId);
-    //     $account = UserModel::find($id);
-    //     if ($account == null) {
-    //         $request->session();
-    //         Session::flash('iconMessage', 'info');
-    //         return redirect()->back()->with('message', 'Không tồn tại thông tin!');
-    //     }
-    //     $account->delete();
-    //     Session::flash('iconMessage', 'success');
-    //     return redirect('/admin/account')->with('message', 'Xóa thành công!');
-    // }
-
-    // public function trashed(){
-    //     $perpages = 10;
-    //     $accountTrash = UserModel::onlyTrashed()->paginate($perpages);
-    //     return view('backend.pages.menus.menus_trash', compact('accountTrash'));
-    // }
-
-    // public function restore($id){
-    //     $accountRe = UserModel::withTrashed()->where('menu_id', $id)->first();
-    //     if ($accountRe) {
-    //         $accountRe->restore();
-    //         Session::flash('iconMessage', 'success');
-    //         return back()->with('message', 'Hoàn tác thành công!');
-    //     } else {
-    //         return abort(404);
-    //     }
-    // }
-
-    // public function restoreAll() {
-    //     UserModel::onlyTrashed()->restore();
-    //     Session::flash('iconMessage', 'success');
-    //     return back()->with('message', 'Hoàn tác thành công!');
-    // }
 
     // public function forceDelete($id){
     //     $accountDe = UserModel::withTrashed()->find($id); // Fetch the soft-deleted record

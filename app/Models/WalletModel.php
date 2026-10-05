@@ -29,21 +29,25 @@ class WalletModel extends Model
 
     protected $casts = ['balance' => 'integer', 'version' => 'integer'];
 
+    /** @return BelongsTo<UserModel, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(UserModel::class, 'user_id', 'user_id');
     }
 
+    /** @return HasMany<WalletTransactionModel, $this> */
     public function transactions(): HasMany
     {
         return $this->hasMany(WalletTransactionModel::class, 'wallet_id', 'wallet_id')->orderByDesc('created_at');
     }
 
+    /** @return HasMany<WalletTopupModel, $this> */
     public function topups(): HasMany
     {
         return $this->hasMany(WalletTopupModel::class, 'wallet_id', 'wallet_id')->orderByDesc('created_at');
     }
 
+    /** @return HasMany<WalletWithdrawalModel, $this> */
     public function withdrawals(): HasMany
     {
         return $this->hasMany(WalletWithdrawalModel::class, 'wallet_id', 'wallet_id')->orderByDesc('created_at');

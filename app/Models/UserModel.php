@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -57,7 +59,8 @@ class UserModel extends Authenticatable
         'password' => 'hashed',
     ];
 
-    public function wallet()
+    /** @return HasOne<WalletModel, $this> */
+    public function wallet(): HasOne
     {
         return $this->hasOne(WalletModel::class, 'user_id', 'user_id');
     }
@@ -85,17 +88,20 @@ class UserModel extends Authenticatable
         return UserModel::where('remember_token', '=', $remember_token)->first();
     }
 
-    public function Order()
+    /** @return HasMany<OrderModel, $this> */
+    public function Order(): HasMany
     {
         return $this->hasMany(OrderModel::class, 'user_id', 'user_id');
     }
 
-    public function Delivery()
+    /** @return BelongsTo<DeliveryInfoModel, $this> */
+    public function Delivery(): BelongsTo
     {
         return $this->belongsTo(DeliveryInfoModel::class, 'info_id');
     }
 
-    public function News()
+    /** @return HasMany<NewsModel, $this> */
+    public function News(): HasMany
     {
         return $this->hasMany(NewsModel::class, 'user_id');
     }

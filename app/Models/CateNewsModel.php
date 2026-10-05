@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\NewsModel as News;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CateNewsModel extends Model
@@ -32,7 +33,8 @@ class CateNewsModel extends Model
         'cate_news_hidden' => 1,
     ];
 
-    public function getNewsInCate()
+    /** @return HasMany<News, $this> */
+    public function getNewsInCate(): HasMany
     {
         return $this->hasMany(News::class, 'cate_news_id', 'cate_news_id');
     }

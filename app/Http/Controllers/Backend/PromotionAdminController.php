@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\View;
 
 class PromotionAdminController extends Controller
 {
+    private const DATE_FORMAT = 'Y/m/d';
+
+    private const IMAGE_DIR = 'backend/uploads/slide/';
+
+    private const PROMOTION_LIST_URL = '/admin/promotion';
+
     /**
      * Display a listing of the resource.
      */
@@ -27,14 +33,7 @@ class PromotionAdminController extends Controller
     {
         $perpage = 10;
         $today = Carbon::today()->toDateString();
-        $orderBy = $request->input('sort-by', 'promotion_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, PromotionModel::class, 'promotion_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['promotion_name'];
 
@@ -86,8 +85,8 @@ class PromotionAdminController extends Controller
         $pro->promotion_name = $name;
         $pro->type = $type;
         $pro->promotion_link = $url;
-        $time_start = date('Y/m/d', strtotime($start_pro));
-        $time_end = date('Y/m/d', strtotime($end_pro));
+        $time_start = date(self::DATE_FORMAT, strtotime($start_pro));
+        $time_end = date(self::DATE_FORMAT, strtotime($end_pro));
         $pro->promotion_start = $time_start;
         $pro->promotion_end = $time_end;
         $pro->promotion_content = $contents;
@@ -99,14 +98,13 @@ class PromotionAdminController extends Controller
             $file = $request->file('img');
             $extension = $file->getClientOriginalExtension();
             $file_name = time().'.'.$extension;
-            $file->move(public_path('backend/uploads/slide/'), $file_name);
-            $pro->promotion_img = 'backend/uploads/slide/'.$file_name;
-            // dd($file);
+            $file->move(public_path(self::IMAGE_DIR), $file_name);
+            $pro->promotion_img = self::IMAGE_DIR.$file_name;
         }
         $pro->save();
         Session::flash('iconMessage', 'success');
 
-        return redirect('/admin/promotion')->with('message', 'Thêm thành công');
+        return redirect(self::PROMOTION_LIST_URL)->with('message', 'Thêm thành công');
     }
 
     /**
@@ -154,14 +152,14 @@ class PromotionAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect('/admin/promotion')->with('message', 'Không tồn tại nội dung');
+            return redirect(self::PROMOTION_LIST_URL)->with('message', 'Không tồn tại nội dung');
         }
 
         $pro->promotion_name = $name;
         $pro->type = $type;
         $pro->promotion_link = $url;
-        $time_start = date('Y/m/d', strtotime($start_pro));
-        $time_end = date('Y/m/d', strtotime($end_pro));
+        $time_start = date(self::DATE_FORMAT, strtotime($start_pro));
+        $time_end = date(self::DATE_FORMAT, strtotime($end_pro));
         $pro->promotion_start = $time_start;
         $pro->promotion_end = $time_end;
         $pro->promotion_content = $contents;
@@ -173,13 +171,13 @@ class PromotionAdminController extends Controller
             $file = $request->file('img');
             $extension = $file->getClientOriginalExtension();
             $file_name = time().'.'.$extension;
-            $file->move(public_path('backend/uploads/slide/'), $file_name);
-            $pro->promotion_img = 'backend/uploads/slide/'.$file_name;
+            $file->move(public_path(self::IMAGE_DIR), $file_name);
+            $pro->promotion_img = self::IMAGE_DIR.$file_name;
         }
         $pro->save();
         Session::flash('iconMessage', 'success');
 
-        return redirect('/admin/promotion')->with('message', 'Chỉnh sửa thành công');
+        return redirect(self::PROMOTION_LIST_URL)->with('message', 'Chỉnh sửa thành công');
     }
 
     public function status(Request $request, $id)
@@ -198,21 +196,10 @@ class PromotionAdminController extends Controller
         return response()->json(['message' => 'Cập nhật thành công']);
 
     }
+
     /**
      * Remove the specified resource from storage.
      */
-    // public function destroy(Request $request, string $id)
-    // {
-    //     $promotion = PromotionModel::find($id);
-    //     if ($promotion==null) {
-    //         $request->session();
-    //         redirect()->back()->with('message', 'Không tồn tại quảng cáo!');
-    //     }
-    //     $promotion->delete();
-    //     Session::flash('iconMessage', 'success');
-    //     return redirect('/admin/promotion')->with('message', 'Xóa thành công!');
-    // }
-
     public function softDelete(Request $request, string $id)
     {
         $promotion = PromotionModel::find($id);
@@ -223,20 +210,13 @@ class PromotionAdminController extends Controller
         $promotion->delete();
         Session::flash('iconMessage', 'success');
 
-        return redirect('/admin/promotion')->with('message', 'Xóa thành công!');
+        return redirect(self::PROMOTION_LIST_URL)->with('message', 'Xóa thành công!');
     }
 
     public function trashed(Request $request)
     {
         $perpage = 10;
-        $orderBy = $request->input('sort-by', 'promotion_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, PromotionModel::class, 'promotion_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['promotion_name'];
 

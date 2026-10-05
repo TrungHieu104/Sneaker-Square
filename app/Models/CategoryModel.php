@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Models\ProductModel as Product;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CategoryModel extends Model
@@ -33,17 +35,20 @@ class CategoryModel extends Model
         'cate_hidden' => 1,
     ];
 
-    public function getChildCate()
+    /** @return HasMany<CategoryModel, $this> */
+    public function getChildCate(): HasMany
     {
         return $this->hasMany(CategoryModel::class, 'cate_parent_id', 'cate_id');
     }
 
-    public function getProductsInCate()
+    /** @return HasMany<Product, $this> */
+    public function getProductsInCate(): HasMany
     {
         return $this->hasMany(Product::class, 'cate_id', 'cate_id');
     }
 
-    public function getParentCate()
+    /** @return BelongsTo<CategoryModel, $this> */
+    public function getParentCate(): BelongsTo
     {
         return $this->belongsTo(CategoryModel::class, 'cate_parent_id', 'cate_id');
     }

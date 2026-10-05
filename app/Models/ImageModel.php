@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\ProductModel as Product;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ImageModel extends Model
@@ -29,7 +30,8 @@ class ImageModel extends Model
         'img_hidden' => 1,
     ];
 
-    public function getProduct()
+    /** @return BelongsTo<Product, $this> */
+    public function getProduct(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'pro_id', 'pro_id');
     }

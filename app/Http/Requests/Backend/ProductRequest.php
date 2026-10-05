@@ -14,6 +14,12 @@ use Illuminate\Validation\Rule;
  */
 class ProductRequest extends FormRequest
 {
+    private const MAX_255 = 'max: 255';
+
+    private const MIN_1 = 'min: 1';
+
+    private const MAX_PRICE = 'max: 9999999999';
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -43,15 +49,15 @@ class ProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pro_name' => ['required', 'max: 255', Rule::unique('products', 'pro_name')->ignore($this->editedProductId(), 'pro_id')],
-            'pro_slug' => ['required', 'max: 255', Rule::unique('products', 'pro_slug')->ignore($this->editedProductId(), 'pro_id')],
+            'pro_name' => ['required', self::MAX_255, Rule::unique('products', 'pro_name')->ignore($this->editedProductId(), 'pro_id')],
+            'pro_slug' => ['required', self::MAX_255, Rule::unique('products', 'pro_slug')->ignore($this->editedProductId(), 'pro_id')],
             'pro_code' => ['required', 'max: 50', Rule::unique('products', 'pro_code')->ignore($this->editedProductId(), 'pro_id')],
-            'capital_price' => ['required', 'numeric', 'min: 1', 'max: 9999999999', 'integer'],
-            'pro_price' => ['required', 'numeric', 'min: 1', 'max: 9999999999', 'integer', 'gt:capital_price'],
-            'pro_price_sale' => ['nullable', 'numeric', 'min: 0', 'max: 9999999999', 'integer', 'lt:pro_price'],
-            'pro_weight' => ['required', 'numeric', 'integer', 'min: 1', 'max: 50000'],
+            'capital_price' => ['required', 'numeric', self::MIN_1, self::MAX_PRICE, 'integer'],
+            'pro_price' => ['required', 'numeric', self::MIN_1, self::MAX_PRICE, 'integer', 'gt:capital_price'],
+            'pro_price_sale' => ['nullable', 'numeric', 'min: 0', self::MAX_PRICE, 'integer', 'lt:pro_price'],
+            'pro_weight' => ['required', 'numeric', 'integer', self::MIN_1, 'max: 50000'],
             'pro_img' => ['required', 'image'],
-            'pro_SEO_title' => ['nullable', 'max: 255'],
+            'pro_SEO_title' => ['nullable', self::MAX_255],
             'pro_meta_keywords' => ['nullable', 'max: 2000'],
             'pro_meta_description' => ['nullable', 'max: 2000'],
             'pro_date' => ['required'],

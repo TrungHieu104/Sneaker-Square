@@ -24,11 +24,13 @@ class OrderReturnItemModel extends Model
 
     protected $casts = ['quantity' => 'integer'];
 
+    /** @return BelongsTo<OrderReturnModel, $this> */
     public function return(): BelongsTo
     {
         return $this->belongsTo(OrderReturnModel::class, 'return_id', 'return_id');
     }
 
+    /** @return BelongsTo<OrderDetailModel, $this> */
     public function line(): BelongsTo
     {
         return $this->belongsTo(OrderDetailModel::class, 'order_details_id', 'order_details_id');

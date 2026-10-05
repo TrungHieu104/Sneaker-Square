@@ -16,17 +16,6 @@ class VisitorMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // $visitorIP = $request->ip();
-        // session(['visitorIP' => $visitorIP]);
-        // $visitorCurrent =  VisitorModel::where('visitor_ip', $visitorIP)->get();
-        // $visitorCurrentCount = $visitorCurrent->count();
-        // if($visitorCurrentCount < 1) {
-        //     $vistior = new VisitorModel();
-        //     $vistior->visitor_ip = $visitorIP;
-        //     $vistior->visitor_date = Now();
-        //     $vistior->save();
-        // }
-        // return $next($request);
         $visitorIP = $request->ip();
         $visitorLastActive = now();
 
@@ -44,15 +33,6 @@ class VisitorMiddleware
             ]);
 
         }
-
-        // $visitorCurrent =  VisitorModel::where('visitor_ip', $visitorIP)->get();
-        // $visitorCurrentCount = $visitorCurrent->count();
-        // if($visitorCurrentCount < 1) {
-        //     $vistior = new VisitorModel();
-        //     $vistior->visitor_ip = $visitorIP;
-        //     $vistior->visitor_date = $visitorLastActive;
-        //     $vistior->save();
-        // }
 
         return $next($request);
     }

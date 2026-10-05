@@ -2,18 +2,8 @@
 
 namespace App\Http\Controllers\Backend;
 
-use App\Enums\OrderStatus;
 use App\Exports\ExportStatistic;
-use App\Exports\ExportStatisticDay;
-use App\Exports\ExportStatisticMonth;
-use App\Exports\ExportStatisticMonthPrev;
-use App\Exports\ExportStatisticWeek;
-use App\Exports\ExportStatisticYear;
 use App\Http\Controllers\Controller;
-use App\Models\ContactFormModel;
-use App\Models\CouponModel;
-use App\Models\OrderModel;
-use App\Models\PromotionModel;
 use App\Models\StatisticModel;
 use App\Models\UserModel;
 use App\Models\VisitorModel;
@@ -29,6 +19,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
+    private const DATE_FORMAT = 'd/m/Y';
+
     public function __construct(Request $request)
     {
         $keyword = $request->input('keyword');
@@ -39,8 +31,8 @@ class DashboardController extends Controller
         // Visits by operating system.
         $dataSystems = Analytics::fetchTopOperatingSystems(Period::days(7));
         // chart account
-        $sub7days = Carbon::now('Asia/Ho_Chi_minh')->subDays(7)->toDateString();
-        $now = Carbon::now('Asia/Ho_Chi_minh')->toDateString();
+        $sub7days = Carbon::now()->subDays(7)->toDateString();
+        $now = Carbon::now()->toDateString();
 
         $datatAccountCount = [];
         $dailyDataAccount = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$sub7days, $now])
@@ -49,7 +41,7 @@ class DashboardController extends Controller
             )->groupBy('date')->orderBy('date', 'ASC')->get();
 
         $datatAccountCount['date'] = $dailyDataAccount->pluck('date')->map(function ($date) {
-            return date('d/m/Y', strtotime($date));
+            return date(self::DATE_FORMAT, strtotime($date));
         });
         $datatAccountCount['data_count'] = $dailyDataAccount->pluck('data_count');
 
@@ -80,7 +72,7 @@ class DashboardController extends Controller
         // Visits, from Google Analytics rather than our own tables.
         $dataVisitor = [];
         $dataTotalVisitor = Analytics::fetchTotalVisitorsAndPageViews(Period::days(7))->sortBy('date');
-        $dataVisitor['date'] = $dataTotalVisitor->pluck('date')->map(fn ($date) => $date->format('d/m/Y'));
+        $dataVisitor['date'] = $dataTotalVisitor->pluck('date')->map(fn ($date) => $date->format(self::DATE_FORMAT));
         $dataVisitor['activeUsers'] = $dataTotalVisitor->pluck('activeUsers');
         $dataVisitor['screenPageViews'] = $dataTotalVisitor->pluck('screenPageViews');
 
@@ -108,7 +100,7 @@ class DashboardController extends Controller
             $dataVisitor = [];
             $dataTotalVisitor = Analytics::fetchTotalVisitorsAndPageViews(Period::days($dataFilter))->sortBy('date');
             $dataVisitor['date'] = $dataTotalVisitor->pluck('date')->map(function ($date) {
-                return $date->format('d/m/Y');
+                return $date->format(self::DATE_FORMAT);
             });
             $dataVisitor['activeUsers'] = $dataTotalVisitor->pluck('activeUsers');
             $dataVisitor['screenPageViews'] = $dataTotalVisitor->pluck('screenPageViews');
@@ -132,14 +124,14 @@ class DashboardController extends Controller
     public function dashboardFilter(Request $request)
     {
         $data = $request->all();
-        $thismonth = Carbon::now('Asia/Ho_Chi_minh')->startOfMonth()->toDateString();
-        $start_month = Carbon::now('Asia/Ho_Chi_minh')->subMonth()->startOfMonth()->toDateString();
-        $end_month = Carbon::now('Asia/Ho_Chi_minh')->subMonth()->endOfMonth()->toDateString();
+        $thismonth = Carbon::now()->startOfMonth()->toDateString();
+        $start_month = Carbon::now()->subMonth()->startOfMonth()->toDateString();
+        $end_month = Carbon::now()->subMonth()->endOfMonth()->toDateString();
 
-        $sub7days = Carbon::now('Asia/Ho_Chi_minh')->subDays(7)->toDateString();
-        $sub365days = Carbon::now('Asia/Ho_Chi_minh')->subDays(365)->toDateString();
+        $sub7days = Carbon::now()->subDays(7)->toDateString();
+        $sub365days = Carbon::now()->subDays(365)->toDateString();
 
-        $now = Carbon::now('Asia/Ho_Chi_minh')->toDateString();
+        $now = Carbon::now()->toDateString();
 
         if ($data['dashboard_value'] == '7ngay') {
             $get = StatisticModel::whereBetween('order_date', [$sub7days, $now])
@@ -156,9 +148,9 @@ class DashboardController extends Controller
         }
 
         $chart_data = [];
-        foreach ($get as $key => $data) {
+        foreach ($get as $data) {
             $chart_data[] = [
-                'period' => date('d/m/Y', strtotime($data->order_date)),
+                'period' => date(self::DATE_FORMAT, strtotime($data->order_date)),
                 'sales' => $data->sales,
                 'profit' => $data->profit,
             ];
@@ -169,39 +161,24 @@ class DashboardController extends Controller
 
     public function filterAccountUser(Request $request)
     {
-        $data = $request->dateData;
+        $data = $request->validate(['dateData' => ['required', 'in:7days,lmonth,tmonth']])['dateData'];
 
-        $now = Carbon::now('Asia/Ho_Chi_minh')->toDateString();
-        $data7days = Carbon::now('Asia/Ho_Chi_minh')->subDays(7)->toDateString();
-        $thisMonth = Carbon::now('Asia/Ho_Chi_minh')->startOfMonth()->toDateString();
-        $startMonth = Carbon::now('Asia/Ho_Chi_minh')->subMonth()->startOfMonth()->toDateString();
-        $endMonth = Carbon::now('Asia/Ho_Chi_minh')->subMonth()->endOfMonth()->toDateString();
+        $now = Carbon::now();
+        [$from, $to] = match ($data) {
+            '7days' => [$now->copy()->subDays(7), $now],
+            'lmonth' => [$now->copy()->subMonth()->startOfMonth(), $now->copy()->subMonth()->endOfMonth()],
+            'tmonth' => [$now->copy()->startOfMonth(), $now],
+        };
 
-        if ($data == '7days') {
-            $dataRes = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$data7days, $now])
-                ->select(
-                    DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
-                )->groupBy('date')->orderBy('date', 'ASC')->get();
-        } elseif ($data == 'lmonth') {
-            $dataRes = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$startMonth, $endMonth])
-                ->select(
-                    DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
-                )->groupBy('date')->orderBy('date', 'ASC')->get();
-        } elseif ($data == 'tmonth') {
-            $dataRes = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$thisMonth, $now])
-                ->select(
-                    DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
-                )->groupBy('date')->orderBy('date', 'ASC')->get();
-        }
+        $dataRes = UserModel::where('user_role', 0)
+            ->whereBetween(DB::raw('DATE(created_at)'), [$from->toDateString(), $to->toDateString()])
+            ->select(DB::raw('DATE(created_at) as date, COUNT(*) as data_count'))
+            ->groupBy('date')->orderBy('date', 'ASC')->get();
 
-        $dataResNew = [];
-        $dataResNew['date'] = $dataRes->pluck('date')->map(function ($date) {
-            return date('d/m/Y', strtotime($date));
-        });
-
-        $dataResNew['data_count'] = $dataRes->pluck('data_count');
-
-        return response()->json($dataResNew);
+        return response()->json([
+            'date' => $dataRes->pluck('date')->map(fn ($date) => date(self::DATE_FORMAT, strtotime($date))),
+            'data_count' => $dataRes->pluck('data_count'),
+        ]);
     }
 
     public function filterByDate(Request $request)
@@ -219,9 +196,9 @@ class DashboardController extends Controller
         }
 
         $chart_data = [];
-        foreach ($get as $key => $data) {
+        foreach ($get as $data) {
             $chart_data[] = [
-                'period' => date('d/m/Y', strtotime($data->order_date)),
+                'period' => date(self::DATE_FORMAT, strtotime($data->order_date)),
                 'sales' => $data->sales,
                 'profit' => $data->profit,
             ];
@@ -237,27 +214,27 @@ class DashboardController extends Controller
 
     public function export_scv_day()
     {
-        return Excel::download(new ExportStatisticDay, 'Doanh thu ngày.xlsx');
+        return Excel::download(ExportStatistic::today(), 'Doanh thu ngày.xlsx');
     }
 
     public function export_scv_week()
     {
-        return Excel::download(new ExportStatisticWeek, 'Doanh thu tuần.xlsx');
+        return Excel::download(ExportStatistic::lastSevenDays(), 'Doanh thu tuần.xlsx');
     }
 
     public function export_scv_month()
     {
-        return Excel::download(new ExportStatisticMonth, 'Doanh thu tháng.xlsx');
+        return Excel::download(ExportStatistic::thisMonth(), 'Doanh thu tháng.xlsx');
     }
 
     public function export_scv_monthprev()
     {
-        return Excel::download(new ExportStatisticMonthPrev, 'Doanh thu tháng trước.xlsx');
+        return Excel::download(ExportStatistic::lastMonth(), 'Doanh thu tháng trước.xlsx');
     }
 
     public function export_scv_year()
     {
-        return Excel::download(new ExportStatisticYear, 'Doanh thu năm.xlsx');
+        return Excel::download(ExportStatistic::thisYear(), 'Doanh thu năm.xlsx');
     }
 
     public function sseNotifications(Request $request)
@@ -275,46 +252,7 @@ class DashboardController extends Controller
                     break;
                 }
 
-                $today = Carbon::today();
-                $prevday = Carbon::today()->subDay();
-                $newOrderCount = OrderModel::where('order_status', OrderStatus::New)
-                    ->confirmedSale()->count();
-                $returnOrderCount = OrderModel::whereIn('order_status', OrderStatus::comingBack())
-                    ->confirmedSale()->count();
-                $sucessOrderCount = OrderModel::where('order_status', OrderStatus::Completed)->whereDate('updated_at', $today)
-                    ->confirmedSale()->count();
-                $couponCount = CouponModel::where('coupon_end', '=', $prevday)->pluck('coupon_name')->toArray();
-                $slideCount = PromotionModel::where('promotion_end', '=', $prevday)->pluck('promotion_name')->toArray();
-                $contactCount = ContactFormModel::where('status', 0)->count();
-
-                $latestOrder = OrderModel::where('order_status', OrderStatus::New)->latest('created_at')->first();
-                $latestReturnOrder = OrderModel::whereIn('order_status', OrderStatus::comingBack())->latest('updated_at')->first();
-                $latestSuccessOrder = OrderModel::where('order_status', OrderStatus::Completed)->latest('updated_at')->first();
-                $latestContact = ContactFormModel::where('status', 0)->latest('created_at')->first();
-                $latestSlide = PromotionModel::where('promotion_end', '=', $prevday)->latest('updated_at')->first();
-                $latestCoupon = CouponModel::where('coupon_end', '=', $prevday)->latest('updated_at')->first();
-
-                $timestampOrder = $latestOrder ? $latestOrder->created_at->timestamp : now()->timestamp;
-                $timestampReturnOrder = $latestReturnOrder ? $latestReturnOrder->updated_at->timestamp : now()->timestamp;
-                $timestampSuccessOrder = $latestSuccessOrder ? $latestSuccessOrder->updated_at->timestamp : now()->timestamp;
-                $timestampContact = $latestContact ? $latestContact->created_at->timestamp : now()->timestamp;
-                $timestampSlide = $latestSlide ? $latestSlide->updated_at->timestamp : now()->timestamp;
-                $timestampCoupon = $latestCoupon ? $latestCoupon->updated_at->timestamp : now()->timestamp;
-
-                $data = [
-                    'newOrderCount' => $newOrderCount,
-                    'contactCount' => $contactCount,
-                    'returnOrderCount' => $returnOrderCount,
-                    'sucessOrderCount' => $sucessOrderCount,
-                    'couponCount' => $couponCount,
-                    'slideCount' => $slideCount,
-                    'timestampOrder' => $timestampOrder,
-                    'timestampReturnOrder' => $timestampReturnOrder,
-                    'timestampSuccessOrder' => $timestampSuccessOrder,
-                    'timestampContact' => $timestampContact,
-                    'timestampSlide' => $timestampSlide,
-                    'timestampCoupon' => $timestampCoupon,
-                ];
+                $data = app(DashboardStatisticsService::class)->notificationSnapshot();
 
                 echo 'data: '.json_encode($data)."\n\n";
                 ob_flush();
@@ -337,8 +275,7 @@ class DashboardController extends Controller
     public function revenue(Request $request)
     {
         $perpage = 15;
-        $orderBy = $request->input('sort-by', 'order_date');
-        $orderType = $request->input('sort-type', 'desc');
+        [$orderBy, $orderType] = $this->listingSort($request, StatisticModel::class, 'order_date', flip: false);
 
         $sortOption = $request->input('sort', 'default');
         $query = StatisticModel::orderBy($orderBy, $orderType);

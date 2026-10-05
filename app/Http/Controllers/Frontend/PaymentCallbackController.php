@@ -133,27 +133,26 @@ class PaymentCallbackController extends Controller
             return;
         }
 
-        switch ($callback->outcome) {
-            case PaymentOutcome::Paid:
-                // Only the call that settled the payment gets an order back, so the
-                // confirmation goes out once however often the gateway tells us.
-                if ($order = $this->confirmPayment->execute($callback)) {
-                    $this->mailer->sendConfirmation($order);
-                }
-                break;
+        match ($callback->outcome) {
+            PaymentOutcome::Paid => $this->settle($callback),
+            // Not a reason to cancel: the customer backed out of one attempt
+            // and may well pay on the next, or another way. The order lapses
+            // on its own when its window closes.
+            PaymentOutcome::Cancelled, PaymentOutcome::Failed => $this->payments->markFailed($callback->orderCode),
+            // Authorised but not captured yet. The order stays unpaid and keeps
+            // its stock until a later notification settles it.
+            PaymentOutcome::Pending => null,
+        };
+    }
 
-            case PaymentOutcome::Cancelled:
-            case PaymentOutcome::Failed:
-                // Not a reason to cancel: the customer backed out of one
-                // attempt and may well pay on the next, or another way. The
-                // order lapses on its own when its window closes.
-                $this->payments->markFailed($callback->orderCode);
-                break;
-
-            case PaymentOutcome::Pending:
-                // Authorised but not captured yet. The order stays unpaid and
-                // keeps its stock until a later notification settles it.
-                break;
+    /**
+     * Only the call that settled the payment gets an order back, so the
+     * confirmation goes out once however often the gateway tells us.
+     */
+    private function settle(PaymentCallback $callback): void
+    {
+        if ($order = $this->confirmPayment->execute($callback)) {
+            $this->mailer->sendConfirmation($order);
         }
     }
 

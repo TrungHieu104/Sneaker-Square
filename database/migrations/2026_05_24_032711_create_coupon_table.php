@@ -20,8 +20,8 @@ return new class extends Migration
             $table->unsignedInteger('coupon_used')->default(0);
             $table->boolean('coupon_condition');
             $table->timestamp('coupon_date')->useCurrent();
-            $table->date('coupon_start', $precision = 0);
-            $table->date('coupon_end', $precision = 0);
+            $table->date('coupon_start');
+            $table->date('coupon_end');
             $table->timestamps();
             $table->softDeletes();
 

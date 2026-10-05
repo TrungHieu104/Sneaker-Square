@@ -96,11 +96,13 @@ class OrderReturnModel extends Model
         'refunded_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<OrderModel, $this> */
     public function order(): BelongsTo
     {
         return $this->belongsTo(OrderModel::class, 'order_id', 'order_id');
     }
 
+    /** @return HasMany<OrderReturnItemModel, $this> */
     public function items(): HasMany
     {
         return $this->hasMany(OrderReturnItemModel::class, 'return_id', 'return_id');

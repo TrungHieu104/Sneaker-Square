@@ -65,6 +65,7 @@ class WalletTransactionModel extends Model
         'created_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<WalletModel, $this> */
     public function wallet(): BelongsTo
     {
         return $this->belongsTo(WalletModel::class, 'wallet_id', 'wallet_id');

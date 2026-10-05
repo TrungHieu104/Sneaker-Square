@@ -52,6 +52,7 @@ class PaymentAttemptModel extends Model
         'settled_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<OrderModel, $this> */
     public function order(): BelongsTo
     {
         return $this->belongsTo(OrderModel::class, 'order_id', 'order_id');

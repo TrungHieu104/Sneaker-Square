@@ -91,7 +91,7 @@ class PlaceOrderAction
             $order->order_payment_due_at = in_array($meta['payment'], OrderPayments::GATEWAYS, true)
                 ? OrderPayments::newDeadline()
                 : null;
-            $order->order_date = Carbon::now('Asia/Ho_Chi_Minh')->format('Y/m/d');
+            $order->order_date = Carbon::now()->format('Y/m/d');
             $order->note_customer = $meta['note_customer'] ?? null;
             $order->coupon_id = $summary['coupon']->coupon_id ?? null;
             $order->user_id = $user->user_id;
@@ -148,7 +148,7 @@ class PlaceOrderAction
         );
 
         $order->order_payment_status = 1;
-        $order->order_payment_time = Carbon::now('Asia/Ho_Chi_Minh');
+        $order->order_payment_time = Carbon::now();
         $order->save();
     }
 
@@ -187,7 +187,7 @@ class PlaceOrderAction
      */
     private function generateOrderCode(): string
     {
-        $date = Carbon::now('Asia/Ho_Chi_Minh')->format('dmY');
+        $date = Carbon::now()->format('dmY');
 
         for ($attempt = 0; $attempt < 20; $attempt++) {
             $code = $date.str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);

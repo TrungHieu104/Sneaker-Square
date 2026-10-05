@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend;
 use App\Actions\CompleteOrderAction;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Frontend\Concerns\SharesStorefrontLayout;
 use App\Http\Requests\Frontend\Authuser\ChangeEmailRequest;
 use App\Http\Requests\Frontend\Authuser\ResetpassRequets;
 use App\Http\Requests\Frontend\Authuser\UserInfoRequest;
@@ -12,15 +13,11 @@ use App\Http\Requests\Frontend\ReturnOrderRequest;
 use App\Mail\sendMailPass;
 use App\Models\CateNewsModel as CateNews;
 use App\Models\DeliveryInfoModel as DeliInfo;
-use App\Models\FaqModel as Faq;
-use App\Models\MenuModel as Menu;
 use App\Models\OrderDetailModel as OrderDetail;
 use App\Models\OrderModel as Order;
-use App\Models\PromotionModel as Promotion;
 use App\Models\UserModel;
 use App\Services\Returns\OrderReturns;
 use App\Services\Returns\ReturnNotAllowed;
-use App\Services\ShopSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -30,32 +27,15 @@ use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
+    use SharesStorefrontLayout;
+
     public function __construct()
     {
-        $data = Menu::where('menu_hidden', 1)->orderBy('menu_position', 'asc')->get();
-        $menu = $this->data_tree($data);
-        $slide = Promotion::where('cate_slide_id', 1)->where('promotion_hidden', 1)->get();
-        $contact = app(ShopSettings::class)->storefrontContact();
-        $faq = Faq::where('faq_hidden', 1)->where('faq_about', 0)->orderBy('faq_id', 'desc')->get();
+        $this->shareStorefrontLayout();
         $cateNews = CateNews::withCount('getNewsInCate')->where('cate_news_hidden', 1)
             ->orderBy('cate_news_sort', 'asc')
             ->get();
-        view()->share(compact('slide', 'contact', 'faq', 'cateNews', 'menu'));
-    }
-
-    public function data_tree($data, $parent_id = 0, $level = 0)
-    {
-        $result = [];
-        foreach ($data as $item) {
-            if ($item['menu_parent_id'] == $parent_id) {
-                $item['level'] = $level;
-                $result[] = $item;
-                $child = $this->data_tree($data, $item['menu_id'], $level + 1);
-                $result = array_merge($result, $child);
-            }
-        }
-
-        return $result;
+        view()->share(compact('cateNews'));
     }
 
     /**
@@ -303,7 +283,7 @@ class UserController extends Controller
     {
         UserModel::whereNotNull('remember_token')
             ->where('user_id', Auth::id())
-            ->where('remember_token', '<', Carbon::now()->subMinute(1))
+            ->where('remember_token', '<', Carbon::now()->subMinutes(1))
             ->update(['remember_token' => null]);
 
         return response()->json(['message' => 'Email verification removed successfully']);

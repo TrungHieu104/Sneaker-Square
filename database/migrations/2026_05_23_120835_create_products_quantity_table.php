@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('products_quantity', function (Blueprint $table) {
             $table->id('quantity_id');
             $table->unsignedBigInteger('quantity');
-            $table->date('quantity_date', $precision = 0);
+            $table->date('quantity_date');
             $table->unsignedInteger('pro_price')->nullable();
             $table->unsignedInteger('pro_price_sale')->nullable();
             $table->unsignedInteger('capital_price')->nullable();

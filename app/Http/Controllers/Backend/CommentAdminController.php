@@ -37,9 +37,6 @@ class CommentAdminController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        // $allComments = Comment::orderBy('comment_date', 'desc')
-        //                         -> paginate(20)
-        //                         -> withQueryString();
         return view('backend.pages.product.comment.comment_list', compact('allComments', 'orderBy', 'orderType'));
     }
 
@@ -99,7 +96,6 @@ class CommentAdminController extends Controller
      */
     public function destroy(Request $request, Comment $comment)
     {
-        // $comment = Comment::find($id);
         if ($comment == null) {
             $request->session();
             Session::flash('iconMessage', 'info');

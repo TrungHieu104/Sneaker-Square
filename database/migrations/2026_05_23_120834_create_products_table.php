@@ -28,7 +28,7 @@ return new class extends Migration
             $table->boolean('pro_hidden')->default(1);
             $table->string('pro_meta_keywords', 2000)->nullable();
             $table->string('pro_meta_description', 2000)->nullable();
-            $table->date('pro_date', $precision = 0);
+            $table->date('pro_date');
             $table->unsignedInteger('cate_id');
             $table->foreign('cate_id')->references('cate_id')->on('category')->onDelete('restrict')->onUpdate('cascade');
             $table->timestamps();

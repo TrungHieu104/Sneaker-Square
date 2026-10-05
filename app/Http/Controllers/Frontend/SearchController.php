@@ -3,12 +3,9 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
-use App\Models\FaqModel as Faq;
-use App\Models\MenuModel as Menu;
+use App\Http\Controllers\Frontend\Concerns\SharesStorefrontLayout;
 use App\Models\NewsModel;
 use App\Models\ProductModel;
-use App\Models\PromotionModel as Promotion;
-use App\Services\ShopSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
@@ -16,30 +13,12 @@ use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 
 class SearchController extends Controller
 {
+    use SharesStorefrontLayout;
+
     public function __construct(Request $request)
     {
-        $keyword = $request->input('keyword');
-        $slide = Promotion::where('cate_slide_id', 1)->where('promotion_hidden', 1)->get();
-        $contact = app(ShopSettings::class)->storefrontContact();
-        $faq = Faq::where('faq_hidden', 1)->where('faq_about', 0)->orderBy('faq_id', 'desc')->get();
-        $data = Menu::where('menu_hidden', 1)->orderBy('menu_position', 'asc')->get();
-        $menu = $this->data_tree($data);
-        View::share(compact('slide', 'contact', 'faq', 'menu', 'keyword'));
-    }
-
-    public function data_tree($data, $parent_id = 0, $level = 0)
-    {
-        $result = [];
-        foreach ($data as $item) {
-            if ($item['menu_parent_id'] == $parent_id) {
-                $item['level'] = $level;
-                $result[] = $item;
-                $child = $this->data_tree($data, $item['menu_id'], $level + 1);
-                $result = array_merge($result, $child);
-            }
-        }
-
-        return $result;
+        $this->shareStorefrontLayout();
+        View::share('keyword', $request->input('keyword'));
     }
 
     public function search(Request $request)

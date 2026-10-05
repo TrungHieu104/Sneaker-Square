@@ -7,6 +7,8 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class DeliveryInfoRequest extends FormRequest
 {
+    private const NAME_LENGTH = 'Nhập tên từ 3 - 50 ký tự';
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -39,11 +41,11 @@ class DeliveryInfoRequest extends FormRequest
     {
         return [
             'info_name.required' => 'Vui lòng nhập tên',
-            'info_name.min' => 'Nhập tên từ 3 - 50 ký tự',
-            'info_name.max' => 'Nhập tên từ 3 - 50 ký tự',
+            'info_name.min' => self::NAME_LENGTH,
+            'info_name.max' => self::NAME_LENGTH,
             'info_address.required' => 'Vui lòng nhập địa chỉ',
-            'info_address.max' => 'Nhập tên từ 3 - 50 ký tự',
-            'info_address.min' => 'Nhập tên từ 3 - 50 ký tự',
+            'info_address.max' => self::NAME_LENGTH,
+            'info_address.min' => self::NAME_LENGTH,
             'info_email.required' => 'Vui lòng nhập email',
             'info_email.email' => 'Nhập sai định dạng email',
             'info_email.ends_with' => 'Gmail phải kết thúc bằng "@gmail.com"',

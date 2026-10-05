@@ -9,6 +9,7 @@ use App\Http\Requests\Backend\CouponUpRequest;
 use App\Mail\CouponMail;
 use App\Models\CouponModel;
 use App\Models\UserModel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
@@ -18,6 +19,21 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CouponAdminController extends Controller
 {
+    /**
+     * The groups the "send coupon" form offers, by the number of orders a
+     * customer has placed: everyone, first-time buyers, regulars, loyal ones.
+     */
+    private const AUDIENCES = [
+        1 => null,
+        2 => [1, 1],
+        3 => [2, 5],
+        4 => [6, null],
+    ];
+
+    private const DATE_FORMAT = 'Y/m/d';
+
+    private const COUPON_NOT_FOUND = 'Không tồn tại mã khuyến mãi';
+
     /**
      * Display a listing of the resource.
      */
@@ -30,21 +46,14 @@ class CouponAdminController extends Controller
     public function index(Request $request)
     {
         $perpage = 10;
-        $orderBy = $request->input('sort-by', 'coupon_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, CouponModel::class, 'coupon_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['coupon_name', 'coupon_code'];
 
         $coupon = $this->performSearch(CouponModel::orderBy($orderBy, $orderType), $keyword, $searchableFields)
             ->paginate($perpage)
             ->withQueryString();
-        $today = Carbon::now()->format('Y/m/d');
+        $today = Carbon::now()->format(self::DATE_FORMAT);
 
         $max_coupon_used = CouponModel::max('coupon_used');
         $max_use = null;
@@ -96,8 +105,8 @@ class CouponAdminController extends Controller
         $cou->coupon_name = $name;
         $cou->coupon_code = $code;
         $cou->coupon_quantity = $quantity;
-        $time_start = date('Y/m/d', strtotime($start_coupon));
-        $time_end = date('Y/m/d', strtotime($end_coupon));
+        $time_start = date(self::DATE_FORMAT, strtotime($start_coupon));
+        $time_end = date(self::DATE_FORMAT, strtotime($end_coupon));
         $cou->coupon_start = $time_start;
         $cou->coupon_end = $time_end;
         $cou->coupon_condition = $condition;
@@ -126,7 +135,7 @@ class CouponAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect(route('coupon.index'))->with('message', 'Không tồn tại mã khuyến mãi');
+            return redirect(route('coupon.index'))->with('message', self::COUPON_NOT_FOUND);
         }
 
         return view('backend.pages.coupon.coupon_edit', compact('coupon'));
@@ -151,13 +160,13 @@ class CouponAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect(route('coupon.index'))->with('message', 'Không tồn tại mã khuyến mãi');
+            return redirect(route('coupon.index'))->with('message', self::COUPON_NOT_FOUND);
         }
         $cou->coupon_name = $name;
         $cou->coupon_code = $code;
         $cou->coupon_quantity = $quantity;
-        $time_start = date('Y/m/d', strtotime($start_coupon));
-        $time_end = date('Y/m/d', strtotime($end_coupon));
+        $time_start = date(self::DATE_FORMAT, strtotime($start_coupon));
+        $time_end = date(self::DATE_FORMAT, strtotime($end_coupon));
         $cou->coupon_start = $time_start;
         $cou->coupon_end = $time_end;
         $cou->coupon_condition = $condition;
@@ -177,25 +186,17 @@ class CouponAdminController extends Controller
     //     if ($cou==null) {
     //         $request->session();
     //         Session::flash('iconMessage', 'info');
-    //         redirect()->back()->with('message', 'Không tồn tại mã khuyến mãi');
+    //         redirect()->back()->with('message', self::COUPON_NOT_FOUND);
     //     }
     //     $isUsedInOrders = $cou->Coupon()->exists();
 
-    //     if ($isUsedInOrders) {
-    //         Session::flash('iconMessage', 'info');
-    //         return back()->with('message', 'Mã khuyến mãi đã được sử dụng trong các đơn hàng!');
-    //     }
-    //     $cou->delete();
-    //     Session::flash('iconMessage', 'success');
-    //     return redirect(route('coupon.index'))->with('message', 'Xóa thành công');
-    // }
     public function softDelete(Request $request, string $coupon_id)
     {
         $cou = CouponModel::find($coupon_id);
         if ($cou == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            redirect()->back()->with('message', 'Không tồn tại mã khuyến mãi');
+            redirect()->back()->with('message', self::COUPON_NOT_FOUND);
         }
         $isUsedInOrders = $cou->Coupon()->exists();
 
@@ -205,7 +206,6 @@ class CouponAdminController extends Controller
             return back()->with('message', 'Mã khuyến mãi đã được sử dụng trong các đơn hàng!');
         }
         $cou->delete();
-        // CouponModel::find($id)->delete();
         Session::flash('iconMessage', 'success');
 
         return back()->with('message', 'Xóa thành công');
@@ -214,21 +214,14 @@ class CouponAdminController extends Controller
     public function trashed(Request $request)
     {
         $perpages = 10;
-        $orderBy = $request->input('sort-by', 'coupon_id');
-        $orderType = $request->input('sort-type', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
+        [$orderBy, $orderType] = $this->listingSort($request, CouponModel::class, 'coupon_id');
         $keyword = $request->input('keyword');
         $searchableFields = ['coupon_name', 'coupon_code'];
 
         $couponTrash = $this->performSearch(CouponModel::onlyTrashed()->orderBy($orderBy, $orderType), $keyword, $searchableFields)
             ->paginate($perpages)
             ->withQueryString();
-        $today = Carbon::now('Asia/Ho_Chi_Minh')->format('Y/m/d');
+        $today = Carbon::now()->format(self::DATE_FORMAT);
 
         return view('backend.pages.coupon.coupon_trash', compact('couponTrash', 'keyword', 'orderBy', 'orderType', 'today'));
     }
@@ -303,54 +296,37 @@ class CouponAdminController extends Controller
 
     public function sendCoupon(Request $request)
     {
-        $coupon = $request->input('coupon');
-        $cou_id = $request->input('couid');
+        $coupon = CouponModel::find($request->input('couid'));
+        $audience = (int) $request->input('coupon');
 
-        if ($coupon == 1) {
-            $customers = UserModel::where('user_role', 0)->where('user_status', 1)->get();
-            $cou = CouponModel::find($cou_id);
-            foreach ($customers as $customer) {
-                Mail::to($customer->email)->send(new CouponMail($cou));
+        if ($coupon && array_key_exists($audience, self::AUDIENCES)) {
+            foreach ($this->activeCustomers(self::AUDIENCES[$audience])->get() as $customer) {
+                Mail::to($customer->email)->send(new CouponMail($coupon));
             }
         }
-        if ($coupon == 2) {
-            $usersWithOrders = UserModel::where('user_role', 0)->where('user_status', 1)->has('Order')
-                ->withCount('Order')
-                ->get();
-            $cou = CouponModel::find($cou_id);
-            foreach ($usersWithOrders as $user) {
-                $orderCount = $user->order_count;
-                if ($orderCount >= 0 && $orderCount < 2) {
-                    Mail::to($user->email)->send(new CouponMail($cou));
-                }
-            }
-        }
-        if ($coupon == 3) {
-            $usersWithOrders = UserModel::where('user_role', 0)->where('user_status', 1)->has('Order')
-                ->withCount('Order')
-                ->get();
-            $cou = CouponModel::find($cou_id);
-            foreach ($usersWithOrders as $user) {
-                $orderCount = $user->order_count;
-                if ($orderCount >= 2 && $orderCount <= 5) {
-                    Mail::to($user->email)->send(new CouponMail($cou));
-                }
-            }
-        }
-        if ($coupon == 4) {
-            $usersWithOrders = UserModel::where('user_role', 0)->where('user_status', 1)->has('Order')
-                ->withCount('Order')
-                ->get();
-            $cou = CouponModel::find($cou_id);
-            foreach ($usersWithOrders as $user) {
-                $orderCount = $user->order_count;
-                if ($orderCount > 5) {
-                    Mail::to($user->email)->send(new CouponMail($cou));
-                }
-            }
-        }
+
         Session::flash('iconMessage', 'success');
 
         return redirect()->back()->with('message', 'Gửi mã giảm thành công!');
+    }
+
+    /**
+     * @param  array{0: int, 1: ?int}|null  $orders  how many orders a customer must have placed, or null for everyone
+     * @return Builder<UserModel>
+     */
+    private function activeCustomers(?array $orders)
+    {
+        $customers = UserModel::where('user_role', 0)->where('user_status', 1);
+
+        if ($orders !== null) {
+            [$fewest, $most] = $orders;
+            $customers->has('Order', '>=', $fewest);
+
+            if ($most !== null) {
+                $customers->has('Order', '<=', $most);
+            }
+        }
+
+        return $customers;
     }
 }
