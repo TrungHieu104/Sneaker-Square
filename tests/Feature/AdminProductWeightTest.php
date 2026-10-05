@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ProductModel;
 use App\Models\UserModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
@@ -129,5 +130,36 @@ class AdminProductWeightTest extends TestCase
             ->assertOk()
             ->assertSee('name="pro_weight"', false)
             ->assertSee('Cổ cao · đế chunky');
+    }
+
+    public function test_them_san_pham_moi_luu_dung_cac_truong(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('product.store'), [
+                'pro_name' => 'giày chạy bộ mới',
+                'pro_slug' => 'giay-chay-bo-moi',
+                'pro_code' => 'SKU-MOI',
+                'pro_price' => 1_500_000,
+                'capital_price' => 900_000,
+                'pro_weight' => 800,
+                'pro_date' => '2026-10-05',
+                'cate_id' => 1,
+                'pro_hot' => 1,
+                'pro_img' => UploadedFile::fake()->image('giay.jpg'),
+            ])
+            ->assertRedirect(route('product.index'))
+            ->assertSessionHas('message', 'Thêm sản phẩm thành công!');
+
+        $product = ProductModel::where('pro_slug', 'giay-chay-bo-moi')->firstOrFail();
+        // The upload lands in public/, so it is removed straight away.
+        @unlink(public_path($product->pro_img));
+
+        $this->assertSame('Giày Chạy Bộ Mới', $product->pro_name);
+        $this->assertSame(1_500_000, (int) $product->pro_price);
+        $this->assertSame(0, (int) $product->pro_price_sale);
+        $this->assertSame(800, (int) $product->pro_weight);
+        $this->assertSame(1, (int) $product->pro_hot);
+        $this->assertSame(0, (int) $product->pro_hidden);
+        $this->assertStringStartsWith('backend/uploads/product/', $product->pro_img);
     }
 }

@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('news_meta_description', 2000)->nullable();
             $table->unsignedBigInteger('views')->default(0);
             $table->boolean('news_hot')->default(0);
-            $table->date('post_date', $precision = 0);
+            $table->date('post_date');
             $table->string('news_created_by', 255)->nullable();
             $table->unsignedInteger('cate_news_id');
             $table->foreign('cate_news_id')->references('cate_news_id')->on('cate_news')->onDelete('restrict')->onUpdate('cascade');

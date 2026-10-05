@@ -3,8 +3,10 @@
 namespace App\Http\Requests\Backend;
 
 use App\Models\ProductQuantityModel;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Session;
 
 /**
  * Rules for the form that edits one variant's prices on the stock screen.
@@ -20,7 +22,7 @@ class ProductVariantPriceRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -94,13 +96,13 @@ class ProductVariantPriceRequest extends FormRequest
 
     public static function errorBagFor($quantityId): string
     {
-        return 'variant-price-' . $quantityId;
+        return 'variant-price-'.$quantityId;
     }
 
     protected function failedValidation(Validator $validator): void
     {
-        \Illuminate\Support\Facades\Session::flash('iconMessage', 'error');
-        \Illuminate\Support\Facades\Session::flash('message', 'Cập nhật giá thất bại!');
+        Session::flash('iconMessage', 'error');
+        Session::flash('message', 'Cập nhật giá thất bại!');
 
         parent::failedValidation($validator);
     }

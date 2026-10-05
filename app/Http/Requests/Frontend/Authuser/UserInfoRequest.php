@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Frontend\Authuser;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UserInfoRequest extends FormRequest
@@ -17,16 +18,17 @@ class UserInfoRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
             'name' => ['required', 'min:5', 'max:30'],
             'user_phone' => ['required', 'regex:/^0[0-9]{9,10}$/'],
-            'img__new' => ['image', 'mimes:jpeg,png,jpg', 'max:2048'], 
+            'img__new' => ['image', 'mimes:jpeg,png,jpg', 'max:2048'],
         ];
     }
+
     public function messages()
     {
         return [

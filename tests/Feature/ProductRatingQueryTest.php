@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\CommentModel;
 use App\Models\ProductModel;
-use App\Models\UserModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ShopFixtures;
@@ -35,7 +34,7 @@ class ProductRatingQueryTest extends TestCase
     private function makeRatedProducts(int $count): void
     {
         for ($i = 1; $i <= $count; $i++) {
-            $product = $this->makeProduct(slug: 'giay-' . $i);
+            $product = $this->makeProduct(slug: 'giay-'.$i);
 
             foreach ([5, 4, 3] as $rating) {
                 CommentModel::create([

@@ -26,6 +26,7 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="REDIS_CLIENT" value="phpredis"/>
+        <env name="RESPONSE_CACHE_DRIVER" value="array"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <!-- No token means AppServiceProvider binds FakeCarrier: a test run must

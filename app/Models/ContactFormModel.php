@@ -9,9 +9,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class ContactFormModel extends Model
 {
     use HasFactory,SoftDeletes;
+
     protected $table = 'contact_forms';
-    public $primaryKey = "id";
+
+    public $primaryKey = 'id';
+
     public $timestamp = true;
+
     protected $dates = ['deleted_at'];
+
     protected $fillable = ['name', 'email', 'phone', 'title', 'status', 'content'];
 }

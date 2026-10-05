@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -21,7 +20,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 1,
                 'menu_parent_id' => null,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -31,7 +30,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 2,
                 'menu_parent_id' => null,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -41,7 +40,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 3,
                 'menu_parent_id' => null,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -51,7 +50,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 4,
                 'menu_parent_id' => null,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -61,7 +60,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 5,
                 'menu_parent_id' => null,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -71,7 +70,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 6,
                 'menu_parent_id' => null,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -81,7 +80,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 7,
                 'menu_parent_id' => null,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -91,7 +90,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 8,
                 'menu_parent_id' => 4,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -101,7 +100,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 9,
                 'menu_parent_id' => 4,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -112,7 +111,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 10,
                 'menu_parent_id' => 4,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -122,7 +121,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 11,
                 'menu_parent_id' => 4,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -132,7 +131,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 12,
                 'menu_parent_id' => 5,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -142,7 +141,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 13,
                 'menu_parent_id' => 5,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -152,7 +151,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 14,
                 'menu_parent_id' => 5,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -162,7 +161,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 15,
                 'menu_parent_id' => 6,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -172,7 +171,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 16,
                 'menu_parent_id' => 6,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -182,7 +181,7 @@ class MenuSeeder extends Seeder
                 'menu_hidden' => 1,
                 'menu_position' => 17,
                 'menu_parent_id' => 6,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 

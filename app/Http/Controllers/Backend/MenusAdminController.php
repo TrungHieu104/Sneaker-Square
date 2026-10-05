@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\MenuModel;
 use App\Http\Requests\Backend\MenuRequest;
 use App\Http\Requests\Backend\MenuUpRequest;
+use App\Models\MenuModel;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
+
 class MenusAdminController extends Controller
 {
+    private const MENU_LIST_URL = 'admin/menus';
+
     /**
      * Display a listing of the resource.
      */
@@ -19,6 +22,7 @@ class MenusAdminController extends Controller
         $keyword = $request->input('keyword');
         View::share(compact('keyword'));
     }
+
     public function index(Request $request)
     {
         $allMenus = MenuModel::orderBy('menu_parent_id', 'asc')
@@ -39,16 +43,17 @@ class MenusAdminController extends Controller
                 'menu_position' => $item['position'],
             ]);
         }
+
         return response()->json(['success' => true, 'message' => 'Cập nhật vị trí thành công']);
     }
 
     public function status(Request $request, $id)
     {
         $arr = $request->post();
-        $status = ($request->has('m-status'))? $arr['m-status']:"";
+        $status = ($request->has('m-status')) ? $arr['m-status'] : '';
         $data = MenuModel::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return response()->json(['message' => 'Không tìm thấy dữ liệu'], 404);
         }
 
@@ -56,29 +61,33 @@ class MenusAdminController extends Controller
         $data->save();
 
         return response()->json(['message' => 'Cập nhật thành công']);
-        
+
     }
 
-    function menu_tree($data, $parent_id = 0, $level=0){
+    public function menu_tree($data, $parent_id = 0, $level = 0)
+    {
         $result = [];
-        foreach($data as $item){
-            if($item['menu_parent_id'] == $parent_id){
+        foreach ($data as $item) {
+            if ($item['menu_parent_id'] == $parent_id) {
                 $item['level'] = $level;
                 $result[] = $item;
-                $child = $this->menu_tree($data, $item['menu_id'], $level+1);
+                $child = $this->menu_tree($data, $item['menu_id'], $level + 1);
                 $result = array_merge($result, $child);
             }
         }
+
         return $result;
     }
+
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
-        $data = MenuModel::where('menu_hidden',1)->orderBy('menu_position','asc')->get();
+        $data = MenuModel::where('menu_hidden', 1)->orderBy('menu_position', 'asc')->get();
         $menu = $this->menu_tree($data);
         $nextPosition = (MenuModel::max('menu_position') ?? 0) + 1;
+
         return view('backend.pages.menus.menus_create', compact('menu', 'nextPosition'));
     }
 
@@ -87,8 +96,8 @@ class MenusAdminController extends Controller
         $name = $request->input('name', '');
         $slug = $request->input('slug', '');
         $parent_id = $request->input('parent_id') ?: 0;
-        $position = $request->filled('position') ? (int)$request->input('position') : ((MenuModel::max('menu_position') ?? 0) + 1);
-        $status = $request->has('status') ? (int)$request->input('status') : 1;
+        $position = $request->filled('position') ? (int) $request->input('position') : ((MenuModel::max('menu_position') ?? 0) + 1);
+        $status = $request->has('status') ? (int) $request->input('status') : 1;
 
         $menu = new MenuModel;
         $menu->menu_name = $name;
@@ -99,7 +108,8 @@ class MenusAdminController extends Controller
         $menu->save();
 
         Session::flash('iconMessage', 'success');
-        return redirect('admin/menus')->with('message', 'Thêm thành công');
+
+        return redirect(self::MENU_LIST_URL)->with('message', 'Thêm thành công');
     }
 
     /**
@@ -113,17 +123,19 @@ class MenusAdminController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Request $request,string $menu_id)
+    public function edit(Request $request, string $menu_id)
     {
         $menus = MenuModel::find($menu_id);
-        if ($menus==null) {
+        if ($menus == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            return redirect('admin/menus')->with('message', 'Không tồn tại menu');
+
+            return redirect(self::MENU_LIST_URL)->with('message', 'Không tồn tại menu');
         }
-        $data = MenuModel::orderBy('menu_position','asc')->get();
+        $data = MenuModel::orderBy('menu_position', 'asc')->get();
         $menu = $this->menu_tree($data);
-        return view("backend.pages.menus.menus_edit", compact('menus','menu'));
+
+        return view('backend.pages.menus.menus_edit', compact('menus', 'menu'));
     }
 
     /**
@@ -135,13 +147,14 @@ class MenusAdminController extends Controller
         if ($menu == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            return redirect('admin/menus')->with('message', 'Không tồn tại menu');
+
+            return redirect(self::MENU_LIST_URL)->with('message', 'Không tồn tại menu');
         }
         $name = $request->input('name', '');
         $slug = $request->input('slug', '');
         $parent_id = $request->input('parent_id') ?: 0;
-        $position = $request->filled('position') ? (int)$request->input('position') : ($menu->menu_position ?? 1);
-        $status = $request->has('status') ? (int)$request->input('status') : 0;
+        $position = $request->filled('position') ? (int) $request->input('position') : ($menu->menu_position ?? 1);
+        $status = $request->has('status') ? (int) $request->input('status') : 0;
 
         $menu->menu_name = $name;
         $menu->menu_link = $slug;
@@ -151,100 +164,98 @@ class MenusAdminController extends Controller
         $menu->save();
 
         Session::flash('iconMessage', 'success');
-        return redirect('admin/menus')->with('message', 'Chỉnh sửa thành công!');
+
+        return redirect(self::MENU_LIST_URL)->with('message', 'Chỉnh sửa thành công!');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    // public function destroy(Request $request,string $id)
-    // {
-    //     $menu = MenuModel::find($id);
-    //     if ($menu==null) {
-    //         $request->session();
-    //         Session::flash('iconMessage', 'info');
-    //         redirect()->back()->with('message', 'Không tồn tại thông tin!');
-    //     }
-    //     if ($menu->menu_parent_id == null && $menu->children()->count() > 0) {
-    //         Session::flash('iconMessage', 'info');
-    //         return redirect()->back()->with('message', 'Không thể xóa menu cha!');
-    //     }
-    //     $menu->delete();
-    //     Session::flash('iconMessage', 'success');
-    //     return redirect('/admin/menus')->with('message', 'Xóa thành công!');
-    // }
     public function softDelete(Request $request, string $id)
     {
         $menu = MenuModel::find($id);
         if ($menu == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
+
             return redirect()->back()->with('message', 'Không tồn tại thông tin!');
         }
         if ($menu->menu_parent_id == null && $menu->children()->count() > 0) {
             Session::flash('iconMessage', 'error');
+
             return redirect()->back()->with('message', 'Không thể xóa menu cha!');
         }
         $menu->delete();
         Session::flash('iconMessage', 'success');
+
         return redirect('/admin/menus')->with('message', 'Xóa thành công!');
     }
 
-
-    public function trashed(Request $request){
+    public function trashed(Request $request)
+    {
         $perpages = 10;
         $keyword = $request->input('keyword');
         $searchableFields = ['menu_name'];
-        
+
         $menuTrash = $this->performSearch(MenuModel::onlyTrashed(), $keyword, $searchableFields)
-        ->paginate($perpages)
-        ->withQueryString();
-        return view('backend.pages.menus.menus_trash', compact('menuTrash','keyword'));
+            ->paginate($perpages)
+            ->withQueryString();
+
+        return view('backend.pages.menus.menus_trash', compact('menuTrash', 'keyword'));
     }
 
-    public function restore($id){
+    public function restore($id)
+    {
         $menuRe = MenuModel::withTrashed()->where('menu_id', $id)->first();
         if ($menuRe) {
             $menuRe->restore();
             Session::flash('iconMessage', 'success');
+
             return back()->with('message', 'Hoàn tác thành công!');
         } else {
             return abort(404);
         }
     }
 
-    public function restoreAll() {
-        $trashed=MenuModel::onlyTrashed();
+    public function restoreAll()
+    {
+        $trashed = MenuModel::onlyTrashed();
         if ($trashed->count() > 0) {
             $trashed->restore();
             Session::flash('iconMessage', 'success');
+
             return back()->with('message', 'Hoàn tác thành công!');
         } else {
             Session::flash('iconMessage', 'info');
+
             return back()->with('message', 'Không có dữ liệu trong thùng rác!');
         }
     }
-    
-    public function forceDelete($id){
+
+    public function forceDelete($id)
+    {
         $menuDe = MenuModel::withTrashed()->find($id); // Fetch the soft-deleted record
         if ($menuDe) {
             $menuDe->forceDelete();
             Session::flash('iconMessage', 'success');
+
             return redirect()->back()->with('message', 'Xóa thành công!');
         } else {
-            return abort(404); 
+            return abort(404);
         }
     }
 
-    public function deleteAll() 
+    public function deleteAll()
     {
         $trashAll = MenuModel::onlyTrashed()->get();
         if ($trashAll->count() > 0) {
             MenuModel::onlyTrashed()->forceDelete();
             Session::flash('iconMessage', 'success');
+
             return redirect()->back()->with('message', 'Xóa menu thành công!');
         } else {
             Session::flash('iconMessage', 'info');
+
             return back()->with('message', 'Không có dữ liệu trong thùng rác!');
         }
     }

@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('order_details', function (Blueprint $table) {
             $table->id('order_details_id');
             $table->string('pro_name', 255);
-            $table->string('size',5)->nullable()->default(null);
-            $table->string('color',20)->nullable()->default(null);
+            $table->string('size', 5)->nullable()->default(null);
+            $table->string('color', 20)->nullable()->default(null);
             $table->unsignedInteger('price');
             $table->unsignedInteger('capital_price')->default(0);
             $table->unsignedInteger('quantity');
@@ -23,7 +23,6 @@ return new class extends Migration
             $table->foreign('order_id')->references('order_id')->on('order')->onDelete('cascade')->onUpdate('cascade');
             $table->unsignedBigInteger('pro_id');
             $table->foreign('pro_id')->references('pro_id')->on('products')->onDelete('no action')->onUpdate('cascade');
-            // $table->primary(['order_id', 'pro_id']);
 
         });
     }

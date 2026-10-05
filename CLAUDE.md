@@ -32,11 +32,16 @@ Laravel 12 · PHP 8.2 · MySQL (dev) + SQLite (test) · Blade · template admin 
 5. Mọi thay đổi hành vi phải có feature test. Tên method giữ kiểu hiện có:
    `test_nhap_kho_hop_le_cong_them_vao_ton`.
 
-6. Chạy `php artisan test` trước khi báo xong, và **dán đúng con số thật** — kể cả
-   khi fail.
+6. Trước khi báo xong phải chạy đủ ba lệnh mà CI chạy, và **dán đúng con số thật**
+   — kể cả khi fail:
+   - `php artisan test`
+   - `./vendor/bin/pint --test` (repo đã pint-clean: file nào sửa thì chạy
+     `./vendor/bin/pint` cho file đó)
+   - `./vendor/bin/phpstan analyse` (Larastan): **0 lỗi**. Không baseline, không
+     `@phpstan-ignore`, không ép kiểu chỉ để tắt lỗi. Sửa gốc.
 
-7. File mới phải qua `./vendor/bin/pint`. **Không format lại file cũ** như tác dụng
-   phụ: repo chưa pint-clean, làm vậy chỉ khiến diff phình lên vô nghĩa.
+7. Refactor đoạn code chưa có test thì **viết test đặc tả trước** trên code cũ, thấy
+   pass, rồi mới sửa.
 
 ## D. Thay đổi giao diện
 
@@ -58,3 +63,31 @@ Laravel 12 · PHP 8.2 · MySQL (dev) + SQLite (test) · Blade · template admin 
 13. Không tự làm việc ngoài yêu cầu. Nêu ra và chờ quyết định.
 
 14. Sửa lỗi mình gây ra thì sửa gọn rồi đi tiếp, không tự kiểm điểm dài dòng.
+
+## F. Chất lượng mã nguồn
+
+Ngưỡng hiện tại và nợ kỹ thuật còn lại nằm ở `docs/ky-thuat/no-ky-thuat.md`. Thay đổi
+không được làm tụt các số đó.
+
+15. **Không viết secret vào code.** Key, token, mật khẩu đọc từ `.env`. Biến mới thì thêm
+    vào `.env.example` với giá trị rỗng và một dòng giải thích. File khoá đặt trong
+    `storage/`, **không bao giờ trong `public/`**: mọi thứ ở đó đều tải được qua web.
+
+16. **Dùng lại khối có sẵn, không chép lại:**
+    - sắp xếp danh sách admin → `$this->listingSort()` trong `Controller`
+    - header, menu, footer storefront → trait `SharesStorefrontLayout`
+    - file Excel → kế thừa `App\Exports\Sheets\ListingSheet`
+    - chuỗi lặp từ 3 lần trong một class → `private const`
+
+17. **Controller mỏng.** Nghiệp vụ đặt trong `app/Actions` hoặc `app/Services`. Một hàm
+    không vượt cognitive complexity 15 (ngưỡng của SonarQube). Dài hơn thì tách hàm.
+
+18. **Quan hệ Eloquent khai báo kiểu trả về và generic**:
+    `/** @return BelongsTo<OrderModel, $this> */ public function order(): BelongsTo`.
+
+19. Không để lại code đã comment, biến hay method không dùng. Git giữ lịch sử rồi.
+
+20. Commit message và tên nhánh **viết bằng tiếng Anh**. Commit theo Conventional Commits
+    (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`, `style:`), một commit một
+    việc. Nhánh dạng `<type>/<kebab-case>` (`refactor/code-quality`), không commit thẳng lên
+    `main`. Chỉ commit khi được yêu cầu, không push khi chưa được yêu cầu.

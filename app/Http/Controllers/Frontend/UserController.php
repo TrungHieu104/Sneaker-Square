@@ -5,63 +5,39 @@ namespace App\Http\Controllers\Frontend;
 use App\Actions\CompleteOrderAction;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Frontend\Concerns\SharesStorefrontLayout;
+use App\Http\Requests\Frontend\Authuser\ChangeEmailRequest;
+use App\Http\Requests\Frontend\Authuser\ResetpassRequets;
+use App\Http\Requests\Frontend\Authuser\UserInfoRequest;
 use App\Http\Requests\Frontend\ReturnOrderRequest;
+use App\Mail\sendMailPass;
+use App\Models\CateNewsModel as CateNews;
+use App\Models\DeliveryInfoModel as DeliInfo;
+use App\Models\OrderDetailModel as OrderDetail;
+use App\Models\OrderModel as Order;
+use App\Models\UserModel;
 use App\Services\Returns\OrderReturns;
 use App\Services\Returns\ReturnNotAllowed;
-use App\Http\Requests\Frontend\Authuser\ResetpassRequets;
-use App\Http\Requests\Frontend\Authuser\ChangeEmailRequest;
-use App\Http\Requests\Frontend\Authuser\UserInfoRequest;
-use App\Models\DeliveryModel;
-use App\Models\UserModel;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
-use App\Models\CateNewsModel as CateNews;
-use App\Models\NewsModel as News;
-use App\Models\TagsModel as Tags;
-use App\Models\NewsByTagsModel as NewsByTags;
-use App\Models\DeliveryInfoModel as DeliInfo;
-use App\Models\PromotionModel as Promotion;
-use App\Models\OrderModel as Order;
-use App\Models\OrderDetailModel as OrderDetail;
-use App\Models\FaqModel as Faq;
-use App\Models\MenuModel as Menu;
-use App\Mail\sendMailPass;
-
-
 
 class UserController extends Controller
 {
+    use SharesStorefrontLayout;
+
     public function __construct()
     {
-        $data = Menu::where('menu_hidden', 1)->orderBy('menu_position', 'asc')->get();
-        $menu = $this->data_tree($data);
-        $slide = Promotion::where('cate_slide_id', 1)->where('promotion_hidden', 1)->get();
-        $contact = app(\App\Services\ShopSettings::class)->storefrontContact();
-        $faq = Faq::where('faq_hidden',1)->where('faq_about',0)->orderBy('faq_id','desc')->get();
+        $this->shareStorefrontLayout();
         $cateNews = CateNews::withCount('getNewsInCate')->where('cate_news_hidden', 1)
             ->orderBy('cate_news_sort', 'asc')
             ->get();
-        view()->share(compact('slide', 'contact', 'faq', 'cateNews', 'menu'));
+        view()->share(compact('cateNews'));
     }
 
-    function data_tree($data, $parent_id = 0, $level = 0)
-    {
-        $result = [];
-        foreach ($data as $item) {
-            if ($item['menu_parent_id'] == $parent_id) {
-                $item['level'] = $level;
-                $result[] = $item;
-                $child = $this->data_tree($data, $item['menu_id'], $level + 1);
-                $result = array_merge($result, $child);
-            }
-        }
-        return $result;
-    }
     /**
      * Display a listing of the resource.
      */
@@ -69,6 +45,7 @@ class UserController extends Controller
     {
         $user = UserModel::where('user_id', Auth::id())->first();
         $address = DeliInfo::where('user_id', Auth::id())->where('info_default', '1')->first();
+
         return view('frontend.pages.account.user_info.pages.user_info', compact('user', 'address'));
     }
 
@@ -80,9 +57,10 @@ class UserController extends Controller
     public function changepass($remember_token)
     {
         $user = UserModel::getTokenSingle($remember_token);
-        if(!empty($user)){
+        if (! empty($user)) {
             $data['user'] = $user;
-            return view('frontend.pages.account.user_info.pages.change_pass',$data);
+
+            return view('frontend.pages.account.user_info.pages.change_pass', $data);
         } else {
             abort(404);
         }
@@ -91,6 +69,7 @@ class UserController extends Controller
     public function delivery()
     {
         $delivery = DeliInfo::where('user_id', Auth::id())->orderBy('info_default', 'desc')->get();
+
         return view('frontend.pages.account.user_info.pages.delivery', compact('delivery'));
     }
 
@@ -104,10 +83,12 @@ class UserController extends Controller
 
         if (! $complete->execute($order_db)) {
             Session::flash('iconMessage', 'error');
+
             return back()->with('message', 'Đơn hàng chưa thể xác nhận đã nhận hàng.');
         }
 
         Session::flash('iconMessage', 'success');
+
         return back()->with('message', 'Cám ơn bạn đã xác nhận đã nhận hàng!');
     }
 
@@ -126,10 +107,12 @@ class UserController extends Controller
             );
         } catch (ReturnNotAllowed $e) {
             Session::flash('iconMessage', 'error');
+
             return back()->with('message', $e->getMessage());
         }
 
         Session::flash('iconMessage', 'success');
+
         return back()->with('message', 'Gửi yêu cầu trả hàng thành công, cửa hàng sẽ phản hồi sớm.');
     }
 
@@ -204,6 +187,7 @@ class UserController extends Controller
 
         return view('frontend.pages.account.user_info.pages.order', compact('all_order', 'all_order_detail', 'wait_payment', 'wait_confirm', 'delivery_order', 'success_order', 'cancel_order', 'return_order'));
     }
+
     /**
      * Show the form for creating a new resource.
      */
@@ -223,10 +207,7 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request)
-    {
-
-    }
+    public function show(Request $request) {}
 
     /**
      * Show the form for editing the specified resource.
@@ -248,12 +229,13 @@ class UserController extends Controller
         if ($request->hasFile('img__new')) {
             $file = $request->file('img__new');
             $extension = $file->getClientOriginalExtension();
-            $file_name = time() . '.' . $extension;
+            $file_name = time().'.'.$extension;
             $file->move('uploads/images/user/', $file_name);
-            $user->user_img = '/uploads/images/user/' . $file_name;
+            $user->user_img = '/uploads/images/user/'.$file_name;
         }
         $user->save();
         Session::flash('iconMessage', 'success');
+
         return back()->with('message', 'Cập nhật thành công !');
     }
 
@@ -271,8 +253,9 @@ class UserController extends Controller
         $user->remember_token = Str::random(30);
         $user->save();
         Mail::to($user->email)->send(new sendMailPass($user));
-        Session::flash('iconMessage','success');
-        return redirect()->back()->with('message','Đã gửi mail');
+        Session::flash('iconMessage', 'success');
+
+        return redirect()->back()->with('message', 'Đã gửi mail');
     }
 
     public function updatePassPost(ResetpassRequets $request)
@@ -282,8 +265,8 @@ class UserController extends Controller
         $user->remember_token = Str::random(30);
         $user->save();
 
-
         Session::flash('iconMessage', 'success');
+
         return redirect(route('user.update_pass'))->with('message', 'Thay đổi mật khẩu thành công !');
 
     }
@@ -292,24 +275,28 @@ class UserController extends Controller
     {
         $request->user()->sendEmailVerificationNotification();
         Session::flash('iconMessage', 'success');
+
         return back()->with('message', 'Mail đã được gửi!');
     }
 
     public function removeToken(Request $request)
     {
         UserModel::whereNotNull('remember_token')
-        ->where('user_id', Auth::id())
-        ->where('remember_token', '<', Carbon::now()->subMinute(1))
-        ->update(['remember_token' => null]);
+            ->where('user_id', Auth::id())
+            ->where('remember_token', '<', Carbon::now()->subMinutes(1))
+            ->update(['remember_token' => null]);
+
         return response()->json(['message' => 'Email verification removed successfully']);
     }
 
-    public function changeEmail(ChangeEmailRequest $request, string $id){
+    public function changeEmail(ChangeEmailRequest $request, string $id)
+    {
         $user = UserModel::find(Auth::id());
-        $user->email_verified_at = null ;
+        $user->email_verified_at = null;
         $user->email = $request['email'];
         $user->save();
         Session::flash('iconMessage', 'success');
+
         return back()->with('message', 'Thay đổi email thành công !');
     }
 }

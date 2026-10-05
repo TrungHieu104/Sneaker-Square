@@ -155,7 +155,7 @@ class ConfirmPaymentAction
     {
         $order->order_payment = $gateway;
         $order->order_payment_status = 1;
-        $order->order_payment_time = Carbon::now('Asia/Ho_Chi_Minh');
+        $order->order_payment_time = Carbon::now();
         $order->save();
     }
 }

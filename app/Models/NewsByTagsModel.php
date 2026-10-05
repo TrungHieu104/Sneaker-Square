@@ -8,11 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 class NewsByTagsModel extends Model
 {
     use HasFactory;
-    protected $table = "news_by_tags";
+
+    protected $table = 'news_by_tags';
+
     public $timestamp = true;
+
     protected $fillable = [
         'news_id',
         'tag_id',
     ];
-
 }

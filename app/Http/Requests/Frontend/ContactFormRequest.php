@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Frontend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ContactFormRequest extends FormRequest
@@ -17,17 +18,18 @@ class ContactFormRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
             'name' => ['required', 'min:5', 'max:30'],
             'email' => 'required|email|ends_with:@gmail.com',
-            'title' => ['required','max:255'],
-            'content' => ['required']
+            'title' => ['required', 'max:255'],
+            'content' => ['required'],
         ];
     }
+
     public function messages()
     {
         return [

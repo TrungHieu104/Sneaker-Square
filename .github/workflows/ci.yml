@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+jobs:
+  quality:
+    name: Test, lint, phân tích tĩnh
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, gd, zip, pdo_sqlite, bcmath
+          coverage: none
+
+      - name: Cài thư viện
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Chuẩn bị môi trường
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          echo "WALLET_SIGNING_KEY=$(openssl rand -hex 32)" >> .env
+
+      - name: Code style (Pint)
+        run: ./vendor/bin/pint --test
+
+      - name: Phân tích tĩnh (Larastan)
+        run: ./vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+      - name: Feature test
+        run: php artisan test
+
+  secrets:
+    name: Quét secret (gitleaks)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Scans only the commits this push or pull request brings in. Keys that
+      # leaked in older history are revoked; see docs/ky-thuat/no-ky-thuat.md.
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -99,7 +98,7 @@ class OrderDetailSeeder extends Seeder
             // Bill 3
             [
                 'pro_name' => 'Dây giày ALB002',
-                'size' => NULL,
+                'size' => null,
                 'color' => 'Đen',
                 'price' => 150000,
                 'quantity' => 2,
@@ -129,7 +128,7 @@ class OrderDetailSeeder extends Seeder
 
             [
                 'pro_name' => 'Vớ Nữ Bitis Hunter ASWH00300',
-                'size' => NULL,
+                'size' => null,
                 'color' => 'Xanh dương',
                 'price' => 78000,
                 'quantity' => 2,
@@ -150,7 +149,7 @@ class OrderDetailSeeder extends Seeder
 
             [
                 'pro_name' => 'Vớ Nữ Bitis Hunter ASWH00300',
-                'size' => NULL,
+                'size' => null,
                 'color' => 'Đen',
                 'price' => 78000,
                 'quantity' => 2,
@@ -181,7 +180,7 @@ class OrderDetailSeeder extends Seeder
             // Bill 5
             [
                 'pro_name' => 'Dây giày ALB002',
-                'size' => NULL,
+                'size' => null,
                 'color' => 'Trắng',
                 'price' => 150000,
                 'quantity' => 2,
@@ -201,8 +200,8 @@ class OrderDetailSeeder extends Seeder
 
             [
                 'pro_name' => 'Chai xịt tạo bọt vệ sinh giày Sneaker XIMO',
-                'size' => NULL,
-                'color' => NULL,
+                'size' => null,
+                'color' => null,
                 'price' => 85000,
                 'quantity' => 2,
                 'order_id' => 5,

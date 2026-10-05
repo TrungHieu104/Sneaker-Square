@@ -252,7 +252,7 @@ class GhnCarrier implements ShippingCarrier
      */
     private function cacheKey(string $subject): string
     {
-        return 'ghn.'.md5((string) config('services.ghn.host')).'.'.$subject;
+        return 'ghn.'.hash('sha256', (string) config('services.ghn.host')).'.'.$subject;
     }
 
     /**

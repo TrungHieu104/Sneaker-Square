@@ -2,26 +2,33 @@
 
 namespace App\Models;
 
+use App\Models\CategoryModel as Category;
+use App\Models\ColorModel as Color;
+use App\Models\CommentModel as Comment;
+use App\Models\ImageModel as Image;
+use App\Models\OrderDetailModel as OrderDetail;
+use App\Models\ProductQuantityModel as Quantity;
+use App\Models\SizeModel as Size;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\CategoryModel as Category;
-use App\Models\ImageModel as Image;
-use App\Models\CommentModel as Comment;
-use App\Models\ColorModel as Color;
-use App\Models\SizeModel as Size;
-use App\Models\OrderDetailModel as OrderDetail;
-use App\Models\ProductQuantityModel as Quantity;
 use Illuminate\Database\Query\Expression;
 
 class ProductModel extends Model
 {
     use HasFactory;
     use SoftDeletes;
-    protected $table = "products";
-    protected $primaryKey = "pro_id";
+
+    protected $table = 'products';
+
+    protected $primaryKey = 'pro_id';
+
     public $timestamps = true;
+
     protected $fillable = [
         'pro_id',
         'pro_name',
@@ -42,6 +49,7 @@ class ProductModel extends Model
         'pro_date',
         'cate_id',
     ];
+
     protected $attributes = [
         'pro_price_sale' => 0,
         'pro_views' => 0,
@@ -49,27 +57,39 @@ class ProductModel extends Model
         'pro_hidden' => 1,
     ];
 
-    public function getCate() {
+    /** @return BelongsTo<Category, $this> */
+    public function getCate(): BelongsTo
+    {
         return $this->belongsTo(Category::class, 'cate_id', 'cate_id');
     }
 
-    public function getImages(){
+    /** @return HasMany<Image, $this> */
+    public function getImages(): HasMany
+    {
         return $this->hasMany(Image::class, 'pro_id', 'pro_id');
     }
 
-    public function getComments() {
+    /** @return HasMany<Comment, $this> */
+    public function getComments(): HasMany
+    {
         return $this->hasMany(Comment::class, 'pro_id', 'pro_id');
     }
 
-    public function getColor() {
+    /** @return BelongsToMany<Color, $this> */
+    public function getColor(): BelongsToMany
+    {
         return $this->belongsToMany(Color::class, 'products_quantity', 'pro_id', 'color_id');
     }
 
-    public function getSize() {
+    /** @return BelongsToMany<Size, $this> */
+    public function getSize(): BelongsToMany
+    {
         return $this->belongsToMany(Size::class, 'products_quantity', 'pro_id', 'size_id');
     }
 
-    public function getQuantities() {
+    /** @return HasMany<Quantity, $this> */
+    public function getQuantities(): HasMany
+    {
         return $this->hasMany(Quantity::class, 'pro_id', 'pro_id');
     }
 
@@ -85,8 +105,10 @@ class ProductModel extends Model
     {
         return (int) ($this->pro_price_sale != 0 ? $this->pro_price_sale : $this->pro_price);
     }
-    
-    public function soldProduct() {
+
+    /** @return BelongsTo<OrderDetail, $this> */
+    public function soldProduct(): BelongsTo
+    {
         return $this->belongsTo(OrderDetail::class, 'pro_id', 'pro_id');
     }
 
@@ -193,9 +215,9 @@ class ProductModel extends Model
         // The outer COALESCE covers a product that has never been stocked, whose
         // subquery returns nothing at all.
         return $query->orderByRaw(
-            "COALESCE((SELECT {$aggregate}(" . self::sellingPriceSql() . ')'
-            . ' FROM products_quantity WHERE products_quantity.pro_id = products.pro_id)'
-            . ", {$product}) " . ($ascending ? 'asc' : 'desc')
+            "COALESCE((SELECT {$aggregate}(".self::sellingPriceSql().')'
+            .' FROM products_quantity WHERE products_quantity.pro_id = products.pro_id)'
+            .", {$product}) ".($ascending ? 'asc' : 'desc')
         );
     }
 
@@ -206,11 +228,11 @@ class ProductModel extends Model
     private static function sellingPriceSql(): string
     {
         return 'CASE'
-            . ' WHEN products_quantity.pro_price_sale IS NULL AND products_quantity.pro_price IS NULL'
-            . ' THEN ' . self::productSellingPriceSql()
-            . ' WHEN products_quantity.pro_price_sale <> 0 THEN products_quantity.pro_price_sale'
-            . ' ELSE COALESCE(products_quantity.pro_price, products.pro_price)'
-            . ' END';
+            .' WHEN products_quantity.pro_price_sale IS NULL AND products_quantity.pro_price IS NULL'
+            .' THEN '.self::productSellingPriceSql()
+            .' WHEN products_quantity.pro_price_sale <> 0 THEN products_quantity.pro_price_sale'
+            .' ELSE COALESCE(products_quantity.pro_price, products.pro_price)'
+            .' END';
     }
 
     private static function listPriceSql(): string
@@ -307,6 +329,6 @@ class ProductModel extends Model
 
         return $range['min'] === $range['max']
             ? $min
-            : $min . ' - ' . number_format($range['max'], 0, ',', '.');
+            : $min.' - '.number_format($range['max'], 0, ',', '.');
     }
 }

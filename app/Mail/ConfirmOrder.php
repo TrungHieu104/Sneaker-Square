@@ -2,19 +2,18 @@
 
 namespace App\Mail;
 
+use App\Models\OrderDetailModel as OrderDetail;
+use App\Models\OrderModel as Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use App\Models\OrderModel as Order;
-use App\Models\OrderDetailModel as OrderDetail;
-use App\Models\CouponModel as Coupon;
-use Illuminate\Mail\Mailables\Attachment;
 
 class ConfirmOrder extends Mailable implements ShouldQueue
-{ 
+{
     use Queueable, SerializesModels;
 
     /**
@@ -51,7 +50,7 @@ class ConfirmOrder extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Thông tin đơn hàng ' . $this->order->order_code,
+            subject: 'Thông tin đơn hàng '.$this->order->order_code,
         );
     }
 
@@ -87,12 +86,12 @@ class ConfirmOrder extends Mailable implements ShouldQueue
     /**
      * Get the attachments for the message.
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {
         return [
-            
+
         ];
     }
 }

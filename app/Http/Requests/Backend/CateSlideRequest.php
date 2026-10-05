@@ -2,11 +2,12 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CateSlideRequest extends FormRequest
 {
-   /**
+    /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
@@ -17,15 +18,17 @@ class CateSlideRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'name' => ['required','min:3', 'max:50','unique:cate_slide,cate_slide_name'],
+            'name' => ['required', 'min:3', 'max:50', 'unique:cate_slide,cate_slide_name'],
         ];
     }
-    public function messages(){
+
+    public function messages()
+    {
         return [
             'name.required' => 'Vui lòng nhập tiêu đề!',
             'name.min' => 'Tiêu đề quá ngắn!',

@@ -3,13 +3,17 @@
 namespace App\Services;
 
 use App\Enums\OrderStatus;
+use App\Models\ContactFormModel;
 use App\Models\CouponModel;
 use App\Models\NewsModel;
 use App\Models\OrderModel;
 use App\Models\ProductModel;
+use App\Models\PromotionModel;
 use App\Models\StatisticModel;
 use App\Models\UserModel;
 use App\Models\VisitorModel;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -128,14 +132,13 @@ class DashboardStatisticsService
      */
     public function revenueChart(): array
     {
-        $from = Carbon::now('Asia/Ho_Chi_Minh')->subDays(self::REVENUE_CHART_DAYS)->toDateString();
+        $from = Carbon::now()->subDays(self::REVENUE_CHART_DAYS)->toDateString();
 
         return StatisticModel::whereBetween('order_date', [$from, Carbon::today()])
             ->orderBy('order_date', 'ASC')
             ->get()
             ->map(fn ($item) => [
                 'period' => date('d/m/Y', strtotime($item->order_date)),
-                'total' => $item->total_order,
                 'sales' => $item->sales,
                 'profit' => $item->profit,
             ])
@@ -145,5 +148,41 @@ class DashboardStatisticsService
     public function allRevenueRows(): Collection
     {
         return StatisticModel::get();
+    }
+
+    /**
+     * Counts for the admin's notification bell, and when each kind last changed
+     * so the page can tell a new event from one it has already shown.
+     *
+     * @return array<string, mixed>
+     */
+    public function notificationSnapshot(): array
+    {
+        $today = Carbon::today();
+        $yesterday = Carbon::today()->subDay();
+
+        return [
+            'newOrderCount' => OrderModel::where('order_status', OrderStatus::New)->confirmedSale()->count(),
+            'contactCount' => ContactFormModel::where('status', 0)->count(),
+            'returnOrderCount' => OrderModel::whereIn('order_status', OrderStatus::comingBack())->confirmedSale()->count(),
+            'sucessOrderCount' => OrderModel::where('order_status', OrderStatus::Completed)->whereDate('updated_at', $today)
+                ->confirmedSale()->count(),
+            'couponCount' => CouponModel::where('coupon_end', '=', $yesterday)->pluck('coupon_name')->toArray(),
+            'slideCount' => PromotionModel::where('promotion_end', '=', $yesterday)->pluck('promotion_name')->toArray(),
+            'timestampOrder' => $this->lastChanged(OrderModel::where('order_status', OrderStatus::New), 'created_at'),
+            'timestampReturnOrder' => $this->lastChanged(OrderModel::whereIn('order_status', OrderStatus::comingBack()), 'updated_at'),
+            'timestampSuccessOrder' => $this->lastChanged(OrderModel::where('order_status', OrderStatus::Completed), 'updated_at'),
+            'timestampContact' => $this->lastChanged(ContactFormModel::where('status', 0), 'created_at'),
+            'timestampSlide' => $this->lastChanged(PromotionModel::where('promotion_end', '=', $yesterday), 'updated_at'),
+            'timestampCoupon' => $this->lastChanged(CouponModel::where('coupon_end', '=', $yesterday), 'updated_at'),
+        ];
+    }
+
+    /**
+     * @param  Builder<Model>  $query
+     */
+    private function lastChanged(Builder $query, string $column): int
+    {
+        return $query->latest($column)->first()?->{$column}->timestamp ?? now()->timestamp;
     }
 }

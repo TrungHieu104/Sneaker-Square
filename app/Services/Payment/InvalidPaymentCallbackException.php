@@ -12,6 +12,4 @@ use RuntimeException;
  * did not really come from the gateway, or does not describe the order we
  * think it does.
  */
-class InvalidPaymentCallbackException extends RuntimeException
-{
-}
+class InvalidPaymentCallbackException extends RuntimeException {}

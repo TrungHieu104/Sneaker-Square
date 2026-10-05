@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,15 +19,15 @@ class CateNewsUpdateRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'name' => ['required','min:3',Rule::unique('cate_news', 'cate_news_name')->ignore( request()->id,'cate_news_id')],
-            'slug' => ['required','min:3',Rule::unique('cate_news', 'cate_news_slug')->ignore( request()->id,'cate_news_id')],
-            'sort' => ['required','min:0', 'max:100000000', 'numeric','integer'],
-            'img_blog' => ['image']
+            'name' => ['required', 'min:3', Rule::unique('cate_news', 'cate_news_name')->ignore(request()->id, 'cate_news_id')],
+            'slug' => ['required', 'min:3', Rule::unique('cate_news', 'cate_news_slug')->ignore(request()->id, 'cate_news_id')],
+            'sort' => ['required', 'min:0', 'max:100000000', 'numeric', 'integer'],
+            'img_blog' => ['image'],
         ];
     }
 
@@ -47,5 +48,4 @@ class CateNewsUpdateRequest extends FormRequest
             'img_blog.image' => 'File không được hỗ trợ!',
         ];
     }
-
 }

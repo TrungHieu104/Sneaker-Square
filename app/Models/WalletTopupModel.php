@@ -54,6 +54,7 @@ class WalletTopupModel extends Model
         'paid_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<WalletModel, $this> */
     public function wallet(): BelongsTo
     {
         return $this->belongsTo(WalletModel::class, 'wallet_id', 'wallet_id');
@@ -75,7 +76,7 @@ class WalletTopupModel extends Model
      */
     public static function generateCode(): string
     {
-        $date = Carbon::now('Asia/Ho_Chi_Minh')->format('dmY');
+        $date = Carbon::now()->format('dmY');
 
         for ($attempt = 0; $attempt < 20; $attempt++) {
             $code = self::PREFIX.$date.str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);

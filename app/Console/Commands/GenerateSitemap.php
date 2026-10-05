@@ -28,8 +28,8 @@ class GenerateSitemap extends Command
     public function handle()
     {
         SitemapGenerator::create(config('app.url'))
-        ->hasCrawled(function (Url $url) {
-            return $url->setChangeFrequency('weekly');
-        })->writeToFile(public_path('sitemap.xml'));
+            ->hasCrawled(function (Url $url) {
+                return $url->setChangeFrequency('weekly');
+            })->writeToFile(public_path('sitemap.xml'));
     }
 }

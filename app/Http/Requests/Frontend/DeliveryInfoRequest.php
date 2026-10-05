@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Frontend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DeliveryInfoRequest extends FormRequest
 {
+    private const NAME_LENGTH = 'Nhập tên từ 3 - 50 ký tự';
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -17,15 +20,15 @@ class DeliveryInfoRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'info_name' => ['required','min:3', 'max:50'],
-            'info_address' => ['required','min:3', 'max:50'],
+            'info_name' => ['required', 'min:3', 'max:50'],
+            'info_address' => ['required', 'min:3', 'max:50'],
             'info_email' => 'required|email|ends_with:@gmail.com',
-            'info_phone' => ['required','min:10','max:11','numeric'],
+            'info_phone' => ['required', 'min:10', 'max:11', 'numeric'],
             'info_province' => 'required',
             'info_district' => 'required',
             'info_ward' => 'required',
@@ -33,15 +36,16 @@ class DeliveryInfoRequest extends FormRequest
             'info_ward_code' => 'required|string|max:20',
         ];
     }
+
     public function messages()
     {
         return [
             'info_name.required' => 'Vui lòng nhập tên',
-            'info_name.min' => 'Nhập tên từ 3 - 50 ký tự',
-            'info_name.max' => 'Nhập tên từ 3 - 50 ký tự',
+            'info_name.min' => self::NAME_LENGTH,
+            'info_name.max' => self::NAME_LENGTH,
             'info_address.required' => 'Vui lòng nhập địa chỉ',
-            'info_address.max' => 'Nhập tên từ 3 - 50 ký tự',
-            'info_address.min' => 'Nhập tên từ 3 - 50 ký tự',
+            'info_address.max' => self::NAME_LENGTH,
+            'info_address.min' => self::NAME_LENGTH,
             'info_email.required' => 'Vui lòng nhập email',
             'info_email.email' => 'Nhập sai định dạng email',
             'info_email.ends_with' => 'Gmail phải kết thúc bằng "@gmail.com"',

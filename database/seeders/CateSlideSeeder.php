@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+
 class CateSlideSeeder extends Seeder
 {
     /**
@@ -17,7 +17,7 @@ class CateSlideSeeder extends Seeder
                 'cate_slide_name' => 'Trang chủ',
                 'cate_slide_slug' => 'trang-chu',
                 'cate_slide_hidden' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
         ]);

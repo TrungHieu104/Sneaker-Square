@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Frontend\Authuser;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DeliveryRequest extends FormRequest
@@ -17,13 +18,13 @@ class DeliveryRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'info_name' => 'required','max:30',
-            'info_phone' => 'required','min:10','max:11',
+            'info_name' => 'required', 'max:30',
+            'info_phone' => 'required', 'min:10', 'max:11',
             'info_email' => 'required|email|ends_with:@gmail.com',
             'info_address' => 'required',
             'info_province' => 'required',
@@ -33,6 +34,7 @@ class DeliveryRequest extends FormRequest
             'info_ward_code' => 'required|string|max:20',
         ];
     }
+
     public function messages()
     {
         return [
@@ -40,7 +42,7 @@ class DeliveryRequest extends FormRequest
             'info_name.max' => 'Họ và tên quá dài',
             'info_phone.min' => 'Số điện thoại phải dài hơn 10 số',
             'info_phone.max' => 'Số điện thoại quá dài',
-            'info_phone.required'=> 'Bạn chưa nhập số điện thoại',
+            'info_phone.required' => 'Bạn chưa nhập số điện thoại',
             'info_email.required' => 'Bạn chưa nhập email',
             'info_email.ends_with' => 'Email sai định dạng',
             'info_email.email' => 'Nhập email chưa đúng',

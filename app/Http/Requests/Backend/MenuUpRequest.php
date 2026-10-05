@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+
 class MenuUpRequest extends FormRequest
 {
     /**
@@ -17,17 +19,19 @@ class MenuUpRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'name'     => ['required', Rule::unique('menu', 'menu_name')->ignore($this->route('menu'), 'menu_id')],
+            'name' => ['required', Rule::unique('menu', 'menu_name')->ignore($this->route('menu'), 'menu_id')],
             'position' => ['nullable', 'min:0', 'max:100000000', 'numeric', 'integer'],
-            'slug'     => ['required'],
+            'slug' => ['required'],
         ];
     }
-    public function messages(){
+
+    public function messages()
+    {
         return [
             'name.required' => 'Vui lòng nhập tiêu đề!',
             'name.unique' => 'Tiêu đề đã tồn tại!',

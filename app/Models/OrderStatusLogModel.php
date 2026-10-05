@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\OrderStatus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * One line of an order's history: what it was, what it became, and who moved it.
@@ -45,7 +46,8 @@ class OrderStatusLogModel extends Model
         };
     }
 
-    public function user()
+    /** @return BelongsTo<UserModel, $this> */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(UserModel::class, 'user_id', 'user_id');
     }

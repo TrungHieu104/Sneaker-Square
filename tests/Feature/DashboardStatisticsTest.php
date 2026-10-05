@@ -36,7 +36,7 @@ class DashboardStatisticsTest extends TestCase
     private function makeOrder(string $payment, int $paymentStatus, OrderStatus $status = OrderStatus::New): OrderModel
     {
         return OrderModel::create([
-            'order_code' => 'DH' . random_int(1000000, 9999999),
+            'order_code' => 'DH'.random_int(1000000, 9999999),
             'order_name' => 'Nguyễn Văn A',
             'order_email' => 'khach@example.test',
             'order_address' => '1 Võ Văn Ngân',
@@ -118,5 +118,22 @@ class DashboardStatisticsTest extends TestCase
 
         $this->assertSame(1, $summary['orderFail']);
         $this->assertSame(1, $summary['orderDelivered']);
+    }
+
+    public function test_chuong_thong_bao_dem_don_moi_va_moc_thoi_gian_moi_nhat(): void
+    {
+        $this->travelTo(now()->subHour());
+        $this->makeOrder('cod', 0);
+        $this->travelBack();
+        $latest = $this->makeOrder('cod', 0);
+        $this->makeOrder('cod', 0, OrderStatus::Completed);
+
+        $snapshot = $this->stats()->notificationSnapshot();
+
+        $this->assertSame(2, $snapshot['newOrderCount']);
+        $this->assertSame(1, $snapshot['sucessOrderCount']);
+        $this->assertSame($latest->created_at->timestamp, $snapshot['timestampOrder']);
+        $this->assertSame(0, $snapshot['contactCount']);
+        $this->assertSame([], $snapshot['couponCount']);
     }
 }

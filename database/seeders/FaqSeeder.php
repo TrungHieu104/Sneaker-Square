@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -48,7 +47,7 @@ class FaqSeeder extends Seeder
                 'faq_hidden' => 1,
                 'faq_about' => 0,
                 'faq_created_by' => 'Admin',
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -104,7 +103,7 @@ class FaqSeeder extends Seeder
                 'faq_hidden' => 1,
                 'faq_about' => 0,
                 'faq_created_by' => 'Admin',
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -192,7 +191,7 @@ class FaqSeeder extends Seeder
                 'faq_hidden' => 1,
                 'faq_about' => 0,
                 'faq_created_by' => 'admin',
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -211,7 +210,7 @@ class FaqSeeder extends Seeder
                 'faq_hidden' => 1,
                 'faq_about' => 0,
                 'faq_created_by' => 'Admin',
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -244,7 +243,7 @@ class FaqSeeder extends Seeder
                 'faq_hidden' => 1,
                 'faq_about' => 1,
                 'faq_created_by' => 'Admin',
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
         ]);

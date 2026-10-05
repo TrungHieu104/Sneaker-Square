@@ -47,12 +47,12 @@ class ProductReviewTest extends TestCase
         ]);
 
         return ProductModel::create([
-            'pro_name' => 'Product ' . $slug,
+            'pro_name' => 'Product '.$slug,
             'pro_slug' => $slug,
-            'pro_code' => 'SKU-' . $slug,
+            'pro_code' => 'SKU-'.$slug,
             'pro_price' => 1_000_000,
             'capital_price' => 600_000,
-            'pro_img' => $slug . '.jpg',
+            'pro_img' => $slug.'.jpg',
             'pro_date' => now()->toDateString(),
             'pro_hidden' => 1,
             'cate_id' => 1,
@@ -111,7 +111,7 @@ class ProductReviewTest extends TestCase
     private function recordCompletedPurchase(ProductModel $product, int $userId): void
     {
         $order = OrderModel::create([
-            'order_code' => 'DH' . random_int(100000, 999999),
+            'order_code' => 'DH'.random_int(100000, 999999),
             'order_name' => 'Reviewer',
             'order_email' => 'reviewer@gmail.com',
             'order_address' => '1 Võ Văn Ngân',

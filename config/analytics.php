@@ -8,11 +8,10 @@ return [
     'property_id' => env('ANALYTICS_PROPERTY_ID'),
 
     /*
-     * Path to the client secret json file. Take a look at the README of this package
-     * to learn how to get this file. You can also pass the credentials as an array
-     * instead of a file path.
+     * The service account key holds a private key, so it lives under storage/
+     * where the web server cannot hand it out — never under public/.
      */
-    'service_account_credentials_json' => public_path('sneaker-square-500512-d95764d94f02.json'),
+    'service_account_credentials_json' => env('ANALYTICS_CREDENTIALS_PATH', storage_path('app/google/service-account.json')),
 
     /*
      * The amount of minutes the Google API responses will be cached.

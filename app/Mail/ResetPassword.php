@@ -5,6 +5,7 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -17,12 +18,13 @@ class ResetPassword extends Mailable implements ShouldQueue
      * Create a new message instance.
      */
     public $user;
+
     public $mailDate;
 
     public function __construct($user, $mailDate)
     {
-        $this->user = $user; 
-        $this->mailDate = $mailDate; 
+        $this->user = $user;
+        $this->mailDate = $mailDate;
     }
 
     /**
@@ -52,7 +54,7 @@ class ResetPassword extends Mailable implements ShouldQueue
     /**
      * Get the attachments for the message.
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {

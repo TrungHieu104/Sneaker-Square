@@ -18,7 +18,7 @@ return new class extends Migration
             // and counting it as five stars would invent data.
             $table->unsignedTinyInteger('rating')->nullable();
             $table->boolean('comment_hidden')->default(1);
-            $table->dateTime('comment_date', $precision = 0);
+            $table->dateTime('comment_date', 0);
             $table->unsignedBigInteger('pro_id');
             $table->foreign('pro_id')->references('pro_id')->on('products')->onDelete('cascade')->onUpdate('cascade');
             $table->unsignedBigInteger('user_id')->nullable();

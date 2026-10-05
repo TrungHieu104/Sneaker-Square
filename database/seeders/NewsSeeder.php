@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;                                                                                                     
+use Illuminate\Support\Facades\DB;
 
 class NewsSeeder extends Seeder
 {
@@ -61,7 +60,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 1,
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -99,10 +98,10 @@ class NewsSeeder extends Seeder
                 ',
                 'news_img' => 'backend/uploads/blog/air-jordan-3-lich-su-cua-thiet-ke-da-cuu-roi-nike.png',
                 'news_hot' => 1,
-                
+
                 'post_date' => Now(),
                 'cate_news_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -135,7 +134,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 1,
                 'post_date' => Now(),
                 'cate_news_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -176,10 +175,10 @@ class NewsSeeder extends Seeder
                 ',
                 'news_img' => 'backend/uploads/blog/co-nen-giat-giay-bang-may-giat-hay-khong.png',
                 'news_hot' => 1,
-                
+
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -219,7 +218,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 1,
                 'post_date' => Now(),
                 'cate_news_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -253,10 +252,10 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
-            //duy
+            // duy
             [
                 'news_title' => '12+ Chai vệ sinh giày đáng dùng nhất không thể bỏ qua',
                 'news_slug' => '12-chai-ve-sinh-giay-dang-dung-nhat-khong-the-bo-qua.html',
@@ -318,7 +317,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -364,7 +363,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -394,7 +393,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -415,7 +414,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -451,7 +450,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -471,7 +470,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -490,7 +489,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -516,7 +515,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -543,10 +542,10 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
-            
+
             [
                 'news_title' => 'Hướng Dẫn Tối Ưu Hóa Sự Thoải Mái Khi Mang Giày Sneaker',
                 'news_slug' => 'huong-dan-toi-uu-hoa-su-thoai-mai-khi-mang-giay-sneaker.html',
@@ -571,7 +570,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             // tâm
@@ -587,11 +586,11 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
-	        [
+            [
                 'news_title' => 'Thị trường sneaker được định giá 79 tỷ USD',
                 'news_slug' => 'thi-truong-sneaker-duoc-dinh-gia-79-ty-usd.html',
                 'news_summarize' => 'Ngày 22/5 vừa qua, Zingnew đưa tin dựa vào thống kê của Statista rằng thị trường sneaker trên toàn cầu từ năm 2020 đến năm 2026 được định giá khoảng 29 tỷ USD. Thậm chí, sau khoảng 5 năm nữa, giá trị có thể lên tới con số 119,5 tỷ USD.',
@@ -602,11 +601,11 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
-            ],	
+            ],
 
-	        [
+            [
                 'news_title' => 'Tips buộc dây giày Nike Air Force 1 vừa đẹp vừa chất',
                 'news_slug' => 'tips-buoc-day-giay-nike-air-force-1-vua-dep-vua-chat.html',
                 'news_summarize' => 'Tuy dây giày chỉ đóng một phần nhỏ trong tổng thể thiết kế của sneaker nhưng đây cũng là vị trí ăn điểm nhất của bạn, đặc biệt với những đôi giày có vẻ ngoài cứng cáp như AF1. Vậy nên trong bài viết này, Sneaker Daily sẽ gửi đến bạn một số cách buộc dây giày Nike Air Force 1 nhé!',
@@ -619,15 +618,15 @@ class NewsSeeder extends Seeder
 
                     Bước 4: Lặp lại xen kẽ bước 2 rồi đến bước 3 cho đến lỗ cuối cùng, thắt cố định ở phía bên dưới lưỡi gà.
                 ',
-		        'news_img' => 'backend/uploads/blog/tips-buoc-day-giay-nike-air-force-1-vua-dep-vua-chat.jpg',
+                'news_img' => 'backend/uploads/blog/tips-buoc-day-giay-nike-air-force-1-vua-dep-vua-chat.jpg',
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
-            ],	
+            ],
 
-	        [
+            [
                 'news_title' => 'Tổng quan về Adidas bạn có thể chưa biết',
                 'news_slug' => 'tong-quan-ve-adidas-ban-co-the-chua-biet.html',
                 'news_summarize' => 'Adidas – thương hiệu thể thao nổi tiếng không chỉ ở riêng nước Đức, mà còn phổ biến trên toàn thế giới, vẫn bám trụ vững chắc trong ngành công nghiệp toàn cầu trong suốt hơn 100 năm qua. Hãy cùng Sneaker Square khám phá một số bí mật về Adidas mà có thể bạn chưa biết nhé!',
@@ -637,9 +636,9 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
-            ],	
+            ],
 
             [
                 'news_title' => 'Giày Sneaker và cách phân biệt các loại giày Sneaker chính',
@@ -648,14 +647,14 @@ class NewsSeeder extends Seeder
                 'news_content' => 'Giày Sneaker là gì?
 		            Sneaker là một thuật ngữ tổng hợp gọi chung các loại giày thể thao gồm: giày chạy bộ, giày tennis, giày tập gym,… Đặc tính của giày sneaker thường có đế được làm từ cao su mềm.',
                 'news_img' => 'backend/uploads/blog/giay-sneaker-va-cach-phan-biet-cac-loai-giay-sneaker-chinh.jpg',
-		        'news_hot' => 0,
+                'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
-            ],	
+            ],
 
-	        [
+            [
                 'news_title' => 'Các cách xỏ dây giày Nike đơn giản mà vô cùng đẹp không thể bỏ qua',
                 'news_slug' => 'cac-cach-xo-day-giay-nike-don-gian-ma-vo-cung-dep-khong-the-bo-qua.html',
                 'news_summarize' => 'Bạn nghĩ sao nếu đôi giày Nike của mình trở nên mới lạ và đẹp chỉ nhờ thay đổi cách buộc dây? Hãy cùng Sneaker Square tìm hiểu qua các cách xỏ dây giày Nike – thương  hiệu giày sneaker được ưa chuộng nhất thế giới trong gần hai thập kỷ trở lại đây nhé!',
@@ -670,9 +669,9 @@ class NewsSeeder extends Seeder
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
-            ],	
+            ],
             // quân
             [
                 'news_title' => 'Làm Thế Nào Để Chọn Đúng Đôi Giày Tại Cửa Hàng Giày Thể Thao Của Chúng Tôi?',
@@ -709,7 +708,7 @@ class NewsSeeder extends Seeder
                 'news_hot' => 1,
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -834,11 +833,11 @@ class NewsSeeder extends Seeder
                 Bạn có thể chọn một đôi giày có lực kéo bền và hỗ trợ nếu bạn thích những con đường mòn. 
                 Nếu bạn đang tìm giày chạy bộ trên máy chạy bộ mà bạn cũng có thể sử dụng cho squats và burpees, thì bạn có thể muốn có một huấn luyện viên chéo.
                 ',
-		        'news_img' => 'backend/uploads/blog/huong-dan-chon-giay-chay-bo-adidas.jpg',
+                'news_img' => 'backend/uploads/blog/huong-dan-chon-giay-chay-bo-adidas.jpg',
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -848,27 +847,27 @@ class NewsSeeder extends Seeder
                 thể thiếu đối với những bạn trẻ trên mọi chặng đường. Thế nhưng, đã bao lâu rồi bạn chưa vệ sinh đôi giày mình đang đi? Đừng quên việc vệ sinh giày thường xuyên để chúng luôn trông sạch đẹp như mới và bền lâu. Dưới đây bài viết sẽ chia sẻ đến bạn những cách vệ sinh giày sneaker cực kỳ đơn giản mà hữu ích ngay tại nhà. Cùng theo dõi nhé!',
                 'news_content' => 'Giày thể thao hay giày sneaker là phụ kiện thời trang không thể thiếu trong đời sống hằng ngày của chúng ta. Vậy bạn có từng đặt câu hỏi rằng “Làm sao để đôi giày được bền đẹp hay trắng sạch?”. Cùng tìm hiểu ngay cách vệ sinh giày Sneaker cho từng loại chất liệu khác nhau dưới đây nhé!
                 ',
-		        'news_img' => 'backend/uploads/blog/9-cach-ve-sinh-giay-sneaker-giay-the-thao-sach-nhu-moi.jpg',
+                'news_img' => 'backend/uploads/blog/9-cach-ve-sinh-giay-sneaker-giay-the-thao-sach-nhu-moi.jpg',
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
                 'news_title' => 'True Size là gì? Cách chọn size giày chuẩn',
                 'news_slug' => 'true-size-la-gi-cach-chon-size-giay-chuan.html',
-                'news_summarize' =>'True Size (hay True To Size) được sử dụng rộng rãi trong giới sneaker với ý nghĩa là kích cỡ size chuẩn. Thuật ngữ này được dùng để xác định kích cỡ đôi giày phù hợp nhất với bàn chân của mình. ',
+                'news_summarize' => 'True Size (hay True To Size) được sử dụng rộng rãi trong giới sneaker với ý nghĩa là kích cỡ size chuẩn. Thuật ngữ này được dùng để xác định kích cỡ đôi giày phù hợp nhất với bàn chân của mình. ',
 
-                'news_content'=> 'Vậy tại sao lại cần đến True Size? Nguyên nhân là bởi mỗi hãng sản xuất giày thể thao đều có các quy chuẩn riêng về kích thước giày. Đôi khi các sản phẩm trong cùng một dòng lại có nhiều bảng size khác nhau làm cho người mua gặp khó khăn trong việc chọn lựa. 
+                'news_content' => 'Vậy tại sao lại cần đến True Size? Nguyên nhân là bởi mỗi hãng sản xuất giày thể thao đều có các quy chuẩn riêng về kích thước giày. Đôi khi các sản phẩm trong cùng một dòng lại có nhiều bảng size khác nhau làm cho người mua gặp khó khăn trong việc chọn lựa. 
 
                     Từ đó hình thành các thuật ngữ như: True Size (size chuẩn), Up size (Size lớn hơn), Down size (Size nhỏ hơn) để thuận tiện cho việc chọn lựa sản phẩm. 
                 ',
-		        'news_img' => 'backend/uploads/blog/true-size-la-gi-cach-chon-size-giay-chuan.jpg',
+                'news_img' => 'backend/uploads/blog/true-size-la-gi-cach-chon-size-giay-chuan.jpg',
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -879,10 +878,10 @@ class NewsSeeder extends Seeder
                 'news_content' => 'Giới thiệu sơ qua về giày Adidas Ultra Boost, đôi giày này đã được trình làng vào tháng 02/2015. Adidas Ultra Boost được các chuyên gia sản xuất đánh giá là mẫu giày chuyên dành cho chạy bộ tốt nhất cùng các hiệu năng khác biệt, thiết kế bắt mắt. Ngày nay, giày thể thao Ultra Boost đã phát triển thêm nhiều dòng sản phẩm mới có sự thay đổi rõ rệt với các phiên bản trước. Đội ngũ Adidas không ngừng chọn lọc và phát triển để mang đến những sản phẩm chất lượng, phù hợp với nhu cầu của khách hàng.
                 ',
                 'news_hot' => 0,
-                'news_img' =>'backend/uploads/blog/10-cach-buoc-day-giay-adidas-don-gian-ma-cuc-chat.jpg',
+                'news_img' => 'backend/uploads/blog/10-cach-buoc-day-giay-adidas-don-gian-ma-cuc-chat.jpg',
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -891,11 +890,11 @@ class NewsSeeder extends Seeder
                 'news_summarize' => 'Giày sneaker là gì? Có thể thấy thị trường công nghiệp giày hiện nay đang cực kỳ phát triển trên thế giới nói chung và ở Việt Nam nói riêng. Chính vì sự phát triển đó, mà hiện nay sân chơi này cũng ngày càng được đông đảo các bạn trẻ hưởng ứng và luôn cập nhật những xu hướng thời trang giày mới.',
                 'news_content' => 'Sneaker là gì? Nếu bạn là một “newbie” và đang tìm hiểu về thế giới của sneaker thì bạn cần phải hiểu rõ thuật ngữ sneaker đầu tiên. Sneaker là một thuật ngữ tổng hợp gọi chung các loại giày thể thao gồm: giày chạy bộ, giày tennis, giày tập gym,… Đặc tính của giày sneaker thường có đế được làm từ cao su mềm.
                 ',
-		        'news_img' => 'backend/uploads/blog/sneaker-la-gi-phan-loai-cac-giay-sneaker-cho-nguoi-moi.jpg',
+                'news_img' => 'backend/uploads/blog/sneaker-la-gi-phan-loai-cac-giay-sneaker-cho-nguoi-moi.jpg',
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -906,11 +905,11 @@ class NewsSeeder extends Seeder
                 Với những ai tôn thờ phong cách tối giản thì có thể, mẫu giày này vẫn đủ để lọt vào mắt xanh của họ nhưng với những ai hy vọng hơn về màn collab của Prada và adidas thì hẳn sẽ có chút hụt hẫng nhẹ.
 
                 ',
-		        'news_img' => 'backend/uploads/blog/don-gian-den-kho-tin-it-ai-ngo-duoc-day-la-sieu-pham-collab-cua-adidas-va-ong-lon-prada.jpg',
+                'news_img' => 'backend/uploads/blog/don-gian-den-kho-tin-it-ai-ngo-duoc-day-la-sieu-pham-collab-cua-adidas-va-ong-lon-prada.jpg',
                 'news_hot' => 0,
                 'post_date' => Now(),
                 'cate_news_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             // hiếu

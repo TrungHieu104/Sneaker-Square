@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\UserModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Testing\TestResponse;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
 
@@ -35,7 +36,7 @@ class LoginRememberMeTest extends TestCase
     /**
      * @return array<int, string>
      */
-    private function cookieNames(\Illuminate\Testing\TestResponse $response): array
+    private function cookieNames(TestResponse $response): array
     {
         return array_map(
             fn ($cookie) => $cookie->getName(),

@@ -4,13 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 class OrderDetailModel extends Model
 {
     use HasFactory;
-    protected $table ="order_details"; 
-    public $primaryKey = "order_details_id";
-    public $timestamps = false;  
+
+    protected $table = 'order_details';
+
+    public $primaryKey = 'order_details_id';
+
+    public $timestamps = false;
+
     protected $fillable = [
         'pro_name',
         'size',
@@ -21,12 +26,16 @@ class OrderDetailModel extends Model
         'capital_price',
         'quantity',
         'order_id',
-        'pro_id'
+        'pro_id',
     ];
-    public function order(){
-        return $this->belongsTo('App\Models\Order','order_id');
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo('App\Models\Order', 'order_id');
     }
-    public function product()
+
+    /** @return BelongsTo<ProductModel, $this> */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(ProductModel::class, 'pro_id');
     }

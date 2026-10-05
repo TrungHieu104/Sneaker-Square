@@ -2,113 +2,95 @@
 
 namespace App\Exports;
 
+use App\Exports\Sheets\ListingSheet;
 use App\Models\StatisticModel;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\Exportable;
-use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Events\AfterSheet;
-use Illuminate\Support\Collection;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Color;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\Exportable;
 
-class ExportStatistic implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithEvents
+/**
+ * Revenue by day, over the whole history or one of the dashboard's periods,
+ * with the totals for that period under the table.
+ */
+class ExportStatistic extends ListingSheet
 {
-    private $count = 1; 
-    private $tongDoanhThu = 0;
-    private $tongLoiNhuan = 0;
-    private $tongDonHang = 0;
-
-    
-    public function collection()
-    {
-        $data = StatisticModel::orderBy('order_date','desc')->get();;
-        foreach ($data as $row) {
-            $this->tongDoanhThu += $row->sales;
-            $this->tongLoiNhuan += $row->profit;
-            $this->tongDonHang += $row->order_total;
-        }
-
-
-        return $data;
-    }
-
-    public function headings(): array
-    {
-        return [
-            [
-                'Thống kê doanh thu | Sneaker Square',  
-            ],
-            [
-                'Số thứ tự',
-                'Ngày',
-                'Doanh thu',
-                'Lợi nhuận',
-                'Số đơn hàng'
-            ],
-        ];
-    }
-    public function styles(Worksheet $sheet)
-    {
-        $sheet->mergeCells('A1:F1'); 
-        $sheet->getStyle('A1:F1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); 
-        return [
-            2 => [
-                'font' => [
-                    // 'color' => new Color(Color::COLOR_BLACK),
-                    'bold' => true,
-                ],
-                'fill' => [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => [
-                        'argb' => 'FFC0C0C0',
-                    ],
-                ],
-            ],
-        ];
-    }
-    public function map($row): array
-    {
-        $result = [
-            $this->count++,
-            Carbon::parse($row->order_date)->format('d/m/Y'),
-            number_format($row->sales, 0, ',', '.') . ' VNĐ',
-            number_format($row->profit, 0, ',', '.') . ' VNĐ',
-            $row->order_total,
-        ];
-
-        return $result;
-    }
-   
     use Exportable;
-    public function registerEvents(): array
+
+    private ?Collection $records = null;
+
+    public function __construct(private readonly ?Carbon $from = null, private readonly ?Carbon $to = null) {}
+
+    public static function today(): self
+    {
+        return new self(self::now(), self::now());
+    }
+
+    public static function lastSevenDays(): self
+    {
+        return new self(self::now()->subDays(7), self::now());
+    }
+
+    public static function thisMonth(): self
+    {
+        return new self(self::now()->startOfMonth(), self::now());
+    }
+
+    public static function lastMonth(): self
+    {
+        return new self(self::now()->subMonth()->startOfMonth(), self::now()->subMonth()->endOfMonth());
+    }
+
+    public static function thisYear(): self
+    {
+        return new self(self::now()->startOfYear(), self::now());
+    }
+
+    private static function now(): Carbon
+    {
+        return Carbon::now();
+    }
+
+    protected function heading(): string
+    {
+        return 'Thống kê doanh thu | Sneaker Square';
+    }
+
+    protected function columns(): array
+    {
+        return ['Ngày', 'Doanh thu', 'Lợi nhuận', 'Số đơn hàng'];
+    }
+
+    protected function records(): Collection
+    {
+        return $this->records ??= StatisticModel::query()
+            ->when($this->from, fn ($days) => $days->whereBetween('order_date', [$this->from->toDateString(), $this->to->toDateString()]))
+            ->orderBy('order_date', 'desc')
+            ->get();
+    }
+
+    protected function row(mixed $day): array
     {
         return [
-            AfterSheet::class => function(AfterSheet $event) {
-                $data = [
-                    '',
-                ];
-                $data3 = [
-                    'Tổng số đơn', $this->tongDonHang,
-                ];
-                $data1 = [
-                    'Tổng doanh thu', number_format($this->tongDoanhThu, 0, ',', '.') . ' VNĐ',
-                ];
-                $data2 = [
-                    'Tổng lợi nhuận', number_format($this->tongLoiNhuan, 0, ',', '.') . ' VNĐ',
-                ];
-
-                $event->sheet->append([$data,$data3,$data1,$data2]); 
-            },
+            Carbon::parse($day->order_date)->format('d/m/Y'),
+            $this->money($day->sales),
+            $this->money($day->profit),
+            $day->order_total,
         ];
     }
 
+    protected function footer(): array
+    {
+        $days = $this->records();
 
+        return [
+            ['Tổng số đơn', $days->sum('order_total')],
+            ['Tổng doanh thu', $this->money($days->sum('sales'))],
+            ['Tổng lợi nhuận', $this->money($days->sum('profit'))],
+        ];
+    }
+
+    private function money(int|float|string $amount): string
+    {
+        return number_format((float) $amount, 0, ',', '.').' VNĐ';
+    }
 }
-
-

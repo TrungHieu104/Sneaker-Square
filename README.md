@@ -85,8 +85,13 @@ php artisan queue:work
 
 ```bash
 php artisan config:clear   # bắt buộc trước khi chạy test
-./vendor/bin/phpunit
+php artisan test
+./vendor/bin/pint --test       # code style
+./vendor/bin/phpstan analyse   # phân tích tĩnh (Larastan)
 ```
+
+CI (`.github/workflows/ci.yml`) chạy cả ba lệnh trên cùng gitleaks cho mỗi push và Pull Request.
+Quy trình nhánh, PR và commit message xem ở [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 > ⚠️ **Phải `config:clear` trước.** `phpunit.xml` trỏ database về SQLite in-memory bằng thẻ `<env>`,
 > nhưng những thẻ này **bị bỏ qua khi còn file `bootstrap/cache/config.php`** — lúc đó `config()` đọc
@@ -116,6 +121,8 @@ local browsing but required for the related features:
 | MoMo payment   | `MOMO_PARTNER_CODE`, `MOMO_ACCESS_KEY`, `MOMO_SECRET_KEY`    |
 | VNPay payment  | `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`                        |
 | Email          | `MAIL_*` (order confirmation, registration, password reset) |
+| Google Analytics | `ANALYTICS_PROPERTY_ID`, `ANALYTICS_CREDENTIALS_PATH` (key file under `storage/`, never `public/`) |
+| CKFinder       | `CKFINDER_LICENSE_NAME`, `CKFINDER_LICENSE_KEY`              |
 
 ## License
 
@@ -141,5 +148,6 @@ sdt: 0912345678
 
 ## Tài liệu
 
-- [`docs/LO-TRINH-PHAT-TRIEN.md`](docs/LO-TRINH-PHAT-TRIEN.md) — hướng phát triển tiếp cho đồ án tốt nghiệp
-- [`docs/XU-LY-NO-KY-THUAT.md`](docs/XU-LY-NO-KY-THUAT.md) — nợ kỹ thuật đã xử lý ở luồng đặt hàng
+- [`docs/ky-thuat/trien-khai.md`](docs/ky-thuat/trien-khai.md) — sơ đồ triển khai và các thành phần
+- [`docs/ky-thuat/no-ky-thuat.md`](docs/ky-thuat/no-ky-thuat.md) — số đo chất lượng hiện tại, nợ kỹ thuật và kế hoạch xử lý
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — quy trình nhánh, Pull Request, commit message, tự kiểm tra trước khi mở PR

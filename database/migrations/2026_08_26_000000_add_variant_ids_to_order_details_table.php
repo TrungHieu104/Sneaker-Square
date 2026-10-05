@@ -62,7 +62,7 @@ return new class extends Migration
      */
     private function backfill(string $lookupTable, string $idColumn, string $labelColumn, string $orderColumn): void
     {
-        $primaryKey = $lookupTable . '_id';
+        $primaryKey = $lookupTable.'_id';
 
         foreach (DB::table($lookupTable)->get() as $row) {
             DB::table('order_details')

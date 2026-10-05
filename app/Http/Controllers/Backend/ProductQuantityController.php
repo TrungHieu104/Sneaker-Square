@@ -3,20 +3,19 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\View;
+use App\Http\Requests\Backend\ColorRequest;
 use App\Http\Requests\Backend\ProductQuantityRequest;
 use App\Http\Requests\Backend\ProductVariantPriceRequest;
 use App\Http\Requests\Backend\StockAdjustRequest;
 use App\Http\Requests\Backend\StockVariantRequest;
-use App\Http\Requests\Backend\ColorRequest;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
-use App\Models\ProductModel as Product;
 use App\Models\ColorModel as Color;
-use App\Models\SizeModel as Size;
+use App\Models\ProductModel as Product;
 use App\Models\ProductQuantityModel as Quantity;
+use App\Models\SizeModel as Size;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\View;
 
 class ProductQuantityController extends Controller
 {
@@ -39,7 +38,7 @@ class ProductQuantityController extends Controller
      */
     public function create()
     {
-        $allProducts = Product::orderBy('pro_name','asc')->get();
+        $allProducts = Product::orderBy('pro_name', 'asc')->get();
         $allColor = Color::all();
         $allSize = Size::orderBy('size', 'asc')->get();
         $today = today()->toDateString();
@@ -60,7 +59,7 @@ class ProductQuantityController extends Controller
      * Prices are entered per colour, so one row of a colour speaks for all its
      * sizes.
      *
-     * @param  \Illuminate\Support\Collection<int, Product>  $products
+     * @param  Collection<int, Product>  $products
      * @return array<string, array<string, mixed>>
      */
     private function currentPrices($products): array
@@ -80,7 +79,7 @@ class ProductQuantityController extends Controller
 
         foreach ($variants as $variant) {
             $product = $byId[$variant->pro_id] ?? null;
-            $key = $variant->pro_id . '-' . ($variant->color_id ?? 'none');
+            $key = $variant->pro_id.'-'.($variant->color_id ?? 'none');
 
             if (! $product || isset($prices['variant'][$key])) {
                 continue;
@@ -102,10 +101,11 @@ class ProductQuantityController extends Controller
     /**
      * Store new color
      */
-    public function storeNewColor(ColorRequest $request) {
+    public function storeNewColor(ColorRequest $request)
+    {
         $input = $request->post();
-        $color = ($request->has('color'))? $input['color']:"";
-        $color_vn = ($request->has('color_vn'))? mb_convert_case($input['color_vn'], MB_CASE_TITLE, "UTF-8"):"";
+        $color = ($request->has('color')) ? $input['color'] : '';
+        $color_vn = ($request->has('color_vn')) ? mb_convert_case($input['color_vn'], MB_CASE_TITLE, 'UTF-8') : '';
 
         $newColor = new Color;
         $newColor->color = $color;
@@ -113,6 +113,7 @@ class ProductQuantityController extends Controller
         $newColor->save();
 
         Session::flash('iconMessage', 'success');
+
         return back()->with('message', 'Thêm màu thành công!');
     }
 
@@ -151,6 +152,7 @@ class ProductQuantityController extends Controller
         }
         $color->delete();
         Session::flash('iconMessage', 'success');
+
         return back()->with('message', 'Xóa màu sắc thành công!');
     }
 
@@ -194,9 +196,9 @@ class ProductQuantityController extends Controller
             }
 
             $prices = [
-                'pro_price' => $request->input('priceColor.' . $colorId),
-                'pro_price_sale' => $request->input('priceSaleColor.' . $colorId),
-                'capital_price' => $request->input('capitalPriceColor.' . $colorId),
+                'pro_price' => $request->input('priceColor.'.$colorId),
+                'pro_price_sale' => $request->input('priceSaleColor.'.$colorId),
+                'capital_price' => $request->input('capitalPriceColor.'.$colorId),
             ];
 
             // With no sizes ticked, the colour alone is the variant.
@@ -362,8 +364,9 @@ class ProductQuantityController extends Controller
     {
         $proId = Product::where('pro_slug', $proSlug)->value('pro_id');
 
-        if($proId == null) {
+        if ($proId == null) {
             Session::flash('iconMessage', 'info');
+
             return redirect()->route('product.index')->with('message', 'Sản phẩm không tồn tại');
         }
 
@@ -385,14 +388,14 @@ class ProductQuantityController extends Controller
         ];
 
         $allQuantity = $this->filterStock(
-                                Quantity::with(['getProducts', 'getSize', 'getColor'])->where('pro_id', $proId),
-                                $filters,
-                            )
-                                -> orderBy('quantity_date', 'desc')
-                                -> orderBy('color_id', 'asc')
-                                -> orderBy('size_id', 'asc')
-                                -> paginate(20)
-                                -> withQueryString();
+            Quantity::with(['getProducts', 'getSize', 'getColor'])->where('pro_id', $proId),
+            $filters,
+        )
+            ->orderBy('quantity_date', 'desc')
+            ->orderBy('color_id', 'asc')
+            ->orderBy('size_id', 'asc')
+            ->paginate(20)
+            ->withQueryString();
 
         return view('backend.pages.product.stock.product_stock', [
             'allQuantity' => $allQuantity,
@@ -409,9 +412,9 @@ class ProductQuantityController extends Controller
             'hasSize' => (clone $rows)->whereNotNull('size_id')->exists(),
             'hasColor' => (clone $rows)->whereNotNull('color_id')->exists(),
             'sizeOptions' => Size::whereIn('size_id', (clone $rows)->distinct()->pluck('size_id'))
-                                ->orderBy('size', 'asc')->get(),
+                ->orderBy('size', 'asc')->get(),
             'colorOptions' => Color::whereIn('color_id', (clone $rows)->distinct()->pluck('color_id'))
-                                ->orderBy('color_vn', 'asc')->get(),
+                ->orderBy('color_vn', 'asc')->get(),
         ]);
     }
 
@@ -486,6 +489,7 @@ class ProductQuantityController extends Controller
         }
         $quan->delete();
         Session::flash('iconMessage', 'success');
+
         return back()->with('message', 'Xóa sản phẩm trong kho thành công!');
     }
-}    
+}

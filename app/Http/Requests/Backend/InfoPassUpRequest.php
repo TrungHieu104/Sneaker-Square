@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class InfoPassUpRequest extends FormRequest
@@ -17,16 +18,18 @@ class InfoPassUpRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'password' => ['required','same:same_password'],
-            'new-pass' => ['required','min:8','max:30','regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/'],
+            'password' => ['required', 'same:same_password'],
+            'new-pass' => ['required', 'min:8', 'max:30', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/'],
         ];
     }
-    public function messages(){
+
+    public function messages()
+    {
         return [
             'password.required' => 'Vui lòng nhập mật khẩu hiện tại!',
             'password.same' => 'Mật khẩu hiện tại không đúng!',
