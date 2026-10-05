@@ -66,7 +66,7 @@ Laravel 12 · PHP 8.2 · MySQL (dev) + SQLite (test) · Blade · template admin 
 
 ## F. Chất lượng mã nguồn
 
-Ngưỡng hiện tại và nợ kỹ thuật còn lại nằm ở `docs/ky-thuat/no-ky-thuat.md`. Thay đổi
+Ngưỡng hiện tại và nợ kỹ thuật còn lại nằm ở `docs/technical/technical-debt.md`. Thay đổi
 không được làm tụt các số đó.
 
 15. **Không viết secret vào code.** Key, token, mật khẩu đọc từ `.env`. Biến mới thì thêm

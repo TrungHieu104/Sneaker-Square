@@ -5,5 +5,5 @@ parameters:
     paths:
         - app
     # Raised one level at a time, each only once the code passes it with no
-    # baseline. The road to level 5 is in docs/ky-thuat/no-ky-thuat.md.
+    # baseline. The road to level 5 is in docs/technical/technical-debt.md.
     level: 2

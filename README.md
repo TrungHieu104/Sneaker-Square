@@ -35,7 +35,7 @@ role-based permissions, statistics, a blog/CMS, and online payment (MoMo & VNPay
 - PHP >= 8.2 and Composer
 - Node.js + npm
 - MySQL
-- Redis (dùng cho hàng đợi, cache, session và response cache)
+- Redis (queue, cache, session and response cache)
 
 ## Installation
 
@@ -46,8 +46,8 @@ cd Sneaker-Square
 composer install
 npm install && npm run build
 
-# Tải phần connector của CKFinder (không đi kèm composer,
-# phải chạy lại sau mỗi lần composer install/update)
+# Download the CKFinder connector (not shipped with Composer;
+# run again after every composer install/update)
 php artisan ckfinder:download
 
 cp .env.example .env
@@ -76,31 +76,25 @@ php artisan storage:link
 ```bash
 php artisan serve
 
-# Bắt buộc chạy song song: mail (xác nhận đơn, đăng ký, quên mật khẩu, gửi mã
-# giảm giá) đều đi qua hàng đợi Redis. Không chạy worker thì mail không được gửi.
+# Required alongside the server: every mail (order confirmation, registration,
+# password reset, coupons) goes through the Redis queue. No worker, no mail.
 php artisan queue:work
 ```
 
-### Chạy test
-
-```bash
-php artisan config:clear   # bắt buộc trước khi chạy test
-php artisan test
-./vendor/bin/pint --test       # code style
-./vendor/bin/phpstan analyse   # phân tích tĩnh (Larastan)
-```
-
-CI (`.github/workflows/ci.yml`) chạy cả ba lệnh trên cùng gitleaks cho mỗi push và Pull Request.
-Quy trình nhánh, PR và commit message xem ở [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-> ⚠️ **Phải `config:clear` trước.** `phpunit.xml` trỏ database về SQLite in-memory bằng thẻ `<env>`,
-> nhưng những thẻ này **bị bỏ qua khi còn file `bootstrap/cache/config.php`** — lúc đó `config()` đọc
-> từ file cache, thấy MySQL, và `RefreshDatabase` sẽ chạy `migrate:fresh` **xóa sạch database phát
-> triển**. `tests/CreatesApplication.php` đã chặn trường hợp này: bộ test từ chối khởi động nếu
-> không trỏ đúng SQLite `:memory:`.
-
 - Storefront: <http://localhost:8000>
 - Admin: <http://localhost:8000/admin>
+
+### Tests
+
+```bash
+php artisan config:clear   # required before running the tests
+php artisan test
+./vendor/bin/pint --test       # code style
+./vendor/bin/phpstan analyse   # static analysis (Larastan)
+```
+
+CI (`.github/workflows/ci.yml`) runs all three, plus gitleaks, on every push and pull request.
+Branch, pull request and commit message conventions are in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Default admin account
 
@@ -124,30 +118,23 @@ local browsing but required for the related features:
 | Google Analytics | `ANALYTICS_PROPERTY_ID`, `ANALYTICS_CREDENTIALS_PATH` (key file under `storage/`, never `public/`) |
 | CKFinder       | `CKFINDER_LICENSE_NAME`, `CKFINDER_LICENSE_KEY`              |
 
+## VNPay sandbox test card
+
+| Field       | Value                 |
+|-------------|-----------------------|
+| Bank        | NCB                   |
+| Card number | `9704198526191432198` |
+| Card holder | `NGUYEN VAN A`        |
+| Issue date  | `07/15`               |
+| OTP         | `123456` (or `000000`) |
+| Phone       | `0912345678`          |
+
+## Documentation
+
+- [`docs/technical/deployment.md`](docs/technical/deployment.md) — deployment diagram and components
+- [`docs/technical/technical-debt.md`](docs/technical/technical-debt.md) — current quality metrics, technical debt and the plan for it
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — branches, pull requests, commit messages, checks to run before opening a PR
+
 ## License
 
 Released for educational purposes (HCMUTE specialized essay course).
-
-
-test VN pay 
-
-Ngân hàng: NCB
-Số thẻ: 9704198526191432198
-Tên chủ thẻ: NGUYEN VAN A
-Ngày phát hành: 07/15
-Mã OTP: 123456
-
-
-
-Ngân hàng: NCB 
-Số thẻ: 9704198526191432198
-Tên chủ thẻ: NGUYEN VAN A
-Ngày phát hành: 07/15 
-Mã OTP: 000000
-sdt: 0912345678
-
-## Tài liệu
-
-- [`docs/ky-thuat/trien-khai.md`](docs/ky-thuat/trien-khai.md) — sơ đồ triển khai và các thành phần
-- [`docs/ky-thuat/no-ky-thuat.md`](docs/ky-thuat/no-ky-thuat.md) — số đo chất lượng hiện tại, nợ kỹ thuật và kế hoạch xử lý
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — quy trình nhánh, Pull Request, commit message, tự kiểm tra trước khi mở PR

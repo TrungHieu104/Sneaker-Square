@@ -1,22 +1,22 @@
-# Quy trình đóng góp
+# Contributing
 
-## Nhánh và Pull Request
+## Branches and pull requests
 
-1. Không commit thẳng lên `main`. Mỗi việc làm trên một nhánh riêng tách từ `main`, tên nhánh
-   **bằng tiếng Anh**: `feat/foot-measure`, `fix/trash-sorting`, `refactor/excel-exports`,
+1. Do not commit straight to `main`. Each piece of work goes on its own branch off `main`, named
+   in English: `feat/foot-measure`, `fix/trash-sorting`, `refactor/excel-exports`,
    `docs/deployment-diagram`.
-2. Đẩy nhánh lên và mở Pull Request vào `main`, điền theo mẫu có sẵn.
-3. Cần ít nhất **một thành viên khác review và approve**, và CI phải xanh, thì mới merge.
-4. Merge bằng **Squash and merge** để mỗi PR là một commit gọn trên `main`.
-5. Commit đều đặn, tuần nào làm thì tuần đó có commit. Không dồn cả tuần vào một commit.
+2. Push the branch and open a pull request into `main`, filling in the template.
+3. At least **one other team member must review and approve**, and CI must be green, before merging.
+4. Merge with **Squash and merge**, so each pull request becomes one clean commit on `main`.
+5. Commit regularly: work done in a week has commits in that week. Do not pile a week into one commit.
 
-Nên bật branch protection cho `main` trên GitHub (Settings → Branches): bắt buộc PR, bắt buộc
-1 review, bắt buộc check CI pass.
+Turn on branch protection for `main` on GitHub (Settings → Branches): require a pull request,
+require 1 review, require the CI checks to pass.
 
-## Commit message
+## Commit messages
 
-Theo [Conventional Commits](https://www.conventionalcommits.org/), viết **bằng tiếng Anh**, một
-commit một việc:
+Follow [Conventional Commits](https://www.conventionalcommits.org/), written **in English**, one
+change per commit:
 
 ```
 feat: measure foot size from a photo
@@ -28,38 +28,38 @@ chore: add CI workflow
 style: format codebase with Laravel Pint
 ```
 
-Không dùng message kiểu `fix`, `update`, hay một câu dài liệt kê năm việc khác nhau.
+Avoid messages like `fix`, `update`, or one long sentence listing five unrelated changes.
 
-## Tự kiểm tra trước khi mở PR
+## Checks before opening a pull request
 
-CI chạy đúng các lệnh dưới đây. Chạy ở máy trước để khỏi chờ CI báo đỏ.
+CI runs exactly the commands below. Run them locally first instead of waiting for CI to fail.
 
 ```bash
 php artisan config:clear
-./vendor/bin/pint --test        # code style, phải sạch
-./vendor/bin/phpstan analyse    # Larastan, phải 0 lỗi
-php artisan test                # feature test, phải pass hết
+./vendor/bin/pint --test        # code style, must be clean
+./vendor/bin/phpstan analyse    # Larastan, must report 0 errors
+php artisan test                # feature tests, must all pass
 ```
 
-Nếu Pint báo lỗi thì chạy `./vendor/bin/pint` để tự sửa.
+If Pint reports problems, run `./vendor/bin/pint` to fix them.
 
-## Secret
+## Secrets
 
-Khoá, token, mật khẩu chỉ để trong `.env`. Thêm biến mới thì ghi vào `.env.example` với giá trị
-rỗng và một dòng giải thích. File khoá (JSON, PEM) để trong `storage/`, không bao giờ để trong
-`public/`, vì mọi thứ trong `public/` đều tải được qua web. CI quét secret bằng gitleaks trên
-mỗi PR.
+Keys, tokens and passwords live only in `.env`. When adding a variable, add it to `.env.example`
+with an empty value and a one-line explanation. Key files (JSON, PEM) go in `storage/`, never in
+`public/`, because everything in `public/` can be downloaded over the web. CI scans every pull
+request for secrets with gitleaks.
 
-## Đo chất lượng bằng SonarQube
+## Measuring quality with SonarQube
 
-Không bắt buộc ở mỗi PR, nhưng nên chạy trước mỗi mốc báo cáo:
+Not required on every pull request, but worth running before each report milestone:
 
 ```bash
 docker run -d --name sonarqube -p 9000:9000 sonarqube:community
-# Mở http://localhost:9000, đăng nhập admin/admin, đổi mật khẩu, tạo token
+# Open http://localhost:9000, log in as admin/admin, change the password, create a token
 docker run --rm --network host -e SONAR_HOST_URL=http://localhost:9000 \
   -e SONAR_TOKEN=<token> -v "$PWD:/usr/src" sonarsource/sonar-scanner-cli
 ```
 
-Phạm vi phân tích nằm trong `sonar-project.properties`. Kết quả gần nhất và danh mục nợ kỹ thuật
-xem ở [`docs/ky-thuat/no-ky-thuat.md`](docs/ky-thuat/no-ky-thuat.md).
+The analysis scope is in `sonar-project.properties`. The latest results and the technical debt
+register are in [`docs/technical/technical-debt.md`](docs/technical/technical-debt.md).
