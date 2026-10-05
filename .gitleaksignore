@@ -1,0 +1,10 @@
+# Secrets that leaked into history and have since been revoked. History is
+# not rewritten because the repository is shared.
+
+# Google service account key, private_key_id 379b57… (revoked 2026-10-05)
+bae84308cba59343c6b6c503d1d3cbbc808c1964:public/sneaker-square-aaad73a613ec.json:private-key:5
+19f7610f20e52c05a0df13c8f28e0cd7547f8453:public/sneaker-square-aaad73a613ec.json:private-key:5
+
+# GHN API token 54ac66… for shop 4541647 (revoked 2026-10-05)
+1fd2ca137db85c0dbe49f253c9067763cb518287:app/Http/Controllers/Frontend/ProductController.php:generic-api-key:659
+d53cc9d0c5dd937ed8bd3e755566d7b821e30e7c:app/Http/Controllers/Frontend/ProductController.php:generic-api-key:659

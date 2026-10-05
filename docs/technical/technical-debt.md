@@ -13,7 +13,7 @@ Updated: 2026-10-05.
 | SonarQube | Duplicated code | 2.5% |
 | SonarQube | Reliability / Security / Maintainability rating | A / A / A |
 | SonarQube | Remaining code smells | 34 Major, 10 Minor |
-| gitleaks | Secrets in the current source | 0 |
+| gitleaks | Secrets in the current source and the whole Git history | 0 (2 old leaks revoked, listed in `.gitleaksignore`) |
 | PHPUnit | Feature tests | 610 passing |
 
 The SonarQube scope, and the reason each part is excluded, is in `sonar-project.properties`.
@@ -22,7 +22,7 @@ The SonarQube scope, and the reason each part is excluded, is in `sonar-project.
 
 | # | Debt | Impact | Plan | Status |
 |---|---|---|---|---|
-| 1 | Old secrets still in Git history: a Google service account key (`private_key_id` starting with `379b57`, commit of 2026-06-25) and a GHN token (commit of 2026-06-03) | Anyone who can read the repo can use them while they are still valid | Revoke the key in Google Cloud Console (IAM → Service accounts → Keys) and regenerate the token in GHN. Once revoked, add both findings' fingerprints to `.gitleaksignore` with a "revoked" note. History is not rewritten because the repo is shared | Waiting for revocation |
+| 1 | Old secrets in Git history: a Google service account key (`private_key_id` starting with `379b57`, commit of 2026-06-25) and a GHN token (commit of 2026-06-03) | None any more: both are revoked, so what remains in history no longer works | Revoked on 2026-10-05; the findings are listed in `.gitleaksignore` with a "revoked" note. History is not rewritten because the repo is shared | Done |
 | 2 | The current Google service account key (`d95764…`) used to sit in `public/`, i.e. downloadable over the web | If a build with that file was ever deployed, the key must be treated as leaked | Moved to `storage/app/google/`, with a test that blocks it from coming back. If it was ever deployed: create a new key and delete the old one | Fixed; rotate the key if it was deployed |
 | 3 | Larastan is at level 2. Levels 3–5 still report about 70 errors, mostly `0/1` assigned to `boolean` columns | Loose typing | Add `boolean` casts to the flag columns (`*_hidden`, `*_status`) and raise one level at a time, with no baseline | Planned |
 | 4 | About 23% duplication in Blade (measured with jscpd; SonarQube does not analyse Blade) | Changing the admin UI means editing many places | Extract the admin create/edit forms and listing tables into Blade components | Planned |
