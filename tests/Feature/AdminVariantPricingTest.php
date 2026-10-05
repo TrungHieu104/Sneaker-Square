@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ProductQuantityModel;
 use App\Models\UserModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
@@ -166,7 +167,7 @@ class AdminVariantPricingTest extends TestCase
 
     private function seedExtraSize(): void
     {
-        \Illuminate\Support\Facades\DB::table('size')
+        DB::table('size')
             ->insertOrIgnore(['size_id' => 2, 'size' => '43', 'size_hidden' => 1]);
     }
 }

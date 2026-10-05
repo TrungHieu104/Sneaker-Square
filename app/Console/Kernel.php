@@ -4,6 +4,7 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Facades\Artisan;
 
 class Kernel extends ConsoleKernel
 {
@@ -20,8 +21,8 @@ class Kernel extends ConsoleKernel
         // past the deadline the customer was shown.
         $schedule->command('orders:expire-unpaid')->withoutOverlapping()->everyMinute();
         $schedule->command('wallet:doi-soat')->withoutOverlapping()->dailyAt('03:00');
-        $schedule->call(function() {
-            \Illuminate\Support\Facades\Artisan::call('cache:clear');
+        $schedule->call(function () {
+            Artisan::call('cache:clear');
             // \Illuminate\Support\Facades\Log::info('Cache cleared successfully.');
         })->dailyAt('16:00');
     }

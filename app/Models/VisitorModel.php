@@ -8,9 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 class VisitorModel extends Model
 {
     use HasFactory;
-    protected $table = "visitors";
-    protected $primaryKey = "visitor_id";
+
+    protected $table = 'visitors';
+
+    protected $primaryKey = 'visitor_id';
+
     public $timestamps = true;
+
     protected $fillable = [
         'visitor_ip',
         'visitor_date',

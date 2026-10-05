@@ -24,7 +24,7 @@ return new class extends Migration
             $table->unsignedInteger('order_delivery_fee');
             $table->unsignedInteger('order_coupon_value')->default(0);
             $table->unsignedInteger('order_total');
-            $table->string('order_payment',50);
+            $table->string('order_payment', 50);
             $table->boolean('order_payment_status');
             $table->dateTime('order_payment_time')->nullable();
             $table->dateTime('order_payment_due_at')->nullable();

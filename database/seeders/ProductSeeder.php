@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -1118,7 +1117,7 @@ class ProductSeeder extends Seeder
                 'created_at' => Now(),
                 'updated_at' => Now(),
             ],
-            
+
             [
                 'pro_name' => 'Adidas Forum Low Pride RM',
                 'pro_slug' => 'adidas-forum-low-pride-rm',
@@ -1135,7 +1134,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1153,7 +1152,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1173,10 +1172,10 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 5,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
-            
+
             [
                 'pro_name' => 'Giày Thể Thao Puma Erupt Trail Running Shoes 193152_02 Phối Màu',
                 'pro_slug' => 'giay-the-thao-puma-erupt-trail-running-shoes-193152-02-phoi-mau',
@@ -1191,7 +1190,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 1,
                 'pro_date' => Now(),
                 'cate_id' => 5,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1209,7 +1208,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 1,
                 'pro_date' => Now(),
                 'cate_id' => 5,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1227,7 +1226,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 5,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1245,7 +1244,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1263,7 +1262,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1281,7 +1280,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1299,7 +1298,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1317,7 +1316,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1335,7 +1334,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             // thuận
@@ -1357,7 +1356,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1377,7 +1376,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1396,7 +1395,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 2,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1415,7 +1414,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 7,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1434,7 +1433,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 5,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1453,7 +1452,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 5,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1472,7 +1471,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 4,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1493,7 +1492,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1514,7 +1513,7 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 3,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
 
@@ -1533,9 +1532,9 @@ class ProductSeeder extends Seeder
                 'pro_hot' => 0,
                 'pro_date' => Now(),
                 'cate_id' => 7,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
-            ]
+            ],
         ]);
     }
 }

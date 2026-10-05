@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,20 +19,22 @@ class CateSlideUpdate extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'name' => ['required','min:3', 'max:50',Rule::unique('cate_slide', 'cate_slide_name')->ignore( request()->id,'cate_slide_id')],
+            'name' => ['required', 'min:3', 'max:50', Rule::unique('cate_slide', 'cate_slide_name')->ignore(request()->id, 'cate_slide_id')],
         ];
     }
-    public function messages(){
+
+    public function messages()
+    {
         return [
             'name.required' => 'Vui lòng nhập tiêu đề!',
             'name.min' => 'Tiêu đề quá ngắn!',
             'name.max' => 'Tên quá dài!',
-            'name.unique' => 'Tên danh mục đã tồn tại!'
+            'name.unique' => 'Tên danh mục đã tồn tại!',
         ];
     }
 }

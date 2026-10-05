@@ -3,21 +3,23 @@
 namespace App\Exports;
 
 use App\Models\StatisticModel;
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Illuminate\Support\Collection;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\Style\Color;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ExportOrderDay implements FromCollection , WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class ExportOrderDay implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping, WithStyles
 {
-    private $count = 1; 
+    private $count = 1;
+
     private $tongDoanhThu = 0;
+
     private $tongLoiNhuan = 0;
 
     public function collection()
@@ -28,7 +30,6 @@ class ExportOrderDay implements FromCollection , WithHeadings, WithMapping, Shou
             $this->tongLoiNhuan += $row->profit;
         }
 
-
         return $data;
     }
 
@@ -36,7 +37,7 @@ class ExportOrderDay implements FromCollection , WithHeadings, WithMapping, Shou
     {
         return [
             [
-                'Thống kê doanh thu | Sneaker Square',  
+                'Thống kê doanh thu | Sneaker Square',
             ],
             [
                 'Số thứ tự',
@@ -48,10 +49,12 @@ class ExportOrderDay implements FromCollection , WithHeadings, WithMapping, Shou
             ],
         ];
     }
+
     public function styles(Worksheet $sheet)
     {
-        $sheet->mergeCells('A1:F1'); 
-        $sheet->getStyle('A1:F1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); 
+        $sheet->mergeCells('A1:F1');
+        $sheet->getStyle('A1:F1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
         return [
             2 => [
                 'font' => [
@@ -59,7 +62,7 @@ class ExportOrderDay implements FromCollection , WithHeadings, WithMapping, Shou
                     'bold' => true,
                 ],
                 'fill' => [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'fillType' => Fill::FILL_SOLID,
                     'startColor' => [
                         'argb' => 'FFC0C0C0',
                     ],
@@ -67,6 +70,7 @@ class ExportOrderDay implements FromCollection , WithHeadings, WithMapping, Shou
             ],
         ];
     }
+
     public function map($row): array
     {
         $result = [
@@ -79,8 +83,8 @@ class ExportOrderDay implements FromCollection , WithHeadings, WithMapping, Shou
         ];
 
         if ($this->count === 2) {
-            $result[4] = number_format($this->tongDoanhThu, 0, ',', '.') . 'đ';
-            $result[5] = number_format($this->tongLoiNhuan, 0, ',', '.') . 'đ';
+            $result[4] = number_format($this->tongDoanhThu, 0, ',', '.').'đ';
+            $result[5] = number_format($this->tongLoiNhuan, 0, ',', '.').'đ';
         }
 
         return $result;

@@ -7,22 +7,26 @@ use App\Services\ShopSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class OrderModel extends Model
 {
     use HasFactory;
-    protected $table = "order";
-    public $primaryKey = "order_id";
+
+    protected $table = 'order';
+
+    public $primaryKey = 'order_id';
+
     public $timestamps = true;
+
     protected $fillable = [
-        'order_code', 
-        'order_name', 
-        'order_phone', 
-        'order_email', 
-        'order_address', 
+        'order_code',
+        'order_name',
+        'order_phone',
+        'order_email',
+        'order_address',
         'order_local',
         'order_district_id',
         'order_ward_code',
@@ -32,19 +36,19 @@ class OrderModel extends Model
         'order_shipping_status',
         'order_delivered_at',
         'order_completed_at',
-        'order_coupon_value', 
-        'order_total', 
-        'order_payment', 
-        'order_payment_status', 
-        'order_date', 
-        'order_delivery_status', 
-        'order_status', 
-        'order_cancel_reason', 
-        'order_refund_required', 
-        'note_customer', 
-        'note_admin', 
-        'coupon_id', 
-        'user_id'
+        'order_coupon_value',
+        'order_total',
+        'order_payment',
+        'order_payment_status',
+        'order_date',
+        'order_delivery_status',
+        'order_status',
+        'order_cancel_reason',
+        'order_refund_required',
+        'note_customer',
+        'note_admin',
+        'coupon_id',
+        'user_id',
     ];
 
     /**
@@ -79,16 +83,19 @@ class OrderModel extends Model
 
     public function User()
     {
-        return $this->belongsTo(UserModel::class, 'user_id','user_id');
+        return $this->belongsTo(UserModel::class, 'user_id', 'user_id');
     }
+
     public function orderDetail()
     {
         return $this->hasMany(OrderDetailModel::class, 'order_id');
     }
+
     public function Coupon()
     {
         return $this->belongsTo(CouponModel::class, 'coupon_id');
     }
+
     public function Product()
     {
         return $this->hasMany(ProductModel::class, 'pro_id');
@@ -332,7 +339,7 @@ class OrderModel extends Model
      * A refused or cancelled request gives its units back to the pool: the
      * goods never left the customer's house. Everything else holds them.
      *
-     * @return array<int, int>  quantity left, keyed by order_details_id
+     * @return array<int, int> quantity left, keyed by order_details_id
      */
     public function returnableQuantities(): array
     {
@@ -434,7 +441,7 @@ class OrderModel extends Model
     /**
      * The attempts before this one, newest parcel first.
      *
-     * @return \Illuminate\Support\Collection<string, \Illuminate\Support\Collection>
+     * @return Collection<string, Collection>
      */
     public function previousShipments()
     {

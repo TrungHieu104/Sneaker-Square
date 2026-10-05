@@ -1,47 +1,46 @@
 <?php
+
+use App\Http\Controllers\Backend\AboutAdminController;
 use App\Http\Controllers\Backend\AuthAdminController;
 use App\Http\Controllers\Backend\BlogAdminController;
 use App\Http\Controllers\Backend\BlogCateController;
-use App\Http\Controllers\Backend\DashboardController;
-use App\Http\Controllers\Backend\ProductAdminController;
-use App\Http\Controllers\Backend\ImageController;
-use App\Http\Controllers\Backend\CommentAdminController;
-use App\Http\Controllers\Backend\ProductQuantityController;
-use App\Http\Controllers\Backend\MenusAdminController;
-use App\Http\Controllers\Backend\FaqAdminController;
-use App\Http\Controllers\Backend\ProductCateController;
-use App\Http\Controllers\Backend\OrderAdminController;
-use App\Http\Controllers\Backend\ShopSettingController;
-use App\Http\Controllers\Backend\ReturnAdminController;
-use App\Http\Controllers\Backend\GhnSimulatorController;
-use App\Http\Controllers\Backend\WalletAdminController;
-use App\Http\Controllers\Backend\CouponAdminController;
 use App\Http\Controllers\Backend\CateSlideAdminController;
-use App\Http\Controllers\Backend\PromotionAdminController;
-use App\Http\Controllers\Backend\TagsAdminController;
-use App\Http\Controllers\Backend\AboutAdminController;
+use App\Http\Controllers\Backend\CommentAdminController;
 use App\Http\Controllers\Backend\ContactFormController;
-
+use App\Http\Controllers\Backend\CouponAdminController;
+use App\Http\Controllers\Backend\DashboardController;
+use App\Http\Controllers\Backend\FaqAdminController;
+use App\Http\Controllers\Backend\GhnSimulatorController;
+use App\Http\Controllers\Backend\ImageController;
+use App\Http\Controllers\Backend\MenusAdminController;
+use App\Http\Controllers\Backend\OrderAdminController;
+use App\Http\Controllers\Backend\ProductAdminController;
+use App\Http\Controllers\Backend\ProductCateController;
+use App\Http\Controllers\Backend\ProductQuantityController;
+use App\Http\Controllers\Backend\PromotionAdminController;
+use App\Http\Controllers\Backend\ReturnAdminController;
+use App\Http\Controllers\Backend\ShopSettingController;
+use App\Http\Controllers\Backend\TagsAdminController;
+use App\Http\Controllers\Backend\WalletAdminController;
 use App\Http\Controllers\Frontend\AuthUserController;
-use App\Http\Controllers\Frontend\ShippingController;
-use App\Http\Controllers\Frontend\ShippingWebhookController;
 use App\Http\Controllers\Frontend\BlogController;
 use App\Http\Controllers\Frontend\CommentController;
+use App\Http\Controllers\Frontend\DeliveryInfoController;
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\LoginFB;
 use App\Http\Controllers\Frontend\LoginGoogle;
-use App\Http\Controllers\Frontend\ProductController;
-use App\Http\Controllers\Frontend\UserController;
-use App\Http\Controllers\Frontend\WishListController;
-use App\Http\Controllers\Frontend\DeliveryInfoController;
-use App\Http\Controllers\Frontend\SearchController;
 use App\Http\Controllers\Frontend\OrderPaymentController;
 use App\Http\Controllers\Frontend\PaymentCallbackController;
+use App\Http\Controllers\Frontend\ProductController;
+use App\Http\Controllers\Frontend\SearchController;
+use App\Http\Controllers\Frontend\ShippingController;
+use App\Http\Controllers\Frontend\ShippingWebhookController;
+use App\Http\Controllers\Frontend\UserController;
 use App\Http\Controllers\Frontend\WalletController;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Request;
+use App\Http\Controllers\Frontend\WishListController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
-
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -55,7 +54,7 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 */
 
 // ======================================Frontend================================================
-Route::fallback(function() {
+Route::fallback(function () {
     abort(404);
 });
 
@@ -73,7 +72,7 @@ Route::group(['middleware' => 'web'], function () {
     Route::get('/', [HomeController::class, 'index'])->name('home.page');
     Route::get('/ve-chung-toi', [HomeController::class, 'about'])->name('about.page');
     Route::get('/lien-he', [HomeController::class, 'contact'])->name('contact.page');
-    Route::post('/lien-he-form',[HomeController::class,'store'])->name('contact-form.sto');
+    Route::post('/lien-he-form', [HomeController::class, 'store'])->name('contact-form.sto');
 
     // Route Product
     Route::get('/san-pham', [ProductController::class, 'index'])->name('product.page');
@@ -153,6 +152,7 @@ Route::group(['middleware' => 'web'], function () {
     // Verification email
     Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
         $request->fulfill();
+
         return back();
     })->middleware(['auth', 'signed'])->name('verification.verify');
     Route::post('/email/verification-notification', [UserController::class, 'verifiedEamil'])->middleware(['throttle:6,1'])->name('verification.send');
@@ -163,18 +163,18 @@ Route::group(['middleware' => 'web'], function () {
     // Info account user
     Route::middleware(['auth', 'doNotCacheResponse'])->group(function () {
         Route::resource('/thong-tin-tai-khoan', (UserController::class));
-        Route::get('cap-nhat-mat-khau',[UserController::class ,'updatePass'])->name('user.update_pass');
-        Route::get('thay-doi-mat-khau/{token}',[UserController::class ,'changePass'])->name('user.change_pass')->middleware('auth');
-        Route::put('cap-nhat-mat-khau',[UserController::class ,'updatePassPost'])->name('user.update_pass_post');
-        Route::post('cap-nhat-email/{id}',[UserController::class ,'changeEmail'])->name('user.change_email');
-        Route::get('dia-chi-giao-hang',[UserController::class ,'delivery'])->name('user.delivery');
+        Route::get('cap-nhat-mat-khau', [UserController::class, 'updatePass'])->name('user.update_pass');
+        Route::get('thay-doi-mat-khau/{token}', [UserController::class, 'changePass'])->name('user.change_pass')->middleware('auth');
+        Route::put('cap-nhat-mat-khau', [UserController::class, 'updatePassPost'])->name('user.update_pass_post');
+        Route::post('cap-nhat-email/{id}', [UserController::class, 'changeEmail'])->name('user.change_email');
+        Route::get('dia-chi-giao-hang', [UserController::class, 'delivery'])->name('user.delivery');
         Route::post('/dia-chi-default', [DeliveryInfoController::class, 'deliInfoDefault'])->name('deliInfoDefault');
-        Route::get('thong-tin-don-hang',[UserController::class ,'userOrder'])->name('user.order');
-        Route::post('da-nhan-hang',[UserController::class ,'successOrder'])->name('success.order');
+        Route::get('thong-tin-don-hang', [UserController::class, 'userOrder'])->name('user.order');
+        Route::post('da-nhan-hang', [UserController::class, 'successOrder'])->name('success.order');
         Route::post('/don-hang/{order_code}/thanh-toan', [OrderPaymentController::class, 'pay'])->name('order.pay');
         Route::patch('/don-hang/{order_code}/phuong-thuc-thanh-toan', [OrderPaymentController::class, 'change'])->name('order.change_payment');
-        Route::patch('/yeu-cau-tra-hang/{order_code}',[UserController::class ,'returnOrder'])->name('return.order');
-        Route::patch('/huy-yeu-cau-tra-hang/{order_code}',[UserController::class ,'cancelReturn'])->name('return.cancel');
+        Route::patch('/yeu-cau-tra-hang/{order_code}', [UserController::class, 'returnOrder'])->name('return.order');
+        Route::patch('/huy-yeu-cau-tra-hang/{order_code}', [UserController::class, 'cancelReturn'])->name('return.cancel');
         Route::get('vi-cua-toi', [WalletController::class, 'index'])->name('user.wallet');
         Route::post('vi-cua-toi/nap-tien', [WalletController::class, 'topup'])->name('wallet.topup');
         Route::post('vi-cua-toi/rut-tien', [WalletController::class, 'withdraw'])->name('wallet.withdraw');
@@ -195,7 +195,7 @@ Route::group(['middleware' => 'web'], function () {
     // Reset password
     Route::get('/quen-mat-khau', [AuthUserController::class, 'forgot'])->name('user.forgot');
     Route::post('/quen-mat-khau', [AuthUserController::class, 'forgotPost'])->name('user.forgot_post');
-    Route::get('/doi-mat-khau/{token}', [AuthUserController::class,'resetPass'])->name('user.reset_pass');;
+    Route::get('/doi-mat-khau/{token}', [AuthUserController::class, 'resetPass'])->name('user.reset_pass');
     Route::post('/doi-mat-khau/{token}', [AuthUserController::class, 'resetPassPost'])->name('user.reset_pass_post');
 
 })->middleware('cacheResponse:600');
@@ -222,46 +222,46 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     Route::post('/dashboard', [DashboardController::class, 'indexPost'])->name('admin.dashboard.post');
     Route::get('/filter-visitor', [DashboardController::class, 'filterVisitor'])->name('dashboard.filter.visitor');
     Route::post('/filter-account-user', [DashboardController::class, 'filterAccountUser'])->name('dashboard.filter.account');
-    Route::post('/export-csv', [DashboardController::class,'export_scv'])->name('export.scv');
-    Route::post('/export-csv-day', [DashboardController::class,'export_scv_day'])->name('export.scvday');
-    Route::post('/export-csv-week', [DashboardController::class,'export_scv_week'])->name('export.scvweek');
-    Route::post('/export-csv-month', [DashboardController::class,'export_scv_month'])->name('export.scvmonth');
-    Route::post('/export-csv-month-prev', [DashboardController::class,'export_scv_monthprev'])->name('export.scvmonthprev');
-    Route::post('/export-csv-year', [DashboardController::class,'export_scv_year'])->name('export.scvyear');
-    Route::get('/support', [DashboardController::class,'support'])->name('support');
+    Route::post('/export-csv', [DashboardController::class, 'export_scv'])->name('export.scv');
+    Route::post('/export-csv-day', [DashboardController::class, 'export_scv_day'])->name('export.scvday');
+    Route::post('/export-csv-week', [DashboardController::class, 'export_scv_week'])->name('export.scvweek');
+    Route::post('/export-csv-month', [DashboardController::class, 'export_scv_month'])->name('export.scvmonth');
+    Route::post('/export-csv-month-prev', [DashboardController::class, 'export_scv_monthprev'])->name('export.scvmonthprev');
+    Route::post('/export-csv-year', [DashboardController::class, 'export_scv_year'])->name('export.scvyear');
+    Route::get('/support', [DashboardController::class, 'support'])->name('support');
     Route::get('/sse-notifications', [DashboardController::class, 'sseNotifications'])->name('sse.noti');
-    Route::get('/revenue', [DashboardController::class,'revenue'])->name('admin.revenue')->middleware('permission:Thống kê doanh thu');
+    Route::get('/revenue', [DashboardController::class, 'revenue'])->name('admin.revenue')->middleware('permission:Thống kê doanh thu');
 
     // Visitor
-    Route::get('/statistical', [DashboardController::class,'statistical'])->name('admin.statistical')->middleware('permission:Thống kê truy cập');
+    Route::get('/statistical', [DashboardController::class, 'statistical'])->name('admin.statistical')->middleware('permission:Thống kê truy cập');
 
     // Product
     Route::resource('product', (ProductAdminController::class))->middleware('permission:Quản trị Sản phẩm');
     Route::post('/products/update-status/{pro_id}', [ProductAdminController::class, 'updateStatus'])->name('product.update.status');
-    Route::post('/products/update-hot/{pro_id}', [ProductAdminController::class, 'updateHot'])->name('product.update.hot');  
-    Route::get('/products/trashed', [ProductAdminController::class,'trashed'])->name('product.trashed')->middleware('permission:Quản trị Sản phẩm');
-    Route::get('/product/restore/{cate_id}', [ProductAdminController::class,'restore'])->name('product.restore')->middleware('permission:Quản trị Sản phẩm');
-    Route::get('/products/restore-all', [ProductAdminController::class,'restoreAll'])->name('product.restore.all')->middleware('permission:Quản trị Sản phẩm');
-    Route::get('/product/delete/{cate_id}', [ProductAdminController::class,'delete'])->name('product.delete')->middleware('permission:Quản trị Sản phẩm');
+    Route::post('/products/update-hot/{pro_id}', [ProductAdminController::class, 'updateHot'])->name('product.update.hot');
+    Route::get('/products/trashed', [ProductAdminController::class, 'trashed'])->name('product.trashed')->middleware('permission:Quản trị Sản phẩm');
+    Route::get('/product/restore/{cate_id}', [ProductAdminController::class, 'restore'])->name('product.restore')->middleware('permission:Quản trị Sản phẩm');
+    Route::get('/products/restore-all', [ProductAdminController::class, 'restoreAll'])->name('product.restore.all')->middleware('permission:Quản trị Sản phẩm');
+    Route::get('/product/delete/{cate_id}', [ProductAdminController::class, 'delete'])->name('product.delete')->middleware('permission:Quản trị Sản phẩm');
     Route::get('/products/delete-all', [ProductAdminController::class, 'deleteAll'])->name('product.delete.all')->middleware('permission:Quản trị Sản phẩm');
-    
+
     // Thống kê sản phẩm
     Route::get('/products/statistical', [ProductAdminController::class, 'productsStatistical'])->name('product.statistical')->middleware('permission:Quản trị Sản phẩm (Thống kê)');
 
     // Hình ảnh
     Route::resource('image', (ImageController::class))->middleware('permission:Quản trị Sản phẩm');
-    Route::get('/images/{pro_slug}/trashed', [ImageController::class,'trashed'])->name('image.trashed')->middleware('permission:Quản trị Sản phẩm');
-    Route::get('/image/restore/{img_id}', [ImageController::class,'restore'])->name('image.restore')->middleware('permission:Quản trị Sản phẩm');
-    Route::get('/images/{pro_slug}/restore-all', [ImageController::class,'restoreAll'])->name('image.restore.all')->middleware('permission:Quản trị Sản phẩm');
-    Route::get('/image/delete/{img_id}', [ImageController::class,'delete'])->name('image.delete')->middleware('permission:Quản trị Sản phẩm');
+    Route::get('/images/{pro_slug}/trashed', [ImageController::class, 'trashed'])->name('image.trashed')->middleware('permission:Quản trị Sản phẩm');
+    Route::get('/image/restore/{img_id}', [ImageController::class, 'restore'])->name('image.restore')->middleware('permission:Quản trị Sản phẩm');
+    Route::get('/images/{pro_slug}/restore-all', [ImageController::class, 'restoreAll'])->name('image.restore.all')->middleware('permission:Quản trị Sản phẩm');
+    Route::get('/image/delete/{img_id}', [ImageController::class, 'delete'])->name('image.delete')->middleware('permission:Quản trị Sản phẩm');
     Route::get('/images/{pro_slug}/delete-all', [ImageController::class, 'deleteAll'])->name('image.delete.all')->middleware('permission:Quản trị Sản phẩm');
 
     // Bình luận
     Route::resource('comment', (CommentAdminController::class))->middleware('permission:Quản trị Sản phẩm (Bình luận)');
-    Route::get('/comments/trashed', [CommentAdminController::class,'trashed'])->name('comment.trashed')->middleware('permission:Quản trị Sản phẩm (Bình luận)');
-    Route::get('/comment/restore/{comment_id}', [CommentAdminController::class,'restore'])->name('comment.restore')->middleware('permission:Quản trị Sản phẩm (Bình luận)');
-    Route::get('/comments/restore-all', [CommentAdminController::class,'restoreAll'])->name('comment.restore.all')->middleware('permission:Quản trị Sản phẩm (Bình luận)');
-    Route::get('/comment/delete/{comment_id}', [CommentAdminController::class,'delete'])->name('comment.delete')->middleware('permission:Quản trị Sản phẩm (Bình luận)');
+    Route::get('/comments/trashed', [CommentAdminController::class, 'trashed'])->name('comment.trashed')->middleware('permission:Quản trị Sản phẩm (Bình luận)');
+    Route::get('/comment/restore/{comment_id}', [CommentAdminController::class, 'restore'])->name('comment.restore')->middleware('permission:Quản trị Sản phẩm (Bình luận)');
+    Route::get('/comments/restore-all', [CommentAdminController::class, 'restoreAll'])->name('comment.restore.all')->middleware('permission:Quản trị Sản phẩm (Bình luận)');
+    Route::get('/comment/delete/{comment_id}', [CommentAdminController::class, 'delete'])->name('comment.delete')->middleware('permission:Quản trị Sản phẩm (Bình luận)');
     Route::get('/comments/delete-all', [CommentAdminController::class, 'deleteAll'])->name('comment.delete.all')->middleware('permission:Quản trị Sản phẩm (Bình luận)');
 
     // Kho
@@ -276,10 +276,10 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     // Danh mục sản phẩm
     Route::resource('product-category', (ProductCateController::class))->middleware('permission:Quản trị Sản phẩm');
     Route::post('/product-categories/update-status/{cate_id}', [ProductCateController::class, 'updateStatus'])->name('product-category.update.status')->middleware('permission:Quản trị Sản phẩm');
-    Route::get('/product-categories/trashed', [ProductCateController::class,'trashed'])->name('product-category.trashed')->middleware('permission:Quản trị Sản phẩm');
-    Route::get('/product-category/restore/{cate_id}', [ProductCateController::class,'restore'])->name('product-category.restore')->middleware('permission:Quản trị Sản phẩm');
-    Route::get('/product-categories/restore-all', [ProductCateController::class,'restoreAll'])->name('product-category.restore.all')->middleware('permission:Quản trị Sản phẩm');
-    Route::get('/product-category/delete/{cate_id}', [ProductCateController::class,'delete'])->name('product-category.delete')->middleware('permission:Quản trị Sản phẩm');
+    Route::get('/product-categories/trashed', [ProductCateController::class, 'trashed'])->name('product-category.trashed')->middleware('permission:Quản trị Sản phẩm');
+    Route::get('/product-category/restore/{cate_id}', [ProductCateController::class, 'restore'])->name('product-category.restore')->middleware('permission:Quản trị Sản phẩm');
+    Route::get('/product-categories/restore-all', [ProductCateController::class, 'restoreAll'])->name('product-category.restore.all')->middleware('permission:Quản trị Sản phẩm');
+    Route::get('/product-category/delete/{cate_id}', [ProductCateController::class, 'delete'])->name('product-category.delete')->middleware('permission:Quản trị Sản phẩm');
     Route::get('/product-categories/delete-all', [ProductCateController::class, 'deleteAll'])->name('product-category.delete.all')->middleware('permission:Quản trị Sản phẩm');
 
     // Blog
@@ -291,7 +291,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     Route::get('/blog-delete-all', [BlogAdminController::class, 'deleteAll'])->name('blog.deleteAll')->middleware('permission:Quản trị Bài viết');
     Route::post('/blog-status/{id}', [BlogAdminController::class, 'status'])->name('blog.status')->middleware('permission:Quản trị Bài viết');
     Route::post('/blog-hot/{id}', [BlogAdminController::class, 'hot'])->name('blog.hot')->middleware('permission:Quản trị Bài viết');
-    
+
     // Blog Category
     Route::resource('blog-category', (BlogCateController::class))->middleware('permission:Quản trị Bài viết');
     Route::get('/blog-category-trashed', [BlogCateController::class, 'trashed'])->name('cate_blog.trashed')->middleware('permission:Quản trị Bài viết');
@@ -319,11 +319,11 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     Route::get('/info/{encryptedUserId}', [AuthAdminController::class, 'editInfo'])->name('account.info');
     Route::post('/info/{id}', [AuthAdminController::class, 'updateInfo'])->name('account.updateinfo');
     Route::post('/change-password', [AuthAdminController::class, 'updatePassword'])->name('change.password');
-    Route::post('/exportuser-csv', [AuthAdminController::class,'exportus_scv'])->name('exportus.scv');
-    Route::post('/exportadmin-csv', [AuthAdminController::class,'exportad_scv'])->name('exportad.scv');
+    Route::post('/exportuser-csv', [AuthAdminController::class, 'exportus_scv'])->name('exportus.scv');
+    Route::post('/exportadmin-csv', [AuthAdminController::class, 'exportad_scv'])->name('exportad.scv');
 
     // Filter Ajax
-    Route::post('/filter-dashboard',[DashboardController::class, 'dashboardFilter'])->name('dashboardFilter');
+    Route::post('/filter-dashboard', [DashboardController::class, 'dashboardFilter'])->name('dashboardFilter');
     Route::post('/filter-by-date', [DashboardController::class, 'filterByDate'])->name('filterByDay');
 
     // Phân quyền
@@ -337,16 +337,18 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
 
     // Mã khuyến mãi
     Route::resource('coupon', (CouponAdminController::class))->middleware('permission:Quản trị Mã giảm giá');
-    Route::get('/coupons/trashed', [CouponAdminController::class,'trashed'])->name('coupon.trashed')->middleware('permission:Quản trị Mã giảm giá');
-    Route::delete('/coupon/soft-delete/{id}', [CouponAdminController::class,'softDelete'])->name('coupon.softDelete')->middleware('permission:Quản trị Mã giảm giá');
-    Route::get('/coupon/restore/{id}', [CouponAdminController::class,'restore'])->name('coupon.restore')->middleware('permission:Quản trị Mã giảm giá');
-    Route::get('/coupons/restore-all', [CouponAdminController::class,'restoreAll'])->name('coupon.restoreAll')->middleware('permission:Quản trị Mã giảm giá');
-    Route::get('/coupons/delete/{id}', [CouponAdminController::class,'forceDelete'])->name('coupon.delete')->middleware('permission:Quản trị Mã giảm giá');
+    Route::get('/coupons/trashed', [CouponAdminController::class, 'trashed'])->name('coupon.trashed')->middleware('permission:Quản trị Mã giảm giá');
+    Route::delete('/coupon/soft-delete/{id}', [CouponAdminController::class, 'softDelete'])->name('coupon.softDelete')->middleware('permission:Quản trị Mã giảm giá');
+    Route::get('/coupon/restore/{id}', [CouponAdminController::class, 'restore'])->name('coupon.restore')->middleware('permission:Quản trị Mã giảm giá');
+    Route::get('/coupons/restore-all', [CouponAdminController::class, 'restoreAll'])->name('coupon.restoreAll')->middleware('permission:Quản trị Mã giảm giá');
+    Route::get('/coupons/delete/{id}', [CouponAdminController::class, 'forceDelete'])->name('coupon.delete')->middleware('permission:Quản trị Mã giảm giá');
     Route::get('/coupons/delete-all', [CouponAdminController::class, 'deleteAll'])->name('coupon.delete.all')->middleware('permission:Quản trị Mã giảm giá');
-    Route::post('/exportcou-csv', [CouponAdminController::class,'exportcou_scv'])->name('exportcou.scv');
-    Route::get('/send-coupon',  function() {abort(404);});
-    Route::post('/send-coupon',[CouponAdminController::class,'sendCoupon'])->name('sendCoupon');
-    
+    Route::post('/exportcou-csv', [CouponAdminController::class, 'exportcou_scv'])->name('exportcou.scv');
+    Route::get('/send-coupon', function () {
+        abort(404);
+    });
+    Route::post('/send-coupon', [CouponAdminController::class, 'sendCoupon'])->name('sendCoupon');
+
     // FAQ Câu hỏi thường gặp
     Route::resource('faq', (FaqAdminController::class))->middleware('permission:Quản trị FAQ');
     Route::get('/faqs/trashed', [FaqAdminController::class, 'trashed'])->name('faq.trashed')->middleware('permission:Quản trị FAQ');
@@ -365,8 +367,8 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     // Đơn hàng
     Route::resource('order', (OrderAdminController::class))->middleware('permission:Quản trị Đơn hàng');
     Route::get('/order/{encryptedOrderId}/edit', [OrderAdminController::class, 'edit'])->name('orders.edit')->middleware('permission:Quản trị Đơn hàng');
-    Route::get('/order-print/{encryptedOrderId}',[OrderAdminController::class,'printOrder'])->name('order.print')->middleware('permission:Quản trị Đơn hàng');
-    Route::post('/exportorder-csv', [OrderAdminController::class,'exportorder_scv'])->name('exportorder.scv');
+    Route::get('/order-print/{encryptedOrderId}', [OrderAdminController::class, 'printOrder'])->name('order.print')->middleware('permission:Quản trị Đơn hàng');
+    Route::post('/exportorder-csv', [OrderAdminController::class, 'exportorder_scv'])->name('exportorder.scv');
     Route::patch('/order/{order_id}/ma-van-don', [OrderAdminController::class, 'updateShippingCode'])->name('order.shipping_code')->middleware('permission:Quản trị Đơn hàng');
     Route::post('/order/{order_id}/tao-van-don', [OrderAdminController::class, 'bookShipment'])->name('order.book_shipment')->middleware('permission:Quản trị Đơn hàng');
     Route::post('/order/{order_id}/huy-van-don', [OrderAdminController::class, 'cancelShipment'])->name('order.cancel_shipment')->middleware('permission:Quản trị Đơn hàng');
@@ -413,7 +415,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     Route::get('/promotion/delete/{id}', [PromotionAdminController::class, 'forceDelete'])->name('promotion.delete')->middleware('permission:Quản trị Slide');
     Route::get('/promotions/delete-all', [PromotionAdminController::class, 'deleteAll'])->name('promotion.delete.all')->middleware('permission:Quản trị Slide');
     Route::post('/promotion-status/{id}', [PromotionAdminController::class, 'status'])->name('promotion.status');
-    
+
     // Danh mục Silde
     Route::resource('cate-slide', (CateSlideAdminController::class))->middleware('permission:Quản trị Slide');
     Route::get('/cateslide/trashed', [CateSlideAdminController::class, 'trashed'])->name('cate_slide.trashed')->middleware('permission:Quản trị Slide');
@@ -434,7 +436,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () {
     Route::get('/menus/delete/{id}', [MenusAdminController::class, 'forceDelete'])->name('menu.delete')->middleware('permission:Quản trị Menu');
     Route::get('/menu/delete-all', [MenusAdminController::class, 'deleteAll'])->name('menus.delete.all')->middleware('permission:Quản trị Menu');
     Route::post('/menu-status/{id}', [MenusAdminController::class, 'status'])->name('menu.status');
-    
+
     // Form liên hệ
     Route::resource('contact-form', (ContactFormController::class))->middleware('permission:Khách hàng liên hệ');
     Route::put('/handle/{id}', [ContactFormController::class, 'handle'])->name('contact.handle')->middleware('permission:Khách hàng liên hệ');

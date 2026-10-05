@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,18 +19,20 @@ class AccountUpRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'name' => ['required','min:3', 'max:50'],
-            'username' => ['required','min:5', 'max:50', Rule::unique('users', 'username')->ignore( request()->id,'user_id')],
-            'email' => ['required','email','ends_with:@gmail.com',Rule::unique('users', 'email')->ignore( request()->id,'user_id')],
+            'name' => ['required', 'min:3', 'max:50'],
+            'username' => ['required', 'min:5', 'max:50', Rule::unique('users', 'username')->ignore(request()->id, 'user_id')],
+            'email' => ['required', 'email', 'ends_with:@gmail.com', Rule::unique('users', 'email')->ignore(request()->id, 'user_id')],
 
         ];
     }
-    public function messages(){
+
+    public function messages()
+    {
         return [
             'name.required' => 'Vui lòng nhập họ tên!',
             'name.max' => 'Tên quá dài!',
@@ -39,7 +42,7 @@ class AccountUpRequest extends FormRequest
             'username.max' => 'Tên đăng nhập quá dài!',
             'username.unique' => 'Tên đăng nhập đã tồn tại!',
             'email.required' => 'Bạn chưa nhập email!',
-            'email.unique' => "Email đã được đăng ký!",
+            'email.unique' => 'Email đã được đăng ký!',
             'email.email' => 'Email nhập không đúng định dạng!',
             'email.ends_with' => 'Email phải có đuôi là @gmail.com!',
         ];

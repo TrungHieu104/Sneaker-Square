@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class NewsRequest extends FormRequest
@@ -17,18 +18,18 @@ class NewsRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'title'=> ['required', 'min:10','max:200','unique:mysql.news,news_title'],
-            'slug'=> ['required', 'min:10','max:200','unique:mysql.news,news_slug'],
-            'summarize'=> ['required','min:10','max:400'],
-            'content'=>['required','min:10','max:90000'],
-            'img_blog' => ['required','image'],
+            'title' => ['required', 'min:10', 'max:200', 'unique:mysql.news,news_title'],
+            'slug' => ['required', 'min:10', 'max:200', 'unique:mysql.news,news_slug'],
+            'summarize' => ['required', 'min:10', 'max:400'],
+            'content' => ['required', 'min:10', 'max:90000'],
+            'img_blog' => ['required', 'image'],
             'cate' => ['required'],
-            'post_date' => ['required','after_or_equal:today'],
+            'post_date' => ['required', 'after_or_equal:today'],
         ];
     }
 
@@ -53,7 +54,7 @@ class NewsRequest extends FormRequest
             'img_blog.image' => 'File không được hỗ trợ!',
             'cate.required' => 'Vui lòng chọn danh mục bài viết!',
             'post_date.required' => 'Vui lòng chọn ngày đăng bài viết!',
-            'post_date.after_or_equal'=> 'Vui lòng chọn ngày đăng từ ngày hôm nay trở đi!'
+            'post_date.after_or_equal' => 'Vui lòng chọn ngày đăng từ ngày hôm nay trở đi!',
         ];
     }
 }

@@ -53,7 +53,7 @@ class PageQueryCountTest extends TestCase
     private function makeProducts(int $count, string $prefix): void
     {
         for ($i = 1; $i <= $count; $i++) {
-            $this->makeProduct(slug: $prefix . '-' . $i);
+            $this->makeProduct(slug: $prefix.'-'.$i);
         }
     }
 
@@ -67,7 +67,7 @@ class PageQueryCountTest extends TestCase
                 'comment_date' => now(),
                 'pro_id' => $product->pro_id,
                 'user_id' => $reviewer->user_id,
-                'comment_name' => 'Người mua ' . $i,
+                'comment_name' => 'Người mua '.$i,
                 'comment_email' => 'nguoimua@example.test',
                 'rating' => 4,
                 'comment_hidden' => 1,
@@ -138,8 +138,8 @@ class PageQueryCountTest extends TestCase
         for ($i = 2; $i <= 6; $i++) {
             DB::table('category')->insert([
                 'cate_id' => $i,
-                'cate_name' => 'Danh mục ' . $i,
-                'cate_slug' => 'danh-muc-' . $i,
+                'cate_name' => 'Danh mục '.$i,
+                'cate_slug' => 'danh-muc-'.$i,
                 'cate_sort' => $i,
                 'cate_hidden' => 1,
                 'cate_parent_id' => 1,

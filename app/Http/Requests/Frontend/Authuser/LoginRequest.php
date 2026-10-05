@@ -2,8 +2,9 @@
 
 namespace App\Http\Requests\Frontend\Authuser;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Rules\Captcha;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
 class LoginRequest extends FormRequest
@@ -19,7 +20,7 @@ class LoginRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+     * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {
@@ -28,20 +29,20 @@ class LoginRequest extends FormRequest
             'password' => [
                 'required',
                 Password::min(8)
-                ->mixedCase()
-                ->numbers()
-                ->symbols()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols(),
             ],
             // A rule object is skipped when the field is absent, so listing the
             // Captcha rule on its own left the check entirely up to the client:
             // omit the field and there was nothing to fail. Once the widget is
             // on the page the token has to come with it.
             'g-recaptcha-response' => self::captchaRequired()
-                ? ['required', new Captcha()]
-                : ['nullable', new Captcha()],
+                ? ['required', new Captcha]
+                : ['nullable', new Captcha],
         ];
     }
-    
+
     /**
      * Whether this sign-in has to carry a reCAPTCHA token.
      *

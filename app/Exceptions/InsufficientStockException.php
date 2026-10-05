@@ -32,6 +32,6 @@ class InsufficientStockException extends Exception
      */
     public function userMessage(): string
     {
-        return $this->getMessage() . ' Vui lòng giảm số lượng hoặc chọn sản phẩm khác.';
+        return $this->getMessage().' Vui lòng giảm số lượng hoặc chọn sản phẩm khác.';
     }
 }

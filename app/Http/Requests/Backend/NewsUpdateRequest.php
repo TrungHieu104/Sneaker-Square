@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,16 +19,16 @@ class NewsUpdateRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'title'=> ['required', 'min:10','max:200',Rule::unique('news', 'news_title')->ignore( request()->id,'news_id')],
-            'slug'=> ['required', 'min:10','max:200',Rule::unique('news', 'news_slug')->ignore( request()->id,'news_id')],
-            'summarize'=> ['required','min:10','max:400'],
-            'content'=>['required','min:10','max:90000'],
-            'img_blog' => ['image']
+            'title' => ['required', 'min:10', 'max:200', Rule::unique('news', 'news_title')->ignore(request()->id, 'news_id')],
+            'slug' => ['required', 'min:10', 'max:200', Rule::unique('news', 'news_slug')->ignore(request()->id, 'news_id')],
+            'summarize' => ['required', 'min:10', 'max:400'],
+            'content' => ['required', 'min:10', 'max:90000'],
+            'img_blog' => ['image'],
         ];
     }
 

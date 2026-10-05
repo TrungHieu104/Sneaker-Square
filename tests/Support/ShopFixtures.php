@@ -88,17 +88,16 @@ trait ShopFixtures
         int $stock = 10,
         string $slug = 'nike-air',
         bool $withVariant = true,
-    ): ProductModel
-    {
+    ): ProductModel {
         $product = ProductModel::create([
             // Stored already title-cased, the way ProductRequest normalises it.
-            'pro_name' => ucwords('Sản phẩm ' . $slug),
+            'pro_name' => ucwords('Sản phẩm '.$slug),
             'pro_slug' => $slug,
-            'pro_code' => 'SKU-' . $slug,
+            'pro_code' => 'SKU-'.$slug,
             'pro_price' => $price,
             'pro_price_sale' => $salePrice,
             'capital_price' => (int) ($price * 0.6),
-            'pro_img' => $slug . '.jpg',
+            'pro_img' => $slug.'.jpg',
             'pro_date' => now()->toDateString(),
             'pro_hidden' => 1,
             'cate_id' => 1,

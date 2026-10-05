@@ -11,7 +11,6 @@ use App\Models\OrderReturnModel;
 use App\Models\ProductModel;
 use App\Models\ProductQuantityModel;
 use App\Models\UserModel;
-use App\Models\WalletTransactionModel;
 use App\Services\Shipping\FakeCarrier;
 use App\Services\Shipping\ShippingCarrier;
 use App\Services\ShopSettings;
@@ -604,7 +603,7 @@ class OrderReturnTest extends TestCase
     // ------------------------------------------------- phí gửi trả theo lỗi
 
     /**
-     * @return array{0: OrderReturnModel, 1: int}  the request and the booked fee
+     * @return array{0: OrderReturnModel, 1: int} the request and the booked fee
      */
     private function bookReturnFor(OrderModel $order, string $reason): array
     {

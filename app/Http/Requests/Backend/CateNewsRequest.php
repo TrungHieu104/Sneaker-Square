@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CateNewsRequest extends FormRequest
@@ -17,18 +18,20 @@ class CateNewsRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'name' => ['required','min:3', 'max:50','unique:mysql.cate_news,cate_news_name'],
-            'slug' => ['required','min:3', 'max:50','unique:mysql.cate_news,cate_news_slug'],
-            'sort' => ['required','min:0', 'max:100000000', 'numeric','integer'],
-            'img_blog' => ['image']
+            'name' => ['required', 'min:3', 'max:50', 'unique:mysql.cate_news,cate_news_name'],
+            'slug' => ['required', 'min:3', 'max:50', 'unique:mysql.cate_news,cate_news_slug'],
+            'sort' => ['required', 'min:0', 'max:100000000', 'numeric', 'integer'],
+            'img_blog' => ['image'],
         ];
     }
-    public function messages(){
+
+    public function messages()
+    {
         return [
             'name.required' => 'Vui lòng nhập tên danh mục!',
             'name.min' => 'Tên danh mục quá ngắn!',

@@ -9,7 +9,9 @@ use Illuminate\Routing\Controller as BaseController;
 class Controller extends BaseController
 {
     use AuthorizesRequests, ValidatesRequests;
-    protected function performSearch($model, $keyword, $searchableFields) {
+
+    protected function performSearch($model, $keyword, $searchableFields)
+    {
         return $model->when($keyword, function ($query) use ($keyword, $searchableFields) {
             $query->where(function ($query) use ($keyword, $searchableFields) {
                 foreach ($searchableFields as $field) {
@@ -17,5 +19,5 @@ class Controller extends BaseController
                 }
             });
         });
-    }    
+    }
 }

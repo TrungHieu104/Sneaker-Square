@@ -43,10 +43,10 @@ class MoMoGateway implements PaymentGateway
             'partnerCode' => $partnerCode,
             'partnerName' => 'Sneaker Square',
             'storeId' => 'SneakerSquare',
-            'requestId' => $charge->code . '-' . time(),
+            'requestId' => $charge->code.'-'.time(),
             'amount' => $charge->amount,
             'orderId' => $charge->code,
-            'orderInfo' => $charge->description . ' qua MoMo',
+            'orderInfo' => $charge->description.' qua MoMo',
             'redirectUrl' => route('process.checkout'),
             'ipnUrl' => route('payment.ipn'),
             'lang' => 'vi',
@@ -113,16 +113,16 @@ class MoMoGateway implements PaymentGateway
      */
     private function createHashData(string $accessKey, array $payload): string
     {
-        return 'accessKey=' . $accessKey
-            . '&amount=' . $payload['amount']
-            . '&extraData=' . $payload['extraData']
-            . '&ipnUrl=' . $payload['ipnUrl']
-            . '&orderId=' . $payload['orderId']
-            . '&orderInfo=' . $payload['orderInfo']
-            . '&partnerCode=' . $payload['partnerCode']
-            . '&redirectUrl=' . $payload['redirectUrl']
-            . '&requestId=' . $payload['requestId']
-            . '&requestType=' . $payload['requestType'];
+        return 'accessKey='.$accessKey
+            .'&amount='.$payload['amount']
+            .'&extraData='.$payload['extraData']
+            .'&ipnUrl='.$payload['ipnUrl']
+            .'&orderId='.$payload['orderId']
+            .'&orderInfo='.$payload['orderInfo']
+            .'&partnerCode='.$payload['partnerCode']
+            .'&redirectUrl='.$payload['redirectUrl']
+            .'&requestId='.$payload['requestId']
+            .'&requestType='.$payload['requestType'];
     }
 
     /**
@@ -135,19 +135,19 @@ class MoMoGateway implements PaymentGateway
     {
         $field = fn (string $key): string => (string) ($params[$key] ?? '');
 
-        return 'accessKey=' . $accessKey
-            . '&amount=' . $field('amount')
-            . '&extraData=' . $field('extraData')
-            . '&message=' . $field('message')
-            . '&orderId=' . $field('orderId')
-            . '&orderInfo=' . $field('orderInfo')
-            . '&orderType=' . $field('orderType')
-            . '&partnerCode=' . $field('partnerCode')
-            . '&payType=' . $field('payType')
-            . '&requestId=' . $field('requestId')
-            . '&responseTime=' . $field('responseTime')
-            . '&resultCode=' . $field('resultCode')
-            . '&transId=' . $field('transId');
+        return 'accessKey='.$accessKey
+            .'&amount='.$field('amount')
+            .'&extraData='.$field('extraData')
+            .'&message='.$field('message')
+            .'&orderId='.$field('orderId')
+            .'&orderInfo='.$field('orderInfo')
+            .'&orderType='.$field('orderType')
+            .'&partnerCode='.$field('partnerCode')
+            .'&payType='.$field('payType')
+            .'&requestId='.$field('requestId')
+            .'&responseTime='.$field('responseTime')
+            .'&resultCode='.$field('resultCode')
+            .'&transId='.$field('transId');
     }
 
     /**
@@ -161,11 +161,11 @@ class MoMoGateway implements PaymentGateway
             $details = [];
 
             foreach ($response['subErrors'] as $subError) {
-                $details[] = ($subError['field'] ?? '?') . ': ' . ($subError['message'] ?? '?');
+                $details[] = ($subError['field'] ?? '?').': '.($subError['message'] ?? '?');
             }
 
             if ($details !== []) {
-                $message .= ' (' . implode(', ', $details) . ')';
+                $message .= ' ('.implode(', ', $details).')';
             }
         }
 

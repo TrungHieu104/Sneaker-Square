@@ -8,9 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 class DeliveryInfoModel extends Model
 {
     use HasFactory;
-    protected $table ="delivery_info"; 
-    public $primaryKey = "info_id";
-    public $timestamps = true;  
+
+    protected $table = 'delivery_info';
+
+    public $primaryKey = 'info_id';
+
+    public $timestamps = true;
+
     protected $fillable = [
         'info_name',
         'info_phone',

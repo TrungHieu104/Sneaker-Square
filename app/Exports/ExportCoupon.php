@@ -1,32 +1,35 @@
 <?php
 
 namespace App\Exports;
+
 use App\Models\CouponModel;
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Illuminate\Support\Collection;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\Style\Color;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-
-class ExportCoupon implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class ExportCoupon implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping, WithStyles
 {
-    private $count = 1; 
+    private $count = 1;
+
     public function collection()
     {
         $data = CouponModel::get();
+
         return $data;
     }
+
     public function headings(): array
     {
         return [
             [
-                'Danh sách mã giảm giá | Sneaker Square',  
+                'Danh sách mã giảm giá | Sneaker Square',
             ],
             [
                 'STT',
@@ -42,10 +45,12 @@ class ExportCoupon implements FromCollection, WithHeadings, WithMapping, ShouldA
             ],
         ];
     }
+
     public function styles(Worksheet $sheet)
     {
-        $sheet->mergeCells('A1:J1'); 
+        $sheet->mergeCells('A1:J1');
         $sheet->getStyle('A1:J1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
         return [
             2 => [
                 'font' => [
@@ -53,7 +58,7 @@ class ExportCoupon implements FromCollection, WithHeadings, WithMapping, ShouldA
                     'bold' => true,
                 ],
                 'fill' => [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'fillType' => Fill::FILL_SOLID,
                     'startColor' => [
                         'argb' => 'FFC0C0C0',
                     ],
@@ -61,6 +66,7 @@ class ExportCoupon implements FromCollection, WithHeadings, WithMapping, ShouldA
             ],
         ];
     }
+
     public function map($row): array
     {
         $today = Carbon::now('Asia/Ho_Chi_Minh')->format('Y/m/d');
@@ -70,20 +76,18 @@ class ExportCoupon implements FromCollection, WithHeadings, WithMapping, ShouldA
             $row->coupon_code,
             $row->coupon_quantity,
             Carbon::parse($row->coupon_date)->format('d-m-Y'),
-            Carbon::parse( $row->coupon_start)->format('d-m-Y'),
-            Carbon::parse( $row->coupon_end)->format('d-m-Y'),
-            ($row->coupon_condition == 1) ? "Giảm theo tiền" : "Giảm theo %",
-            ($row->coupon_condition == 1) ? number_format($row->coupon_value, 0, ',', '.') . 'đ' : ($row->coupon_value).'%',
+            Carbon::parse($row->coupon_start)->format('d-m-Y'),
+            Carbon::parse($row->coupon_end)->format('d-m-Y'),
+            ($row->coupon_condition == 1) ? 'Giảm theo tiền' : 'Giảm theo %',
+            ($row->coupon_condition == 1) ? number_format($row->coupon_value, 0, ',', '.').'đ' : ($row->coupon_value).'%',
             (date('Y-m-d', strtotime($row->coupon_end)) >= date('Y-m-d', strtotime($today))) ?
 
-               "Còn hạn"
-            
-            :
-                "Hết hạn"
-            ,
-                                                        
-        ];
+               'Còn hạn'
 
+            :
+                'Hết hạn',
+
+        ];
 
         return $result;
     }

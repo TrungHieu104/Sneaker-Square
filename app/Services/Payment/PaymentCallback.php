@@ -18,6 +18,5 @@ final class PaymentCallback
         public readonly PaymentOutcome $outcome,
         public readonly ?string $reference = null,
         public readonly ?string $message = null,
-    ) {
-    }
+    ) {}
 }

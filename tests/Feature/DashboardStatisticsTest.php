@@ -36,7 +36,7 @@ class DashboardStatisticsTest extends TestCase
     private function makeOrder(string $payment, int $paymentStatus, OrderStatus $status = OrderStatus::New): OrderModel
     {
         return OrderModel::create([
-            'order_code' => 'DH' . random_int(1000000, 9999999),
+            'order_code' => 'DH'.random_int(1000000, 9999999),
             'order_name' => 'Nguyễn Văn A',
             'order_email' => 'khach@example.test',
             'order_address' => '1 Võ Văn Ngân',

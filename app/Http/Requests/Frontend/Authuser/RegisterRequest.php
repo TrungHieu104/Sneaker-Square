@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Frontend\Authuser;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
@@ -18,7 +19,7 @@ class RegisterRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+     * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {
@@ -34,10 +35,10 @@ class RegisterRequest extends FormRequest
                 'same:same_password',
             ],
             'same_password' => 'required|min:8',
-            'terms' => 'accepted'
+            'terms' => 'accepted',
         ];
     }
-    
+
     public function messages()
     {
         return [
@@ -56,7 +57,7 @@ class RegisterRequest extends FormRequest
             'password.symbols' => 'Mật khẩu phải có ký tự đặc biệt',
             'same_password.required' => 'Bạn chưa nhập lại mật khẩu',
             'same_password.min' => 'Mật khẩu nhập lại cùng từ 8 ký tự trở lên',
-            'terms.accepted' => 'Vui lòng chấp nhận điều khoản & chính sách'
+            'terms.accepted' => 'Vui lòng chấp nhận điều khoản & chính sách',
         ];
     }
 }

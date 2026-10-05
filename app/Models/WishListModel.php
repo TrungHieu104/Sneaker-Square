@@ -8,10 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 class WishListModel extends Model
 {
     use HasFactory;
-    
-    protected $table = "like";
-    protected $primaryKey = "like_id";
+
+    protected $table = 'like';
+
+    protected $primaryKey = 'like_id';
+
     public $timestamps = true;
+
     protected $fillable = [
         'pro_id',
         'user_id',

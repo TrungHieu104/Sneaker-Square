@@ -51,7 +51,7 @@ trait CreatesApplication
 
         throw new RuntimeException(
             "Bộ test đang trỏ vào '{$connection}' / '{$database}' thay vì sqlite :memory:. "
-            . $hint . ' Nếu chạy tiếp, RefreshDatabase sẽ xóa sạch database thật.'
+            .$hint.' Nếu chạy tiếp, RefreshDatabase sẽ xóa sạch database thật.'
         );
     }
 }

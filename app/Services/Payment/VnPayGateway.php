@@ -40,7 +40,7 @@ class VnPayGateway implements PaymentGateway
             'vnp_CurrCode' => 'VND',
             'vnp_IpAddr' => request()->ip() ?? '127.0.0.1',
             'vnp_Locale' => 'vn',
-            'vnp_OrderInfo' => $charge->description . ' qua VNPay',
+            'vnp_OrderInfo' => $charge->description.' qua VNPay',
             'vnp_OrderType' => 'billpayment',
             'vnp_ReturnUrl' => route('process.checkout'),
             'vnp_TxnRef' => $charge->code,
@@ -58,7 +58,7 @@ class VnPayGateway implements PaymentGateway
         $query = http_build_query($input);
         $secureHash = hash_hmac('sha512', $this->hashData($input), (string) config('services.vnpay.hash_secret'));
 
-        return config('services.vnpay.url') . '?' . $query . '&vnp_SecureHash=' . $secureHash;
+        return config('services.vnpay.url').'?'.$query.'&vnp_SecureHash='.$secureHash;
     }
 
     public function verify(array $params): PaymentCallback
@@ -114,7 +114,7 @@ class VnPayGateway implements PaymentGateway
         $pairs = [];
 
         foreach ($params as $key => $value) {
-            $pairs[] = urlencode((string) $key) . '=' . urlencode((string) $value);
+            $pairs[] = urlencode((string) $key).'='.urlencode((string) $value);
         }
 
         return implode('&', $pairs);

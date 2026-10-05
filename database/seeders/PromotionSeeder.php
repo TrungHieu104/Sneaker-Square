@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+
 class PromotionSeeder extends Seeder
 {
     /**
@@ -28,7 +28,7 @@ class PromotionSeeder extends Seeder
                 'promotion_content' => 'Mua ngay các sản phẩm chính hãng từ các thương hiệu nổi tiếng giá tốt nhất thị trường chỉ có thể là Sneaker Square.',
                 'promotion_note' => null,
                 'cate_slide_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -44,7 +44,7 @@ class PromotionSeeder extends Seeder
                 'promotion_content' => 'Được làm bằng chất liệu BOOST nhẹ hơn 30%, đây là dòng Ultraboost nhẹ nhất từ trước đến nay đến từ thương hiệu Adidas.',
                 'promotion_note' => null,
                 'cate_slide_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -60,7 +60,7 @@ class PromotionSeeder extends Seeder
                 'promotion_content' => 'Adidas Hyperturf mang đến trải nghiệm tuyệt vời trong quá trình tập luyện, với sự hỗ trợ từ các công nghệ giày cao cấp, giúp cải thiện và nâng cao hiệu suất.',
                 'promotion_note' => null,
                 'cate_slide_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -76,7 +76,7 @@ class PromotionSeeder extends Seeder
                 'promotion_content' => 'Ưu đãi online độc quyền: giảm đến 50% cho một số sản phẩm phát hành giới hạn của Nike. Chương trình diễn ra trong tháng 06-2026.',
                 'promotion_note' => null,
                 'cate_slide_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -92,7 +92,7 @@ class PromotionSeeder extends Seeder
                 'promotion_content' => 'Biểu tượng của sự đẳng cấp và phong cách thời trang, với thiết kế bền bỉ và lớp vỏ da sang trọng, đôi giày này là sự kết hợp hoàn hảo giữa tiện ích và thẩm mỹ.',
                 'promotion_note' => null,
                 'cate_slide_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
             [
@@ -108,7 +108,7 @@ class PromotionSeeder extends Seeder
                 'promotion_content' => 'Với sự kết hợp tinh tế giữa các gam màu và chất liệu cao cấp, đây không chỉ là một đôi giày, mà là một tuyên bố về phong cách cá nhân.',
                 'promotion_note' => null,
                 'cate_slide_id' => 1,
-                'created_at' => Now(), 
+                'created_at' => Now(),
                 'updated_at' => Now(),
             ],
         ]);

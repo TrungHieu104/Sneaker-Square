@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PromotionRequest extends FormRequest
@@ -11,28 +12,29 @@ class PromotionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return  true;
+        return true;
     }
 
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'name' => ['required','min:3', 'max:100','unique:promotion,promotion_name'],
-            'start_pro' => ['required','after_or_equal:today'],
-            'end_pro' => ['required','after:start_start', 'after_or_equal:today'],
-            'position' => ['required','min:0', 'max:100000000', 'numeric','integer','unique:promotion,promotion_sort'],
+            'name' => ['required', 'min:3', 'max:100', 'unique:promotion,promotion_name'],
+            'start_pro' => ['required', 'after_or_equal:today'],
+            'end_pro' => ['required', 'after:start_start', 'after_or_equal:today'],
+            'position' => ['required', 'min:0', 'max:100000000', 'numeric', 'integer', 'unique:promotion,promotion_sort'],
             'img' => ['required'],
             'cate' => ['required'],
-            'url' => ['required','max:200'],
+            'url' => ['required', 'max:200'],
             'type' => ['required'],
-            'contents' => ['required','min:3', 'max:200'],
+            'contents' => ['required', 'min:3', 'max:200'],
         ];
-    } 
+    }
+
     public function messages()
     {
         return [

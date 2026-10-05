@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Enums\OrderStatus;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+
 class OrderSeeder extends Seeder
 {
     /**
@@ -20,11 +21,11 @@ class OrderSeeder extends Seeder
                 'order_address' => '391/375 Trần Hưng Đạo, Phường Cầu Kho, Quận 1, TP Hồ Chí Minh',
                 'order_phone' => '09347935983',
                 'order_total' => 83000000,
-                'order_payment' => 1, 
+                'order_payment' => 1,
                 'order_payment_status' => 1,
                 // 'order_dilivery_status' => 0,
                 'order_date' => now(),
-                'order_status' => \App\Enums\OrderStatus::New,
+                'order_status' => OrderStatus::New,
                 'coupon_id' => 2,
                 'user_id' => 1,
                 'created_at' => now(),
@@ -37,11 +38,11 @@ class OrderSeeder extends Seeder
                 'order_address' => '111 Khuông Việt, Phường Phú Trung, Quận Tân Phú, TP Hồ Chí Minh',
                 'order_phone' => '0903047443',
                 'order_total' => 18300000,
-                'order_payment' => 1, 
+                'order_payment' => 1,
                 'order_payment_status' => 1,
                 // 'order_dilivery_status' => 0,
                 'order_date' => now(),
-                'order_status' => \App\Enums\OrderStatus::New,
+                'order_status' => OrderStatus::New,
                 'coupon_id' => 5,
                 'user_id' => 1,
                 'created_at' => now(),
@@ -54,10 +55,10 @@ class OrderSeeder extends Seeder
                 'order_address' => '297/3 Tô Hiến Thành, Phường 13, Quận 10, TP Hồ Chí Minh',
                 'order_phone' => '0983003421',
                 'order_total' => 430000,
-                'order_payment' => 1, 
+                'order_payment' => 1,
                 'order_payment_status' => 1,
                 'order_date' => now(),
-                'order_status' => \App\Enums\OrderStatus::New,
+                'order_status' => OrderStatus::New,
                 'coupon_id' => 2,
                 'user_id' => 1,
                 'created_at' => now(),
@@ -70,10 +71,10 @@ class OrderSeeder extends Seeder
                 'order_address' => '401 Phan Xích Long, Phường 3, Quận Phú Nhuận, TP Hồ Chí Minh.',
                 'order_phone' => '098040222',
                 'order_total' => 1890000,
-                'order_payment' => 1, 
+                'order_payment' => 1,
                 'order_payment_status' => 1,
                 'order_date' => now(),
-                'order_status' => \App\Enums\OrderStatus::New,
+                'order_status' => OrderStatus::New,
                 'coupon_id' => null,
                 'user_id' => 1,
                 'created_at' => now(),
@@ -86,10 +87,10 @@ class OrderSeeder extends Seeder
                 'order_address' => '94 Lê Văn Thọ, Phường 11, Quận Gò Vấp, TP Hồ Chí Minh',
                 'order_phone' => '033983777',
                 'order_total' => 1230000,
-                'order_payment' => 1, 
+                'order_payment' => 1,
                 'order_payment_status' => 1,
                 'order_date' => now(),
-                'order_status' => \App\Enums\OrderStatus::New,
+                'order_status' => OrderStatus::New,
                 'coupon_id' => 5,
                 'user_id' => 1,
                 'created_at' => now(),
@@ -102,10 +103,10 @@ class OrderSeeder extends Seeder
                 'order_address' => '54 Tô Vĩnh Diện, Phường Linh Chiểu, Tp Thủ Đức, TP Hồ Chí Minh.',
                 'order_phone' => '093485333',
                 'order_total' => 9940000,
-                'order_payment' => 1, 
+                'order_payment' => 1,
                 'order_payment_status' => 1,
                 'order_date' => now(),
-                'order_status' => \App\Enums\OrderStatus::New,
+                'order_status' => OrderStatus::New,
                 'coupon_id' => 8,
                 'user_id' => 1,
                 'created_at' => now(),

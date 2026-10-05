@@ -3,32 +3,36 @@
 namespace App\Exports;
 
 use App\Models\OrderModel;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Illuminate\Support\Collection;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
-use Maatwebsite\Excel\Concerns\WithEvents;
-use PhpOffice\PhpSpreadsheet\Style\Color;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use Maatwebsite\Excel\Concerns\WithMultipleSheets;
-use Carbon\Carbon;
-class OrdersSheet implements FromCollection, WithHeadings, WithMapping, WithEvents, WithStyles, ShouldAutoSize
+use PhpOffice\PhpSpreadsheet\Style\Color;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+
+class OrdersSheet implements FromCollection, ShouldAutoSize, WithEvents, WithHeadings, WithMapping, WithStyles
 {
-    private $count = 1; 
+    private $count = 1;
+
     public function collection()
     {
         // Pull the rows from the model and return them as a collection.
-        return OrderModel::orderBy('order_id','desc')->get();
+        return OrderModel::orderBy('order_id', 'desc')->get();
     }
+
     public function title(): string
     {
         return 'Tất cả';
     }
+
     public function registerEvents(): array
     {
         return [
@@ -37,11 +41,12 @@ class OrdersSheet implements FromCollection, WithHeadings, WithMapping, WithEven
             },
         ];
     }
+
     public function headings(): array
     {
         return [
             [
-                'Danh sách đơn hàng | Sneaker Square',  
+                'Danh sách đơn hàng | Sneaker Square',
             ],
             [
                 'Số thứ tự',
@@ -57,10 +62,12 @@ class OrdersSheet implements FromCollection, WithHeadings, WithMapping, WithEven
             ],
         ];
     }
+
     public function styles(Worksheet $sheet)
     {
-        $sheet->mergeCells('A1:I1'); 
+        $sheet->mergeCells('A1:I1');
         $sheet->getStyle('A1:I1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
         return [
             2 => [
                 'font' => [
@@ -68,7 +75,7 @@ class OrdersSheet implements FromCollection, WithHeadings, WithMapping, WithEven
                     'bold' => true,
                 ],
                 'fill' => [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'fillType' => Fill::FILL_SOLID,
                     'startColor' => [
                         'argb' => 'FFC0C0C0',
                     ],
@@ -76,6 +83,7 @@ class OrdersSheet implements FromCollection, WithHeadings, WithMapping, WithEven
             ],
         ];
     }
+
     public function map($row): array
     {
         $result = [
@@ -87,28 +95,31 @@ class OrdersSheet implements FromCollection, WithHeadings, WithMapping, WithEven
             $row->order_address,
             $row->order_local,
             Carbon::parse($row->order_date)->format('d-m-Y'),
-            
-            number_format($row->order_total, 0, ',', '.') . 'đ',
-            
+
+            number_format($row->order_total, 0, ',', '.').'đ',
+
             $row->order_status->label(),
         ];
-
 
         return $result;
     }
 }
-class OrderDaySheet implements FromCollection, WithHeadings, WithMapping, WithEvents, WithStyles, ShouldAutoSize
+class OrderDaySheet implements FromCollection, ShouldAutoSize, WithEvents, WithHeadings, WithMapping, WithStyles
 {
-    private $count = 1; 
+    private $count = 1;
+
     public function collection()
     {
         $today = Carbon::today();
-        return OrderModel::where('order_date',$today)->orderBy('order_id','asc')->get();
+
+        return OrderModel::where('order_date', $today)->orderBy('order_id', 'asc')->get();
     }
+
     public function title(): string
     {
         return 'Hôm nay';
     }
+
     public function registerEvents(): array
     {
         return [
@@ -117,11 +128,12 @@ class OrderDaySheet implements FromCollection, WithHeadings, WithMapping, WithEv
             },
         ];
     }
+
     public function headings(): array
     {
         return [
             [
-                'Đơn hàng ngày hôm nay | Sneaker Square',  
+                'Đơn hàng ngày hôm nay | Sneaker Square',
             ],
             [
                 'Số thứ tự',
@@ -137,10 +149,12 @@ class OrderDaySheet implements FromCollection, WithHeadings, WithMapping, WithEv
             ],
         ];
     }
+
     public function styles(Worksheet $sheet)
     {
-        $sheet->mergeCells('A1:I1'); 
+        $sheet->mergeCells('A1:I1');
         $sheet->getStyle('A1:I1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
         return [
             2 => [
                 'font' => [
@@ -148,7 +162,7 @@ class OrderDaySheet implements FromCollection, WithHeadings, WithMapping, WithEv
                     'bold' => true,
                 ],
                 'fill' => [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'fillType' => Fill::FILL_SOLID,
                     'startColor' => [
                         'argb' => 'FFC0C0C0',
                     ],
@@ -156,6 +170,7 @@ class OrderDaySheet implements FromCollection, WithHeadings, WithMapping, WithEv
             ],
         ];
     }
+
     public function map($row): array
     {
         $result = [
@@ -167,30 +182,33 @@ class OrderDaySheet implements FromCollection, WithHeadings, WithMapping, WithEv
             $row->order_address,
             $row->order_local,
             Carbon::parse($row->order_date)->format('d-m-Y'),
-            
-            number_format($row->order_total, 0, ',', '.') . 'đ',
-            
+
+            number_format($row->order_total, 0, ',', '.').'đ',
+
             $row->order_status->label(),
         ];
-
 
         return $result;
     }
 }
 
-class OrderWeekSheet implements FromCollection, WithHeadings, WithMapping, WithEvents, WithStyles, ShouldAutoSize
+class OrderWeekSheet implements FromCollection, ShouldAutoSize, WithEvents, WithHeadings, WithMapping, WithStyles
 {
-    private $count = 1; 
+    private $count = 1;
+
     public function collection()
     {
         $today = Carbon::today();
         $sub7days = Carbon::now('Asia/Ho_Chi_minh')->subDays(7)->toDateString();
-        return OrderModel::whereBetween('order_date',[$sub7days,$today])->orderBy('order_id','asc')->get();
+
+        return OrderModel::whereBetween('order_date', [$sub7days, $today])->orderBy('order_id', 'asc')->get();
     }
+
     public function title(): string
     {
         return '7 ngày qua';
     }
+
     public function registerEvents(): array
     {
         return [
@@ -199,11 +217,12 @@ class OrderWeekSheet implements FromCollection, WithHeadings, WithMapping, WithE
             },
         ];
     }
+
     public function headings(): array
     {
         return [
             [
-                'Đơn hàng 7 ngày qua | Sneaker Square',  
+                'Đơn hàng 7 ngày qua | Sneaker Square',
             ],
             [
                 'Số thứ tự',
@@ -219,10 +238,12 @@ class OrderWeekSheet implements FromCollection, WithHeadings, WithMapping, WithE
             ],
         ];
     }
+
     public function styles(Worksheet $sheet)
     {
-        $sheet->mergeCells('A1:I1'); 
+        $sheet->mergeCells('A1:I1');
         $sheet->getStyle('A1:I1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
         return [
             2 => [
                 'font' => [
@@ -230,7 +251,7 @@ class OrderWeekSheet implements FromCollection, WithHeadings, WithMapping, WithE
                     'bold' => true,
                 ],
                 'fill' => [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'fillType' => Fill::FILL_SOLID,
                     'startColor' => [
                         'argb' => 'FFC0C0C0',
                     ],
@@ -238,6 +259,7 @@ class OrderWeekSheet implements FromCollection, WithHeadings, WithMapping, WithE
             ],
         ];
     }
+
     public function map($row): array
     {
         $result = [
@@ -249,29 +271,32 @@ class OrderWeekSheet implements FromCollection, WithHeadings, WithMapping, WithE
             $row->order_address,
             $row->order_local,
             Carbon::parse($row->order_date)->format('d-m-Y'),
-            number_format($row->order_total, 0, ',', '.') . 'đ',
+            number_format($row->order_total, 0, ',', '.').'đ',
             $row->order_status->label(),
         ];
-
 
         return $result;
     }
 }
 
-class OrderPrevMonthSheet implements FromCollection, WithHeadings, WithMapping, WithEvents, WithStyles, ShouldAutoSize
+class OrderPrevMonthSheet implements FromCollection, ShouldAutoSize, WithEvents, WithHeadings, WithMapping, WithStyles
 {
-    private $count = 1; 
+    private $count = 1;
+
     public function collection()
     {
         $today = Carbon::today();
         $start_month = Carbon::now('Asia/Ho_Chi_minh')->subMonth()->startOfMonth()->toDateString();
         $end_month = Carbon::now('Asia/Ho_Chi_minh')->subMonth()->endOfMonth()->toDateString();
-        return OrderModel::whereBetween('order_date',[$start_month,$end_month])->orderBy('order_id','asc')->get();
+
+        return OrderModel::whereBetween('order_date', [$start_month, $end_month])->orderBy('order_id', 'asc')->get();
     }
+
     public function title(): string
     {
         return 'Tháng trước';
     }
+
     public function registerEvents(): array
     {
         return [
@@ -280,11 +305,12 @@ class OrderPrevMonthSheet implements FromCollection, WithHeadings, WithMapping, 
             },
         ];
     }
+
     public function headings(): array
     {
         return [
             [
-                'Đơn hàng tháng trước | Sneaker Square',  
+                'Đơn hàng tháng trước | Sneaker Square',
             ],
             [
                 'Số thứ tự',
@@ -300,10 +326,12 @@ class OrderPrevMonthSheet implements FromCollection, WithHeadings, WithMapping, 
             ],
         ];
     }
+
     public function styles(Worksheet $sheet)
     {
-        $sheet->mergeCells('A1:I1'); 
+        $sheet->mergeCells('A1:I1');
         $sheet->getStyle('A1:I1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
         return [
             2 => [
                 'font' => [
@@ -311,7 +339,7 @@ class OrderPrevMonthSheet implements FromCollection, WithHeadings, WithMapping, 
                     'bold' => true,
                 ],
                 'fill' => [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'fillType' => Fill::FILL_SOLID,
                     'startColor' => [
                         'argb' => 'FFC0C0C0',
                     ],
@@ -319,6 +347,7 @@ class OrderPrevMonthSheet implements FromCollection, WithHeadings, WithMapping, 
             ],
         ];
     }
+
     public function map($row): array
     {
         $result = [
@@ -330,30 +359,33 @@ class OrderPrevMonthSheet implements FromCollection, WithHeadings, WithMapping, 
             $row->order_address,
             $row->order_local,
             Carbon::parse($row->order_date)->format('d-m-Y'),
-            
-            number_format($row->order_total, 0, ',', '.') . 'đ',
-            
+
+            number_format($row->order_total, 0, ',', '.').'đ',
+
             $row->order_status->label(),
         ];
-
 
         return $result;
     }
 }
 
-class OrderMonthSheet implements FromCollection, WithHeadings, WithMapping, WithEvents, WithStyles, ShouldAutoSize
+class OrderMonthSheet implements FromCollection, ShouldAutoSize, WithEvents, WithHeadings, WithMapping, WithStyles
 {
-    private $count = 1; 
+    private $count = 1;
+
     public function collection()
     {
         $today = Carbon::today();
         $thismonth = Carbon::now('Asia/Ho_Chi_minh')->startOfMonth()->toDateString();
-        return OrderModel::whereBetween('order_date',[$thismonth,$today])->orderBy('order_id','asc')->get();
+
+        return OrderModel::whereBetween('order_date', [$thismonth, $today])->orderBy('order_id', 'asc')->get();
     }
+
     public function title(): string
     {
         return 'Tháng này';
     }
+
     public function registerEvents(): array
     {
         return [
@@ -362,11 +394,12 @@ class OrderMonthSheet implements FromCollection, WithHeadings, WithMapping, With
             },
         ];
     }
+
     public function headings(): array
     {
         return [
             [
-                'Đơn hàng tháng này | Sneaker Square',  
+                'Đơn hàng tháng này | Sneaker Square',
             ],
             [
                 'Số thứ tự',
@@ -382,10 +415,12 @@ class OrderMonthSheet implements FromCollection, WithHeadings, WithMapping, With
             ],
         ];
     }
+
     public function styles(Worksheet $sheet)
     {
-        $sheet->mergeCells('A1:I1'); 
+        $sheet->mergeCells('A1:I1');
         $sheet->getStyle('A1:I1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
         return [
             2 => [
                 'font' => [
@@ -393,7 +428,7 @@ class OrderMonthSheet implements FromCollection, WithHeadings, WithMapping, With
                     'bold' => true,
                 ],
                 'fill' => [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'fillType' => Fill::FILL_SOLID,
                     'startColor' => [
                         'argb' => 'FFC0C0C0',
                     ],
@@ -401,6 +436,7 @@ class OrderMonthSheet implements FromCollection, WithHeadings, WithMapping, With
             ],
         ];
     }
+
     public function map($row): array
     {
         $result = [
@@ -412,29 +448,32 @@ class OrderMonthSheet implements FromCollection, WithHeadings, WithMapping, With
             $row->order_address,
             $row->order_local,
             Carbon::parse($row->order_date)->format('d-m-Y'),
-            
-            number_format($row->order_total, 0, ',', '.') . 'đ',
-            
+
+            number_format($row->order_total, 0, ',', '.').'đ',
+
             $row->order_status->label(),
         ];
-
 
         return $result;
     }
 }
-class OrderYearSheet implements FromCollection, WithHeadings, WithMapping, WithEvents, WithStyles, ShouldAutoSize
+class OrderYearSheet implements FromCollection, ShouldAutoSize, WithEvents, WithHeadings, WithMapping, WithStyles
 {
-    private $count = 1; 
+    private $count = 1;
+
     public function collection()
     {
         $today = Carbon::today();
         $sub365days = Carbon::now('Asia/Ho_Chi_minh')->subDays(365)->toDateString();
-        return OrderModel::whereBetween('order_date',[$sub365days,$today])->orderBy('order_id','asc')->get();
+
+        return OrderModel::whereBetween('order_date', [$sub365days, $today])->orderBy('order_id', 'asc')->get();
     }
+
     public function title(): string
     {
         return 'Năm qua';
     }
+
     public function registerEvents(): array
     {
         return [
@@ -443,11 +482,12 @@ class OrderYearSheet implements FromCollection, WithHeadings, WithMapping, WithE
             },
         ];
     }
+
     public function headings(): array
     {
         return [
             [
-                'Đơn hàng 365 ngày qua | Sneaker Square',  
+                'Đơn hàng 365 ngày qua | Sneaker Square',
             ],
             [
                 'Số thứ tự',
@@ -463,10 +503,12 @@ class OrderYearSheet implements FromCollection, WithHeadings, WithMapping, WithE
             ],
         ];
     }
+
     public function styles(Worksheet $sheet)
     {
-        $sheet->mergeCells('A1:I1'); 
+        $sheet->mergeCells('A1:I1');
         $sheet->getStyle('A1:I1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
         return [
             2 => [
                 'font' => [
@@ -474,7 +516,7 @@ class OrderYearSheet implements FromCollection, WithHeadings, WithMapping, WithE
                     'bold' => true,
                 ],
                 'fill' => [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'fillType' => Fill::FILL_SOLID,
                     'startColor' => [
                         'argb' => 'FFC0C0C0',
                     ],
@@ -482,6 +524,7 @@ class OrderYearSheet implements FromCollection, WithHeadings, WithMapping, WithE
             ],
         ];
     }
+
     public function map($row): array
     {
         $result = [
@@ -493,12 +536,11 @@ class OrderYearSheet implements FromCollection, WithHeadings, WithMapping, WithE
             $row->order_address,
             $row->order_local,
             Carbon::parse($row->order_date)->format('d-m-Y'),
-            
-            number_format($row->order_total, 0, ',', '.') . 'đ',
-            
+
+            number_format($row->order_total, 0, ',', '.').'đ',
+
             $row->order_status->label(),
         ];
-
 
         return $result;
     }
@@ -506,18 +548,19 @@ class OrderYearSheet implements FromCollection, WithHeadings, WithMapping, WithE
 
 class ExportOrder implements WithMultipleSheets
 {
-    private $count = 1; 
+    private $count = 1;
+
     public function sheets(): array
     {
         $sheets = [];
-       
+
         $dataOrders = OrderModel::get();
         $sheets[] = new OrdersSheet($dataOrders);
-        
+
         $today = Carbon::today();
-        $dataDate= OrderModel::where('order_date',$today)->get();
+        $dataDate = OrderModel::where('order_date', $today)->get();
         $sheets[] = new OrderDaySheet($dataDate);
-        
+
         $dataWeek = OrderModel::get();
         $sheets[] = new OrderWeekSheet($dataWeek);
 
@@ -532,5 +575,4 @@ class ExportOrder implements WithMultipleSheets
 
         return $sheets;
     }
-    
 }

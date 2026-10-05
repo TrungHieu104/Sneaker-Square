@@ -2,19 +2,23 @@
 
 namespace App\Models;
 
+use App\Models\NewsModel as News;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\NewsModel as News;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
 
 class CateNewsModel extends Model
 {
     use HasFactory , SoftDeletes;
-    protected $table = "cate_news";
-    protected $primaryKey = "cate_news_id";
+
+    protected $table = 'cate_news';
+
+    protected $primaryKey = 'cate_news_id';
+
     public $timestamp = true;
+
     protected $dates = ['deleted_at'];
+
     protected $fillable = [
         'cate_news_id',
         'cate_news_name',
@@ -25,10 +29,11 @@ class CateNewsModel extends Model
     ];
 
     protected $atttributes = [
-        'cate_news_hidden' =>1,
+        'cate_news_hidden' => 1,
     ];
 
-    public function getNewsInCate(){
+    public function getNewsInCate()
+    {
         return $this->hasMany(News::class, 'cate_news_id', 'cate_news_id');
     }
 }

@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+
 class CouponUpRequest extends FormRequest
 {
     /**
@@ -17,19 +19,20 @@ class CouponUpRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+     * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {
         return [
-            'name' => ['required','min:3', 'max:50',Rule::unique('coupon', 'coupon_name')->ignore( request()->id,'coupon_id')],
-            'code' => ['required','max:50','regex:/[A-Z]/','min:3',Rule::unique('coupon', 'coupon_code')->ignore( request()->id,'coupon_id')],
+            'name' => ['required', 'min:3', 'max:50', Rule::unique('coupon', 'coupon_name')->ignore(request()->id, 'coupon_id')],
+            'code' => ['required', 'max:50', 'regex:/[A-Z]/', 'min:3', Rule::unique('coupon', 'coupon_code')->ignore(request()->id, 'coupon_id')],
             'start_coupon' => ['required'],
-            'end_coupon' => ['required','after:start_coupon'],
-            'quantity' => ['required','min:0', 'max:100000000', 'numeric','integer'],
-            'money' => ['required','min:0', 'numeric','integer'],
+            'end_coupon' => ['required', 'after:start_coupon'],
+            'quantity' => ['required', 'min:0', 'max:100000000', 'numeric', 'integer'],
+            'money' => ['required', 'min:0', 'numeric', 'integer'],
         ];
-    }  
+    }
+
     public function messages()
     {
         return [

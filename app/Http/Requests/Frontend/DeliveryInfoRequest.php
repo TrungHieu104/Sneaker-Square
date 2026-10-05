@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Frontend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DeliveryInfoRequest extends FormRequest
@@ -17,15 +18,15 @@ class DeliveryInfoRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'info_name' => ['required','min:3', 'max:50'],
-            'info_address' => ['required','min:3', 'max:50'],
+            'info_name' => ['required', 'min:3', 'max:50'],
+            'info_address' => ['required', 'min:3', 'max:50'],
             'info_email' => 'required|email|ends_with:@gmail.com',
-            'info_phone' => ['required','min:10','max:11','numeric'],
+            'info_phone' => ['required', 'min:10', 'max:11', 'numeric'],
             'info_province' => 'required',
             'info_district' => 'required',
             'info_ward' => 'required',
@@ -33,6 +34,7 @@ class DeliveryInfoRequest extends FormRequest
             'info_ward_code' => 'required|string|max:20',
         ];
     }
+
     public function messages()
     {
         return [

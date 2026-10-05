@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AccountRequest extends FormRequest
@@ -17,19 +18,21 @@ class AccountRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'name' => ['required','min:3', 'max:50'],
-            'username' => ['required','min:5', 'max:50', 'unique:users'],
+            'name' => ['required', 'min:3', 'max:50'],
+            'username' => ['required', 'min:5', 'max:50', 'unique:users'],
             'email' => 'required|email|ends_with:@gmail.com|unique:users',
             'passwords' => 'required|min:8|max:30|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/',
             'confirm-pass' => 'required|min:8|same:passwords',
         ];
     }
-    public function messages(){
+
+    public function messages()
+    {
         return [
             'name.required' => 'Vui lòng nhập họ tên!',
             'name.min' => 'Họ tên quá ngắn!',
@@ -39,7 +42,7 @@ class AccountRequest extends FormRequest
             'username.max' => 'Tên đăng nhập quá dài!',
             'username.unique' => 'Tên đăng nhập đã tồn tại!',
             'email.required' => 'Bạn chưa nhập email!',
-            'email.unique' => "Email đã được đăng ký!",
+            'email.unique' => 'Email đã được đăng ký!',
             'email.email' => 'Email nhập không đúng định dạng!',
             'email.ends_with' => 'Email phải có đuôi là @gmail.com!',
             'passwords.required' => 'Vui lòng nhập mật khẩu!',
@@ -47,8 +50,8 @@ class AccountRequest extends FormRequest
             'passwords.max' => 'Mật khẩu tối đa 30 kí tự!',
             'passwords.regex' => 'Mật khẩu bao gồm chữ thường, hoa và ít nhất một kí tự đặc biệt!',
             'confirm-pass.required' => 'Vui lòng nhập lại mật khẩu!',
-            'confirm-pass.min'=> 'Mật khẩu ít nhất 8 kí tự',
-            'confirm-pass.same'=> 'Hai mật khẩu không khớp!',
+            'confirm-pass.min' => 'Mật khẩu ít nhất 8 kí tự',
+            'confirm-pass.same' => 'Hai mật khẩu không khớp!',
         ];
     }
 }

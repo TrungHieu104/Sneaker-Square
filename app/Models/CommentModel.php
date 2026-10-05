@@ -2,19 +2,23 @@
 
 namespace App\Models;
 
+use App\Models\ProductModel as Product;
+use App\Models\UserModel as User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\UserModel as User;
-use App\Models\ProductModel as Product;
 
 class CommentModel extends Model
 {
     use HasFactory;
     use SoftDeletes;
-    protected $table = "comments";
-    protected $primaryKey = "comment_id";
+
+    protected $table = 'comments';
+
+    protected $primaryKey = 'comment_id';
+
     public $timestamps = true;
+
     protected $fillable = [
         'comment_id',
         'comment_content',
@@ -26,15 +30,18 @@ class CommentModel extends Model
         'comment_email',
         'rating',
     ];
+
     protected $attributes = [
         'comment_hidden' => 0,
     ];
 
-    public function getUsers() {
+    public function getUsers()
+    {
         return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 
-    public function getProducts() {
+    public function getProducts()
+    {
         return $this->belongsTo(Product::class, 'pro_id', 'pro_id');
     }
 }

@@ -12,7 +12,7 @@ class VisitorMiddleware
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -32,19 +32,19 @@ class VisitorMiddleware
 
         // Check whether this visitor has already been seen recently.
         $existingVisitor = VisitorModel::where('visitor_ip', $visitorIP)
-        ->where('visitor_date', '>=', now()->subMinutes(10))
-        ->first();
+            ->where('visitor_date', '>=', now()->subMinutes(10))
+            ->first();
 
-        if (!$existingVisitor) {
+        if (! $existingVisitor) {
             // Record a new row when this is a first-time visitor.
             $existingVisitor = VisitorModel::updateOrCreate([
                 'visitor_ip' => $visitorIP,
             ], [
                 'visitor_date' => $visitorLastActive,
             ]);
-            
+
         }
-        
+
         // $visitorCurrent =  VisitorModel::where('visitor_ip', $visitorIP)->get();
         // $visitorCurrentCount = $visitorCurrent->count();
         // if($visitorCurrentCount < 1) {

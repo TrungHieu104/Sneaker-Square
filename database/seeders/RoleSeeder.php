@@ -2,12 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use App\Models\UserModel;
+use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RoleSeeder extends Seeder
 {
@@ -18,17 +16,17 @@ class RoleSeeder extends Seeder
     {
         $adminRole = Role::firstOrCreate([
             'name' => 'Quản trị viên',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
         ]);
 
         Role::firstOrCreate([
             'name' => 'Cộng tác viên',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
         ]);
 
         Role::firstOrCreate([
             'name' => 'Nhân viên',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
         ]);
 
         // Sync all permissions to the admin role
@@ -42,4 +40,3 @@ class RoleSeeder extends Seeder
         }
     }
 }
-

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backend;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -37,13 +38,13 @@ class ProductRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'pro_name' => ['required','max: 255', Rule::unique('products', 'pro_name')->ignore($this->editedProductId(), 'pro_id')],
-            'pro_slug' => ['required','max: 255', Rule::unique('products', 'pro_slug')->ignore($this->editedProductId(), 'pro_id')],
+            'pro_name' => ['required', 'max: 255', Rule::unique('products', 'pro_name')->ignore($this->editedProductId(), 'pro_id')],
+            'pro_slug' => ['required', 'max: 255', Rule::unique('products', 'pro_slug')->ignore($this->editedProductId(), 'pro_id')],
             'pro_code' => ['required', 'max: 50', Rule::unique('products', 'pro_code')->ignore($this->editedProductId(), 'pro_id')],
             'capital_price' => ['required', 'numeric', 'min: 1', 'max: 9999999999', 'integer'],
             'pro_price' => ['required', 'numeric', 'min: 1', 'max: 9999999999', 'integer', 'gt:capital_price'],
@@ -70,7 +71,7 @@ class ProductRequest extends FormRequest
         return $id === null ? null : (string) $id;
     }
 
-    public function messages() 
+    public function messages()
     {
         return [
             'pro_name.required' => 'Vui lòng nhập tên sản phẩm!',

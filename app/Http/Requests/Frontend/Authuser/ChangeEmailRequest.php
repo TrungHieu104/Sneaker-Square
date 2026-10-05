@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Frontend\Authuser;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ChangeEmailRequest extends FormRequest
@@ -17,14 +18,15 @@ class ChangeEmailRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-             'email' => 'required|email|ends_with:@gmail.com|unique:users,email',
+            'email' => 'required|email|ends_with:@gmail.com|unique:users,email',
         ];
     }
+
     public function messages()
     {
         return [

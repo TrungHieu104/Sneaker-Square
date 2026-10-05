@@ -2,32 +2,30 @@
 
 namespace App\Http\Controllers\Backend;
 
-use Exception;
-use App\Models\NewsModel;
-use App\Models\UserModel;
-use App\Models\OrderModel;
-use App\Models\CouponModel;
+use App\Enums\OrderStatus;
+use App\Exports\ExportStatistic;
+use App\Exports\ExportStatisticDay;
+use App\Exports\ExportStatisticMonth;
+use App\Exports\ExportStatisticMonthPrev;
+use App\Exports\ExportStatisticWeek;
+use App\Exports\ExportStatisticYear;
+use App\Http\Controllers\Controller;
 use App\Models\ContactFormModel;
-use App\Models\ProductModel;
+use App\Models\CouponModel;
+use App\Models\OrderModel;
 use App\Models\PromotionModel;
+use App\Models\StatisticModel;
+use App\Models\UserModel;
 use App\Models\VisitorModel;
 use App\Services\DashboardStatisticsService;
 use Illuminate\Http\Request;
-use Spatie\Analytics\Period;
-use App\Models\StatisticModel;
 use Illuminate\Support\Carbon;
-use App\Exports\ExportStatistic;
-use App\Exports\ExportStatisticYear;
-use App\Exports\ExportStatisticDay;
-use App\Exports\ExportStatisticWeek;
-use App\Exports\ExportStatisticMonth;
-use App\Exports\ExportStatisticMonthPrev;
 use Illuminate\Support\Facades\DB;
-use App\Enums\OrderStatus;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\View;
 use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Analytics\Facades\Analytics;
+use Spatie\Analytics\Period;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
@@ -37,18 +35,18 @@ class DashboardController extends Controller
         // Visits by browser.
         $dataTopBrowsers = Analytics::fetchTopBrowsers(Period::days(7));
         // Visits by referring path.
-        $dataTopReferrers= Analytics::fetchTopReferrers(Period::days(7), 15);
+        $dataTopReferrers = Analytics::fetchTopReferrers(Period::days(7), 15);
         // Visits by operating system.
-        $dataSystems= Analytics::fetchTopOperatingSystems(Period::days(7));
-        //chart account
+        $dataSystems = Analytics::fetchTopOperatingSystems(Period::days(7));
+        // chart account
         $sub7days = Carbon::now('Asia/Ho_Chi_minh')->subDays(7)->toDateString();
         $now = Carbon::now('Asia/Ho_Chi_minh')->toDateString();
-        
+
         $datatAccountCount = [];
         $dailyDataAccount = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$sub7days, $now])
-        ->select(
-            DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
-        )->groupBy('date')->orderBy('date', 'ASC')->get();
+            ->select(
+                DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
+            )->groupBy('date')->orderBy('date', 'ASC')->get();
 
         $datatAccountCount['date'] = $dailyDataAccount->pluck('date')->map(function ($date) {
             return date('d/m/Y', strtotime($date));
@@ -91,28 +89,30 @@ class DashboardController extends Controller
             'couponName'));
     }
 
-    public function indexPost(Request $request) 
+    public function indexPost(Request $request)
     {
         // Online users counted by IP address.
         $onlineVisitors = VisitorModel::where('visitor_date', '>=', now()->subMinutes(10))->get();
         $onlineVisitorCount = $onlineVisitors->count();
-        if($request->ajax()) {
+        if ($request->ajax()) {
             return response()->json(['visitorTotal' => $onlineVisitorCount]);
         }
+
         return response()->json(['error' => 'Không tìm thấy dữ liệu']);
     }
-    
+
     public function filterVisitor(Request $request)
     {
         $dataFilter = $request->input('dataDate');
-        if($dataFilter) {
-            $dataVisitor = []; 
+        if ($dataFilter) {
+            $dataVisitor = [];
             $dataTotalVisitor = Analytics::fetchTotalVisitorsAndPageViews(Period::days($dataFilter))->sortBy('date');
             $dataVisitor['date'] = $dataTotalVisitor->pluck('date')->map(function ($date) {
                 return $date->format('d/m/Y');
             });
             $dataVisitor['activeUsers'] = $dataTotalVisitor->pluck('activeUsers');
             $dataVisitor['screenPageViews'] = $dataTotalVisitor->pluck('screenPageViews');
+
             return response()->json($dataVisitor);
         } else {
             return response()->json(['error' => 'Không tìm thấy dữ liệu bạn yêu cầu!']);
@@ -124,7 +124,7 @@ class DashboardController extends Controller
         return view('backend.pages.support.support');
     }
 
-    public function statistical() 
+    public function statistical()
     {
         return view('backend.pages.statistical.access');
     }
@@ -141,32 +141,33 @@ class DashboardController extends Controller
 
         $now = Carbon::now('Asia/Ho_Chi_minh')->toDateString();
 
-        if($data['dashboard_value']=='7ngay'){
-            $get = StatisticModel::whereBetween('order_date',[$sub7days,$now])
-            ->orderBy('order_date','ASC')->get();
-        } elseif($data['dashboard_value']=='thangtruoc'){
-            $get = StatisticModel::whereBetween('order_date',[$start_month,$end_month])
-            ->orderBy('order_date','ASC')->get();
-        } elseif($data['dashboard_value']=='thangnay'){
-            $get = StatisticModel::whereBetween('order_date',[$thismonth,$now])
-            ->orderBy('order_date','ASC')->get();
+        if ($data['dashboard_value'] == '7ngay') {
+            $get = StatisticModel::whereBetween('order_date', [$sub7days, $now])
+                ->orderBy('order_date', 'ASC')->get();
+        } elseif ($data['dashboard_value'] == 'thangtruoc') {
+            $get = StatisticModel::whereBetween('order_date', [$start_month, $end_month])
+                ->orderBy('order_date', 'ASC')->get();
+        } elseif ($data['dashboard_value'] == 'thangnay') {
+            $get = StatisticModel::whereBetween('order_date', [$thismonth, $now])
+                ->orderBy('order_date', 'ASC')->get();
         } else {
-            $get = StatisticModel::whereBetween('order_date',[$sub365days,$now])
-            ->orderBy('order_date','ASC')->get();
+            $get = StatisticModel::whereBetween('order_date', [$sub365days, $now])
+                ->orderBy('order_date', 'ASC')->get();
         }
 
         $chart_data = [];
         foreach ($get as $key => $data) {
             $chart_data[] = [
-                'period' => date('d/m/Y', strtotime( $data->order_date)),
+                'period' => date('d/m/Y', strtotime($data->order_date)),
                 'sales' => $data->sales,
                 'profit' => $data->profit,
             ];
         }
+
         return response()->json($chart_data);
     }
 
-    public function filterAccountUser(Request $request) 
+    public function filterAccountUser(Request $request)
     {
         $data = $request->dateData;
 
@@ -176,21 +177,21 @@ class DashboardController extends Controller
         $startMonth = Carbon::now('Asia/Ho_Chi_minh')->subMonth()->startOfMonth()->toDateString();
         $endMonth = Carbon::now('Asia/Ho_Chi_minh')->subMonth()->endOfMonth()->toDateString();
 
-        if($data == '7days') {
+        if ($data == '7days') {
             $dataRes = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$data7days, $now])
-            ->select(
-                DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
-            )->groupBy('date')->orderBy('date', 'ASC')->get();
-        } elseif($data == 'lmonth') {
-            $dataRes = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$startMonth,$endMonth])
-            ->select(
-                DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
-            )->groupBy('date')->orderBy('date', 'ASC')->get();
-        } elseif($data == 'tmonth') {
-            $dataRes = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$thisMonth,$now])
-            ->select(
-                DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
-            )->groupBy('date')->orderBy('date', 'ASC')->get();
+                ->select(
+                    DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
+                )->groupBy('date')->orderBy('date', 'ASC')->get();
+        } elseif ($data == 'lmonth') {
+            $dataRes = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$startMonth, $endMonth])
+                ->select(
+                    DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
+                )->groupBy('date')->orderBy('date', 'ASC')->get();
+        } elseif ($data == 'tmonth') {
+            $dataRes = UserModel::where('user_role', 0)->whereBetween(DB::raw('DATE(created_at)'), [$thisMonth, $now])
+                ->select(
+                    DB::raw('DATE(created_at) as date, COUNT(*) as data_count')
+                )->groupBy('date')->orderBy('date', 'ASC')->get();
         }
 
         $dataResNew = [];
@@ -213,54 +214,55 @@ class DashboardController extends Controller
         $get = StatisticModel::whereBetween('order_date', [$from_date_converted, $to_date_converted])
             ->orderBy('order_date', 'ASC')
             ->get();
-            if ($get->isEmpty()) {
-                return response()->json(['error' => 'Không tìm thấy dữ liệu bạn yêu cầu!']);
-            }
-    
+        if ($get->isEmpty()) {
+            return response()->json(['error' => 'Không tìm thấy dữ liệu bạn yêu cầu!']);
+        }
+
         $chart_data = [];
         foreach ($get as $key => $data) {
             $chart_data[] = [
-                'period' =>date('d/m/Y', strtotime( $data->order_date)),
+                'period' => date('d/m/Y', strtotime($data->order_date)),
                 'sales' => $data->sales,
                 'profit' => $data->profit,
             ];
         }
+
         return response()->json($chart_data);
     }
 
     public function export_scv()
     {
-        return Excel::download(new ExportStatistic() , 'Doanh thu.xlsx');
+        return Excel::download(new ExportStatistic, 'Doanh thu.xlsx');
     }
 
     public function export_scv_day()
     {
-        return Excel::download(new ExportStatisticDay() , 'Doanh thu ngày.xlsx');
+        return Excel::download(new ExportStatisticDay, 'Doanh thu ngày.xlsx');
     }
 
     public function export_scv_week()
     {
-        return Excel::download(new ExportStatisticWeek() , 'Doanh thu tuần.xlsx');
+        return Excel::download(new ExportStatisticWeek, 'Doanh thu tuần.xlsx');
     }
 
     public function export_scv_month()
     {
-        return Excel::download(new ExportStatisticMonth() , 'Doanh thu tháng.xlsx');
+        return Excel::download(new ExportStatisticMonth, 'Doanh thu tháng.xlsx');
     }
 
     public function export_scv_monthprev()
     {
-        return Excel::download(new ExportStatisticMonthPrev() , 'Doanh thu tháng trước.xlsx');
+        return Excel::download(new ExportStatisticMonthPrev, 'Doanh thu tháng trước.xlsx');
     }
 
     public function export_scv_year()
     {
-        return Excel::download(new ExportStatisticYear() , 'Doanh thu năm.xlsx');
+        return Excel::download(new ExportStatisticYear, 'Doanh thu năm.xlsx');
     }
 
     public function sseNotifications(Request $request)
     {
-        $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () {
+        $response = new StreamedResponse(function () {
             // Detect if running on single-threaded php built-in server (cli-server)
             $isBuiltInServer = (php_sapi_name() === 'cli-server');
             $maxIterations = $isBuiltInServer ? 1 : 10;
@@ -281,16 +283,16 @@ class DashboardController extends Controller
                     ->confirmedSale()->count();
                 $sucessOrderCount = OrderModel::where('order_status', OrderStatus::Completed)->whereDate('updated_at', $today)
                     ->confirmedSale()->count();
-                $couponCount = CouponModel::where('coupon_end','=',$prevday)->pluck('coupon_name')->toArray();
-                $slideCount = PromotionModel::where('promotion_end','=',$prevday)->pluck('promotion_name')->toArray();
-                $contactCount = ContactFormModel::where('status',0)->count();
+                $couponCount = CouponModel::where('coupon_end', '=', $prevday)->pluck('coupon_name')->toArray();
+                $slideCount = PromotionModel::where('promotion_end', '=', $prevday)->pluck('promotion_name')->toArray();
+                $contactCount = ContactFormModel::where('status', 0)->count();
 
                 $latestOrder = OrderModel::where('order_status', OrderStatus::New)->latest('created_at')->first();
                 $latestReturnOrder = OrderModel::whereIn('order_status', OrderStatus::comingBack())->latest('updated_at')->first();
                 $latestSuccessOrder = OrderModel::where('order_status', OrderStatus::Completed)->latest('updated_at')->first();
                 $latestContact = ContactFormModel::where('status', 0)->latest('created_at')->first();
-                $latestSlide = PromotionModel::where('promotion_end','=',$prevday)->latest('updated_at')->first();
-                $latestCoupon = CouponModel::where('coupon_end','=',$prevday)->latest('updated_at')->first();
+                $latestSlide = PromotionModel::where('promotion_end', '=', $prevday)->latest('updated_at')->first();
+                $latestCoupon = CouponModel::where('coupon_end', '=', $prevday)->latest('updated_at')->first();
 
                 $timestampOrder = $latestOrder ? $latestOrder->created_at->timestamp : now()->timestamp;
                 $timestampReturnOrder = $latestReturnOrder ? $latestReturnOrder->updated_at->timestamp : now()->timestamp;
@@ -302,9 +304,9 @@ class DashboardController extends Controller
                 $data = [
                     'newOrderCount' => $newOrderCount,
                     'contactCount' => $contactCount,
-                    'returnOrderCount' => $returnOrderCount, 
+                    'returnOrderCount' => $returnOrderCount,
                     'sucessOrderCount' => $sucessOrderCount,
-                    'couponCount' => $couponCount, 
+                    'couponCount' => $couponCount,
                     'slideCount' => $slideCount,
                     'timestampOrder' => $timestampOrder,
                     'timestampReturnOrder' => $timestampReturnOrder,
@@ -314,7 +316,7 @@ class DashboardController extends Controller
                     'timestampCoupon' => $timestampCoupon,
                 ];
 
-                echo "data: " . json_encode($data) . "\n\n";
+                echo 'data: '.json_encode($data)."\n\n";
                 ob_flush();
                 flush();
 
@@ -335,7 +337,7 @@ class DashboardController extends Controller
     public function revenue(Request $request)
     {
         $perpage = 15;
-        $orderBy = $request->input('sort-by', 'order_date'); 
+        $orderBy = $request->input('sort-by', 'order_date');
         $orderType = $request->input('sort-type', 'desc');
 
         $sortOption = $request->input('sort', 'default');
@@ -353,23 +355,23 @@ class DashboardController extends Controller
 
         switch ($sortOption) {
             case 'today':
-                $query->where('order_date',$now)
+                $query->where('order_date', $now)
                     ->orderBy('order_date', 'asc');
                 break;
             case 'week':
-                $query->whereBetween('order_date',[$sub7days,$now])
+                $query->whereBetween('order_date', [$sub7days, $now])
                     ->orderBy('order_date', 'DESC');
                 break;
             case 'month':
-                $query->whereBetween('order_date',[$thismonth,$now])
+                $query->whereBetween('order_date', [$thismonth, $now])
                     ->orderBy('order_date', 'DESC');
                 break;
             case 'pmonth':
-                $query->whereBetween('order_date',[$start_month,$end_month])
+                $query->whereBetween('order_date', [$start_month, $end_month])
                     ->orderBy('order_date', 'DESC');
                 break;
             case 'year':
-                $query->whereBetween('order_date',[$sub365days,$now])
+                $query->whereBetween('order_date', [$sub365days, $now])
                     ->orderBy('order_date', 'DESC');
                 break;
             default:
@@ -385,14 +387,15 @@ class DashboardController extends Controller
         $searchableFields = ['order_date'];
         $query = $this->performSearch($query, $keyword, $searchableFields);
 
-        $statistic = $query->paginate($perpage)->withQueryString();  
+        $statistic = $query->paginate($perpage)->withQueryString();
 
-        $revenueday = StatisticModel::where('order_date',$now)->get();
-        $revenueweek = StatisticModel::whereBetween('order_date',[$sub7days,$now])->get();
-        $revenuemonth = StatisticModel::whereBetween('order_date',[$thismonth,$now])->get();
-        $revenuemonthprev = StatisticModel::whereBetween('order_date',[$start_month,$end_month])->get();
-        $revenueyear = StatisticModel::whereBetween('order_date',[$start_year,$now])->get();
+        $revenueday = StatisticModel::where('order_date', $now)->get();
+        $revenueweek = StatisticModel::whereBetween('order_date', [$sub7days, $now])->get();
+        $revenuemonth = StatisticModel::whereBetween('order_date', [$thismonth, $now])->get();
+        $revenuemonthprev = StatisticModel::whereBetween('order_date', [$start_month, $end_month])->get();
+        $revenueyear = StatisticModel::whereBetween('order_date', [$start_year, $now])->get();
         $revenueall = StatisticModel::get();
-        return view('backend.pages.statistical.revenue', compact('revenueall','revenueyear','revenuemonthprev','revenuemonth','revenueday','revenueweek','statistic','orderBy', 'orderType'));
+
+        return view('backend.pages.statistical.revenue', compact('revenueall', 'revenueyear', 'revenuemonthprev', 'revenuemonth', 'revenueday', 'revenueweek', 'statistic', 'orderBy', 'orderType'));
     }
 }

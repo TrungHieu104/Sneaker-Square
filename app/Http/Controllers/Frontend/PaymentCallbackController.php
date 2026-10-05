@@ -37,8 +37,7 @@ class PaymentCallbackController extends Controller
         private readonly OrderPayments $payments,
         private readonly OrderMailer $mailer,
         private readonly WalletTopups $topups,
-    ) {
-    }
+    ) {}
 
     /**
      * The customer's browser coming back from the gateway.

@@ -4,14 +4,13 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Frontend\Authuser\DeliveryRequest;
-use App\Http\Requests\Frontend\DeliveryInfoRequest;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 use App\Models\DeliveryInfoModel as Info;
 use App\Services\Shipping\Shipment;
 use App\Services\Shipping\ShippingCarrier;
 use App\Services\Shipping\ShippingUnavailable;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class DeliveryInfoController extends Controller
 {
@@ -63,10 +62,11 @@ class DeliveryInfoController extends Controller
         $user_id = Auth::user()->user_id;
         $PersonInfo = Info::where('user_id', $user_id)->get();
         foreach ($PersonInfo as $PI) {
-            if ($PI->info_default == 1)
+            if ($PI->info_default == 1) {
                 $found = true;
+            }
         }
-        $Info = new Info();
+        $Info = new Info;
         $Info->info_name = $request->info_name;
         $Info->info_phone = $request->info_phone;
         $Info->info_email = $request->info_email;
@@ -78,11 +78,12 @@ class DeliveryInfoController extends Controller
         $Info->info_ward_code = (string) $request->info_ward_code;
         $Info->info_delivery_fee = $this->indicativeFee((int) $request->info_district_id, (string) $request->info_ward_code);
         $Info->user_id = $user_id;
-        if (!$found) {
+        if (! $found) {
             $Info->info_default = 1;
         }
         $Info->save();
         Session::flash('iconMessage', 'success');
+
         return redirect()->back()->with('message', 'Thêm mới thành công!');
     }
 
@@ -100,7 +101,8 @@ class DeliveryInfoController extends Controller
         $dataInfoNew = Info::find($selectInfoDefault);
         $dataInfoNew->info_default = 1;
         $dataInfoNew->save();
-        Session::flash('iconMessage', 'success');   
+        Session::flash('iconMessage', 'success');
+
         return redirect()->back()->with('message', 'Đổi địa chỉ nhận hàng thành công!');
     }
 
@@ -131,6 +133,7 @@ class DeliveryInfoController extends Controller
         $Info = Info::find($id);
         if ($Info == null) {
             Session::flash('iconMessage', 'error');
+
             return redirect()->back()->with('message', 'Không tồn tại địa chỉ này!');
         }
         $Info->info_name = $request->info_name;
@@ -145,6 +148,7 @@ class DeliveryInfoController extends Controller
         $Info->info_delivery_fee = $this->indicativeFee((int) $request->info_district_id, (string) $request->info_ward_code);
         $Info->save();
         Session::flash('iconMessage', 'success');
+
         return redirect()->back()->with('message', 'Cập nhật địa chỉ nhận hàng thành công!');
     }
 
@@ -157,12 +161,14 @@ class DeliveryInfoController extends Controller
 
         if ($info == null) {
             Session::flash('iconMessage', 'error');
+
             return redirect()->back()->with('message', 'Không tồn tại địa chỉ này!');
         }
 
         $info->delete();
 
         Session::flash('iconMessage', 'success');
+
         return redirect()->back()->with('message', 'Xóa địa chỉ nhận hàng thành công!');
     }
 
@@ -183,6 +189,7 @@ class DeliveryInfoController extends Controller
         }
         $info->save();
         Session::flash('iconMessage', 'success');
+
         return redirect()->back()->with('message', 'Đổi địa chỉ nhận hàng thành công!');
     }
 }

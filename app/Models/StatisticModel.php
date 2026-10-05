@@ -8,9 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 class StatisticModel extends Model
 {
     use HasFactory;
-    protected $table = "statistical";
-    protected $primaryKey = "id_statistical";
+
+    protected $table = 'statistical';
+
+    protected $primaryKey = 'id_statistical';
+
     public $timestamps = false;
+
     protected $fillable = [
         'order_date',
         'sales',

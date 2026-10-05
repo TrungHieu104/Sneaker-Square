@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Models\UserModel;
+use Exception;
 use Illuminate\Http\Request;
-use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
-use Exception;
+use Laravel\Socialite\Facades\Socialite;
 
 class LoginFB extends Controller
 {
@@ -69,7 +69,7 @@ class LoginFB extends Controller
     {
         //
     }
-    
+
     public function redirectToFacebook()
     {
         return Socialite::driver('facebook')->stateless()->redirect();
@@ -84,11 +84,12 @@ class LoginFB extends Controller
     {
         try {
             $user = Socialite::driver('facebook')->stateless()->user();
-            
+
             // Check if there is an existing account with the same email but no facebook_id
             $duplicateEmails = UserModel::where('email', $user->email)->whereNull('facebook_id')->first();
             if ($duplicateEmails) {
                 Session::flash('iconMessage', 'error');
+
                 return redirect(route('user.login'))
                     ->with('message', 'Email này đã được đăng ký bằng phương thức khác');
             }
@@ -100,6 +101,7 @@ class LoginFB extends Controller
                 $finduser->save();
 
                 Auth::login($finduser);
+
                 return redirect()->intended(route('home.page'));
             } else {
                 $newUser = UserModel::create([
@@ -113,9 +115,10 @@ class LoginFB extends Controller
                     // anyone could sign in as any of them through the ordinary
                     // login form. The customer sets a real one via "forgot
                     // password" if they ever want to sign in without Google.
-                    'password' => Hash::make(Str::random(40))
+                    'password' => Hash::make(Str::random(40)),
                 ]);
                 Auth::login($newUser);
+
                 return redirect()->intended(route('home.page'));
             }
         } catch (Exception $e) {

@@ -2,28 +2,27 @@
 
 namespace App\Http\Controllers\Backend;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Backend\ShippingCodeRequest;
-use App\Services\Shipping\ShipmentPulse;
-use App\Services\Shipping\ShippingUnavailable;
-use App\Services\ShippingService;
 use App\Actions\CancelOrderAction;
 use App\Enums\OrderStatus;
+use App\Exports\ExportOrder;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Backend\ShippingCodeRequest;
 use App\Models\OrderDetailModel;
 use App\Models\OrderModel;
 use App\Models\OrderStatusLogModel;
+use App\Services\Shipping\ShipmentPulse;
+use App\Services\Shipping\ShippingUnavailable;
+use App\Services\ShippingService;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\RedirectResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Crypt;
-use App\Models\UserModel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\App;
-use App\Exports\ExportOrder;
-use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
-use Illuminate\Contracts\Encryption\DecryptException;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderAdminController extends Controller
 {
@@ -34,8 +33,9 @@ class OrderAdminController extends Controller
     {
         $keyword = $request->input('keyword');
         $isNewOrder = $this->checkForNewOrders();
-        View::share(compact('keyword','isNewOrder'));
+        View::share(compact('keyword', 'isNewOrder'));
     }
+
     public function checkForNewOrders()
     {
         $newOrdersCount = OrderModel::where('order_status', OrderStatus::New)
@@ -48,9 +48,8 @@ class OrderAdminController extends Controller
     public function index(Request $request)
     {
         $perpage = 30;
-        $orderBy = $request->input('sort-by', 'order_id'); 
+        $orderBy = $request->input('sort-by', 'order_id');
         $orderType = $request->input('sort-type', 'asc');
-
 
         if ($orderType === 'asc') {
             $orderType = 'desc';
@@ -58,8 +57,8 @@ class OrderAdminController extends Controller
             $orderType = 'asc';
         }
         $keyword = $request->input('keyword');
-        $searchableFields = ['order_name','order_code','order_date'];
-        
+        $searchableFields = ['order_name', 'order_code', 'order_date'];
+
         $sortOption = $request->input('sort', 'default');
         $query = OrderModel::orderBy($orderBy, $orderType)->confirmedSale();
 
@@ -74,23 +73,23 @@ class OrderAdminController extends Controller
 
         switch ($sortOption) {
             case 'today':
-                $query->where('order_date',$now)
+                $query->where('order_date', $now)
                     ->orderBy('order_id', 'asc');
                 break;
             case 'week':
-                $query->whereBetween('order_date',[$sub7days,$now])
+                $query->whereBetween('order_date', [$sub7days, $now])
                     ->orderBy('order_id', 'DESC');
                 break;
             case 'month':
-                $query->whereBetween('order_date',[$thismonth,$now])
+                $query->whereBetween('order_date', [$thismonth, $now])
                     ->orderBy('order_id', 'DESC');
                 break;
             case 'pmonth':
-                $query->whereBetween('order_date',[$start_month,$end_month])
+                $query->whereBetween('order_date', [$start_month, $end_month])
                     ->orderBy('order_id', 'DESC');
                 break;
             case 'year':
-                $query->whereBetween('order_date',[$sub365days,$now])
+                $query->whereBetween('order_date', [$sub365days, $now])
                     ->orderBy('order_id', 'DESC');
                 break;
             default:
@@ -100,9 +99,9 @@ class OrderAdminController extends Controller
 
         $query = $this->performSearch($query, $keyword, $searchableFields);
 
-        $order = $query->paginate($perpage, ['*'], 'order_page')->withQueryString();   
-        
-        $orderNew = clone $query;  
+        $order = $query->paginate($perpage, ['*'], 'order_page')->withQueryString();
+
+        $orderNew = clone $query;
         $orderNew = $orderNew->where('order_status', OrderStatus::New)
             ->paginate($perpage, ['*'], 'order_new_page')->withQueryString();
 
@@ -131,28 +130,33 @@ class OrderAdminController extends Controller
         $orderSuccess = clone $query;
         $orderSuccess = $orderSuccess->where('order_status', OrderStatus::Completed)
             ->paginate($perpage, ['*'], 'order_confirm')->withQueryString();
-                
-        return view('backend.pages.order.order_list', compact('order', 'orderBy', 'orderType','keyword','orderNew','orderConfirm','orderCancel','orderCancelRequest','orderDeli','orderSuccess','orderReturn'));
+
+        return view('backend.pages.order.order_list', compact('order', 'orderBy', 'orderType', 'keyword', 'orderNew', 'orderConfirm', 'orderCancel', 'orderCancelRequest', 'orderDeli', 'orderSuccess', 'orderReturn'));
     }
 
-    public function printOrder(Request $request,$encryptedOrderId){
-        try{
+    public function printOrder(Request $request, $encryptedOrderId)
+    {
+        try {
             $order_id = Crypt::decrypt($encryptedOrderId);
             $pdf = App::make('dompdf.wrapper');
             $pdf->loadHTML($this->print_order_convert($order_id));
+
             return $pdf->stream();
         } catch (DecryptException $e) {
             // The identifier could not be decrypted.
             $request->session();
             Session::flash('iconMessage', 'info');
+
             return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
         }
     }
 
-    public function print_order_convert($order_id){
+    public function print_order_convert($order_id)
+    {
         $order = OrderModel::where('order_id', $order_id)->first();
         $od = OrderDetailModel::where('order_id', $order->order_id)->get();
-        return view('backend.pages.order.pdf.print_bill',compact('od','order'));
+
+        return view('backend.pages.order.pdf.print_bill', compact('od', 'order'));
 
     }
 
@@ -188,24 +192,25 @@ class OrderAdminController extends Controller
         try {
             $order_id = Crypt::decrypt($encryptedOrderId);
             $order = OrderModel::with(['orderDetail', 'Coupon', 'User'])->find($order_id);
-    
+
             if ($order == null) {
                 $request->session();
                 Session::flash('iconMessage', 'info');
+
                 return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
             }
-    
+
             $orderDetail = OrderDetailModel::with('product')->where('order_id', $order_id)->get();
-    
-            return view("backend.pages.order.order_detail", compact('order', 'orderDetail'));
+
+            return view('backend.pages.order.order_detail', compact('order', 'orderDetail'));
         } catch (DecryptException $e) {
             // The identifier could not be decrypted.
             $request->session();
             Session::flash('iconMessage', 'info');
+
             return redirect('admin/order')->with('message', 'Đơn hàng không tồn tại');
         }
     }
-    
 
     /**
      * Hands the parcel to GHN.
@@ -652,8 +657,9 @@ class OrderAdminController extends Controller
     {
         //
     }
-    public function exportorder_scv(){
-        return Excel::download(new ExportOrder() , 'Đơn hàng.xlsx');
-    }
 
+    public function exportorder_scv()
+    {
+        return Excel::download(new ExportOrder, 'Đơn hàng.xlsx');
+    }
 }
