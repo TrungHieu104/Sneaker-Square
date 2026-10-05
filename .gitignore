@@ -31,4 +31,4 @@ auth.json
 *.docx
 *.pptx
 docs/*
-!docs/ky-thuat/
+!docs/technical/

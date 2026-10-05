@@ -7,7 +7,7 @@ on:
 
 jobs:
   quality:
-    name: Test, lint, phân tích tĩnh
+    name: Tests, lint, static analysis
     runs-on: ubuntu-latest
 
     steps:
@@ -19,10 +19,10 @@ jobs:
           extensions: mbstring, intl, gd, zip, pdo_sqlite, bcmath
           coverage: none
 
-      - name: Cài thư viện
+      - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Chuẩn bị môi trường
+      - name: Prepare environment
         run: |
           cp .env.example .env
           php artisan key:generate
@@ -31,14 +31,14 @@ jobs:
       - name: Code style (Pint)
         run: ./vendor/bin/pint --test
 
-      - name: Phân tích tĩnh (Larastan)
+      - name: Static analysis (Larastan)
         run: ./vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 
-      - name: Feature test
+      - name: Feature tests
         run: php artisan test
 
   secrets:
-    name: Quét secret (gitleaks)
+    name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
 
     steps:
@@ -47,7 +47,7 @@ jobs:
           fetch-depth: 0
 
       # Scans only the commits this push or pull request brings in. Keys that
-      # leaked in older history are revoked; see docs/ky-thuat/no-ky-thuat.md.
+      # leaked in older history are tracked in docs/technical/technical-debt.md.
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

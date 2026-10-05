@@ -1,15 +1,15 @@
-## Thay đổi gì
+## What changed
 
-<!-- Một hai câu: đổi cái gì và vì sao. -->
+<!-- One or two sentences: what changed and why. -->
 
-## Kiểm tra
+## Checks
 
-- [ ] `php artisan test` pass (ghi số test)
-- [ ] `./vendor/bin/pint --test` sạch
-- [ ] `./vendor/bin/phpstan analyse` 0 lỗi
-- [ ] Đổi giao diện thì có ảnh chụp màn hình
-- [ ] Không có key, token, mật khẩu trong code (để ở `.env`)
+- [ ] `php artisan test` passes (state the number of tests)
+- [ ] `./vendor/bin/pint --test` is clean
+- [ ] `./vendor/bin/phpstan analyse` reports 0 errors
+- [ ] UI changes include a screenshot
+- [ ] No keys, tokens or passwords in the code (they belong in `.env`)
 
-## Người review
+## Reviewer
 
-<!-- Gắn ít nhất một thành viên khác review trước khi merge. -->
+<!-- Request a review from at least one other team member before merging. -->
