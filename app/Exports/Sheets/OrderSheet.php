@@ -37,6 +37,11 @@ class OrderSheet extends ListingSheet
         ];
     }
 
+    protected function textColumns(): array
+    {
+        return ['Mã đơn hàng', 'Số điện thoại'];
+    }
+
     protected function records(): Collection
     {
         return ($this->scope)(OrderModel::query())->get();

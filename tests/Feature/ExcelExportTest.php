@@ -65,6 +65,9 @@ class ExcelExportTest extends TestCase
         // MySQL stores the date column normalised; SQLite keeps whatever string
         // it was handed, so the test writes it the way MySQL would hold it.
         $order->order_date = now()->toDateString();
+        // Codes start with the order day, so from the 10th onwards they have
+        // no leading zero, and Excel would read them as a number.
+        $order->order_code = '131020269512';
         $order->save();
 
         $book = $this->open(new ExportOrder);
@@ -78,6 +81,7 @@ class ExcelExportTest extends TestCase
         $this->assertSame('Danh sách đơn hàng | Sneaker Square', $all[0][0]);
         $this->assertSame(['Số thứ tự', 'Mã đơn hàng', 'Họ và tên'], array_slice($all[1], 0, 3));
         $this->assertSame([1, $order->order_code], array_slice($all[2], 0, 2));
+        $this->assertSame($order->order_phone, $all[2][4]);
         $this->assertSame($order->fresh()->order_status->label(), $all[2][9]);
 
         $this->assertSame('Đơn hàng ngày hôm nay | Sneaker Square', $this->rows($book, 1)[0][0]);
