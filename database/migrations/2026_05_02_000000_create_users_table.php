@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('facebook_id', 50)->nullable();
             $table->integer('login_attempts')->default(0);
             $table->timestamp('locked_at')->nullable();
+            $table->unsignedTinyInteger('shoe_size')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

@@ -122,13 +122,19 @@
                         {{-- Display size --}}
                         @if ($getSize->isNotEmpty())
                             <div class="product-detail_size mt-3">
-                                <label class="fw-bold fs-6 mb-2">Size:</label>
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <label class="fw-bold fs-6 mb-0">Size:</label>
+                                    <a href="{{ route('foot.measure', ['sp' => $detailProduct->pro_slug]) }}"
+                                        class="foot-measure-link ms-auto" id="foot-measure-link">
+                                        <i class='bx bx-ruler'></i> <span>Đo cỡ chân của tôi</span>
+                                    </a>
+                                </div>
                                 <div class="product-list_size d-flex flex-wrap gap-3">
                                     @php $i = 1; @endphp
                                     @foreach ($getSize as $size)
                                         <input type="radio" class="btn-check btn-radio" name="options-size"
                                             id="size{{ $i }}" value="{{ $size->size_id }}" autocomplete="off">
-                                        <label class="btn btn-style px-4"
+                                        <label class="btn btn-style px-4" data-size="{{ $size->size }}"
                                             for="size{{ $i }}">{{ $size->size }}</label>
                                         @php $i++; @endphp
                                     @endforeach
@@ -136,6 +142,9 @@
                             </div>
                         @endif
                         <i><span id="size-error" style="color: red;"></span></i>
+                        @if ($getSize->isNotEmpty())
+                            <p class="foot-suggest d-none mb-0 mt-2" id="foot-suggest"></p>
+                        @endif
 
                         <div class="product-detail_quality mt-3">
                             <label class="fw-bold fs-6 mb-2">Số lượng:</label>
@@ -479,6 +488,37 @@
         }
 
 
+        .foot-measure-link {
+            color: var(--color-orange);
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .foot-measure-link:hover {
+            color: var(--color-orange-hover);
+        }
+
+        .foot-suggest {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .product-list_size label.is-suggested {
+            position: relative;
+        }
+
+        .product-list_size label.is-suggested::after {
+            content: "";
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--color-orange);
+            border: 2px solid #fff;
+        }
+
         .btn-order:disabled {
             cursor: not-allowed;
             opacity: .55;
@@ -495,6 +535,34 @@
         const rangeSellingPrice = @json($detailProduct->displaySellingPrice());
         const rangeListPrice = @json($detailProduct->displayListPrice());
         const rangeIsOnSale = @json($detailProduct->isOnSale());
+
+        // Fetched rather than rendered: this page is served from the shared
+        // response cache, and the suggestion belongs to one person.
+        function showFootSuggestion() {
+            const box = $('#foot-suggest');
+
+            if (!box.length) {
+                return;
+            }
+
+            $.getJSON(@json(route('foot.show')), function (foot) {
+                if (!foot.size) {
+                    return;
+                }
+
+                const label = $('.product-list_size label[data-size="' + foot.size + '"]');
+                $('#foot-measure-link span').text('Đo lại');
+
+                if (label.length) {
+                    label.addClass('is-suggested');
+                    box.html('Size gợi ý cho bạn: <b>' + foot.size + '</b>');
+                } else {
+                    box.html('Mẫu này không có size <b>' + foot.size + '</b> của bạn.');
+                }
+
+                box.removeClass('d-none');
+            });
+        }
 
         function formatPrice(value) {
             return new Intl.NumberFormat('vi-VN').format(value);
@@ -659,6 +727,7 @@
             refreshColors();
             refreshPrice();
             refreshQuantity();
+            showFootSuggestion();
             $('#product-form').submit(function(event) {
                 let colorError = false;
                 let sizeError = false;
