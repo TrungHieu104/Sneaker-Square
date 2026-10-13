@@ -29,6 +29,7 @@ use App\Http\Controllers\Frontend\CheckoutController;
 use App\Http\Controllers\Frontend\CommentController;
 use App\Http\Controllers\Frontend\CustomerOrderController;
 use App\Http\Controllers\Frontend\DeliveryInfoController;
+use App\Http\Controllers\Frontend\FootMeasureController;
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\OrderPaymentController;
 use App\Http\Controllers\Frontend\PaymentCallbackController;
@@ -82,6 +83,11 @@ Route::group(['middleware' => 'web'], function () {
     Route::get('/san-pham-hot', [ProductController::class, 'index'])->name('product.hot');
     Route::get('/san-pham-sale', [ProductController::class, 'index'])->name('product.sale');
     Route::get('/san-pham/{pro_slug}', [ProductController::class, 'detail'])->name('product.detail');
+
+    // The suggestion is one person's own, so none of it may come from the shared cache.
+    Route::get('/do-co-chan', [FootMeasureController::class, 'index'])->name('foot.measure')->middleware('doNotCacheResponse');
+    Route::get('/co-chan-cua-toi', [FootMeasureController::class, 'show'])->name('foot.show')->middleware('doNotCacheResponse');
+    Route::post('/co-chan-cua-toi', [FootMeasureController::class, 'store'])->name('foot.store');
     Route::post('/binh-luan/{pro_id}', [CommentController::class, 'store'])->name('comments.store');
     Route::get('/tim-kiem', [SearchController::class, 'search'])->name('search.frontend');
 
