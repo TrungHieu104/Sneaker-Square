@@ -12,12 +12,14 @@ use App\Models\CouponModel as Coupon;
 use App\Models\DeliveryInfoModel as Info;
 use App\Models\OrderModel as Order;
 use App\Models\ProductModel as Product;
+use App\Models\UserEventModel;
 use App\Services\CartService;
 use App\Services\OrderMailer;
 use App\Services\Payment\OrderPayments;
 use App\Services\Payment\PaymentNotAllowed;
 use App\Services\Shipping\ShippingUnavailable;
 use App\Services\ShippingService;
+use App\Services\UserEventLog;
 use App\Services\Wallet\InsufficientBalance;
 use App\Services\Wallet\WalletService;
 use Illuminate\Http\RedirectResponse;
@@ -48,6 +50,7 @@ class CheckoutController extends Controller
         private readonly CartService $cart,
         private readonly OrderMailer $mailer,
         private readonly OrderPayments $payments,
+        private readonly UserEventLog $events,
     ) {
         $this->shareStorefrontLayout();
         View::share('keyword', $request->input('keyword'));
@@ -88,6 +91,10 @@ class CheckoutController extends Controller
         // back from whatever the address was quoted when it was saved.
         $shippingQuote = app(ShippingService::class)->quoteForAddress($cart, $InfoDeli->firstWhere('info_default', 1));
         $walletBalance = (int) app(WalletService::class)->for(Auth::user())->balance;
+        $this->events->record(UserEventModel::CHECKOUT_START, ['meta' => [
+            'lines' => count($cart),
+            'value' => (int) collect($cart)->sum(fn ($line) => (int) $line['pro_price'] * (int) $line['quantity']),
+        ]]);
 
         return view('frontend.pages.product.product_checkout', compact('cart', 'coupon_data', 'InfoDeli', 'shippingQuote', 'walletBalance'));
 
@@ -156,12 +163,17 @@ class CheckoutController extends Controller
 
         session()->forget('cart');
         session()->forget('coupon_data');
+        $this->events->record(UserEventModel::PLACE_ORDER, [
+            'order_id' => $order->order_id,
+            'meta' => ['payment' => $order->order_payment, 'total' => (int) $order->order_total],
+        ]);
 
         // Cash on delivery and the wallet both leave nowhere to send the
         // customer: one is paid at the door, the other was paid as the order
         // was written.
         if (in_array($order->order_payment, [self::PAYMENT_ON_DELIVERY, PlaceOrderAction::PAY_FROM_WALLET], true)) {
             $this->mailer->sendConfirmation($order);
+            $this->events->recordPurchase($order);
 
             return redirect()->route('success.checkout');
         }

@@ -7,6 +7,7 @@ use App\Models\OrderModel;
 use App\Services\OrderMailer;
 use App\Services\Payment\OrderPayments;
 use App\Services\Payment\PaymentNotAllowed;
+use App\Services\UserEventLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +23,7 @@ class OrderPaymentController extends Controller
     public function __construct(
         private readonly OrderPayments $payments,
         private readonly OrderMailer $mailer,
+        private readonly UserEventLog $events,
     ) {}
 
     public function pay(string $order_code): RedirectResponse
@@ -59,6 +61,7 @@ class OrderPaymentController extends Controller
         // Cash on delivery and the wallet settle the order here and now, which
         // is when checkout would have sent the confirmation for them.
         $this->mailer->sendConfirmation($order->fresh());
+        $this->events->recordPurchase($order);
 
         Session::flash('iconMessage', 'success');
 

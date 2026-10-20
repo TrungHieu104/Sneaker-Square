@@ -487,6 +487,14 @@
             filter: grayscale(0.7);
         }
 
+        /* Bootstrap lets a disabled option ignore the pointer. Clickable again
+           so a click on a sold-out pair can be counted; the input underneath
+           stays disabled, so nothing gets picked. */
+        .btn-check:disabled + .btn-style {
+            pointer-events: auto;
+            cursor: not-allowed;
+        }
+
 
         .foot-measure-link {
             color: var(--color-orange);
@@ -535,6 +543,7 @@
         const rangeSellingPrice = @json($detailProduct->displaySellingPrice());
         const rangeListPrice = @json($detailProduct->displayListPrice());
         const rangeIsOnSale = @json($detailProduct->isOnSale());
+        const productId = @json($detailProduct->pro_id);
 
         // Fetched rather than rendered: this page is served from the shared
         // response cache, and the suggestion belongs to one person.
@@ -660,6 +669,42 @@
             }
         }
 
+        // Once per pair the customer settles on, not once per click.
+        let reportedVariant = null;
+
+        function reportVariant() {
+            const key = selectedVariantKey();
+
+            if (key === null || key === reportedVariant) {
+                return;
+            }
+
+            reportedVariant = key;
+            trackEvent('select_variant', {
+                pro_id: productId,
+                color_id: $("input[name='options-color']:checked").val(),
+                size_id: $("input[name='options-size']:checked").val(),
+            });
+        }
+
+        // Someone asking for a pair the shelf does not have: the signal
+        // restocking is read from.
+        function reportSoldOut() {
+            const input = document.getElementById(this.htmlFor);
+
+            if (!input || !input.disabled) {
+                return;
+            }
+
+            const isSize = input.name === 'options-size';
+
+            trackEvent('stock_out_hit', {
+                pro_id: productId,
+                size_id: isSize ? input.value : $("input[name='options-size']:checked").val(),
+                color_id: isSize ? $("input[name='options-color']:checked").val() : input.value,
+            });
+        }
+
         // The mirror of refreshSizes(): a size the customer has settled on rules out
         // the colours that never came in it, or have sold out of it.
         function refreshColors() {
@@ -716,13 +761,16 @@
                 refreshColors();
                 refreshPrice();
                 refreshQuantity();
+                reportVariant();
             });
             $("input[name='options-size']").on('change', function () {
                 refreshColors();
                 refreshSizes();
                 refreshPrice();
                 refreshQuantity();
+                reportVariant();
             });
+            $('.product-list_color label, .product-list_size label').on('click', reportSoldOut);
             refreshSizes();
             refreshColors();
             refreshPrice();

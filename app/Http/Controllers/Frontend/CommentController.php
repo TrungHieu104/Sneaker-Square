@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Frontend\CommentRequest;
 use App\Models\CommentModel as Comment;
+use App\Models\UserEventModel;
+use App\Services\UserEventLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -35,7 +37,7 @@ class CommentController extends Controller
      * write. The reviewer's name and address come from the account rather than
      * the form.
      */
-    public function store(CommentRequest $request, string $proId)
+    public function store(CommentRequest $request, string $proId, UserEventLog $events)
     {
         $comment = new Comment;
         $comment->comment_content = $request->validated('comment_content');
@@ -47,6 +49,7 @@ class CommentController extends Controller
         $comment->rating = $request->validated('rating');
         $comment->comment_hidden = 1;
         $comment->save();
+        $events->record(UserEventModel::REVIEW, ['pro_id' => $proId, 'meta' => ['rating' => (int) $comment->rating]]);
 
         Session::flash('iconMessage', 'success');
 

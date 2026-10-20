@@ -10,6 +10,8 @@ use App\Models\LikeModel;
 use App\Models\ProductModel as Product;
 use App\Models\ProductQuantityModel as Quantity;
 use App\Models\SizeModel as Size;
+use App\Models\UserEventModel;
+use App\Services\UserEventLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +28,7 @@ class ProductController extends Controller
 
     public function __construct(
         Request $request,
+        private readonly UserEventLog $events,
     ) {
         $this->shareStorefrontLayout();
         View::share('keyword', $request->input('keyword'));
@@ -65,7 +68,10 @@ class ProductController extends Controller
         $this->applySort($getAllProduct, $request['sort']);
 
         $reqSort = $request['sort'];
-        if ($getAllProduct->count() === 0) {
+        $found = $getAllProduct->count();
+        $this->recordBrowsing($request, $keyword, $found);
+
+        if ($found === 0) {
             Session::flash('iconMessage', 'info');
 
             return redirect()->back()->with('message', 'Không tìm thấy sản phẩm nào.');
@@ -79,6 +85,28 @@ class ProductController extends Controller
             ]);
         } else {
             return view('frontend.pages.product.product_page', compact('getAllCate', 'getAllProduct', 'getHotProduct', 'getSaleProduct', 'url', 'reqSort', 'getOneCate', 'getAccessories', 'keyword'));
+        }
+    }
+
+    /**
+     * The search and the sort the listing was asked for, once per listing
+     * rather than once per page of it.
+     */
+    private function recordBrowsing(Request $request, string $keyword, int $found): void
+    {
+        if ((int) $request->input('page', 1) > 1) {
+            return;
+        }
+
+        if ($keyword !== '') {
+            $this->events->record(UserEventModel::SEARCH, ['meta' => ['keyword' => $keyword, 'results' => $found]]);
+        }
+
+        if ($request->filled('sort')) {
+            $this->events->record(UserEventModel::FILTER, ['meta' => [
+                'sort' => (string) $request->input('sort'),
+                'category' => $request->route('cate_slug'),
+            ]]);
         }
     }
 
@@ -125,6 +153,7 @@ class ProductController extends Controller
             ->first();
         $detailProduct->pro_views++;
         $detailProduct->save();
+        $this->events->record(UserEventModel::VIEW_PRODUCT, ['pro_id' => $proId]);
 
         $getColor = Quantity::select('pro_id', 'products_quantity.color_id', 'color')
             ->where('pro_id', $proId)

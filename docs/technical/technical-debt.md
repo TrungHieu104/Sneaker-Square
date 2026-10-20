@@ -14,7 +14,7 @@ Updated: 2026-10-05.
 | SonarQube | Reliability / Security / Maintainability rating | A / A / A |
 | SonarQube | Remaining code smells | 34 Major, 10 Minor |
 | gitleaks | Secrets in the current source and the whole Git history | 0 (2 old leaks revoked, listed in `.gitleaksignore`) |
-| PHPUnit | Feature tests | 623 passing |
+| PHPUnit | Feature tests | 640 passing |
 
 The SonarQube scope, and the reason each part is excluded, is in `sonar-project.properties`.
 
@@ -28,7 +28,7 @@ The SonarQube scope, and the reason each part is excluded, is in `sonar-project.
 | 4 | About 23% duplication in Blade (measured with jscpd; SonarQube does not analyse Blade) | Changing the admin UI means editing many places | Extract the admin create/edit forms and listing tables into Blade components | Planned |
 | 5 | Large admin controllers: `OrderAdminController` (662 lines), `ProductQuantityController` (495), `AuthAdminController` (492) | Hard to read and test | Split by responsibility, as done with `ProductController` (now Product/Cart/Checkout/CustomerOrder) | Planned |
 | 6 | Remaining Major code smells: methods with many `return`s, snake_case variable names, unused parameters required by route signatures | Low | Fix gradually when touching the file | Planned |
-| 7 | `database/sneaker_square.sql` is out of sync with the migrations (missing `facebook_id`, `shoe_size`) | Installing with option 1 in the README leaves the column out | Re-export the dump from a database built with `migrate --seed` | Planned |
+| 7 | `database/sneaker_square.sql` is out of sync with the migrations (missing `facebook_id`, `shoe_size` and the `user_events` table; still has the dropped `visitors` table) | Installing with option 1 in the README leaves those out | Re-export the dump from a database built with `migrate --seed` | Planned |
 | 8 | Older Git history was committed straight to `main`, without pull requests | No review trail | Since 2026-10-05, follow `CONTRIBUTING.md`: own branch, pull request, review, merge only when CI is green | In effect |
 
 ## Done in the 2026-10-05 round

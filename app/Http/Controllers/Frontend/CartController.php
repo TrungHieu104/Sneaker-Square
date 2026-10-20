@@ -10,8 +10,10 @@ use App\Models\CouponModel as Coupon;
 use App\Models\ProductModel as Product;
 use App\Models\ProductQuantityModel as Quantity;
 use App\Models\SizeModel as Size;
+use App\Models\UserEventModel;
 use App\Services\CartPricingService;
 use App\Services\CartService;
+use App\Services\UserEventLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Session;
@@ -25,9 +27,12 @@ class CartController extends Controller
     use ScreensSessionCart;
     use SharesStorefrontLayout;
 
+    private const OUT_OF_STOCK = 'Opps!!! Sản phẩm bạn vừa chọn đã hết hàng';
+
     public function __construct(
         Request $request,
         private readonly CartService $cart,
+        private readonly UserEventLog $events,
     ) {
         $this->shareStorefrontLayout();
         View::share('keyword', $request->input('keyword'));
@@ -73,19 +78,30 @@ class CartController extends Controller
             ? $this->stockRefusal($request, $product, $proSlug, $color_id, $size_id, $quantity)
             : 'Opps!!! Sản phẩm bạn vừa chọn không có trong hệ thống';
 
+        if ($refusal === self::OUT_OF_STOCK) {
+            $this->events->record(UserEventModel::STOCK_OUT_HIT, [
+                'pro_id' => $product->pro_id, 'size_id' => $size_id, 'color_id' => $color_id, 'meta' => ['source' => 'add_cart'],
+            ]);
+        }
+
         if ($refusal !== null) {
             return back()->with(['iconMessage' => 'warning', 'message' => $refusal]);
         }
 
         // Name and price come from the database, never from the request. The cart
         // now holds only what the customer picked: product, size, colour, quantity.
+        $price = app(CartPricingService::class)->unitPrice($product, $color_id, $size_id);
         $this->putInCart($request, [
             'proSlug' => $proSlug,
             'pro_name' => $product->pro_name,
             'quantity' => $quantity,
             'color_id' => $color_id,
             'size_id' => $size_id,
-            'pro_price' => app(CartPricingService::class)->unitPrice($product, $color_id, $size_id),
+            'pro_price' => $price,
+        ]);
+        $this->events->record(UserEventModel::ADD_CART, [
+            'pro_id' => $product->pro_id, 'size_id' => $size_id, 'color_id' => $color_id,
+            'meta' => ['quantity' => $quantity, 'price' => $price],
         ]);
 
         // Two buttons post this form: one to carry on browsing, one to go and
@@ -115,7 +131,7 @@ class CartController extends Controller
         }
 
         if ((int) $variant->quantity === 0) {
-            return 'Opps!!! Sản phẩm bạn vừa chọn đã hết hàng';
+            return self::OUT_OF_STOCK;
         }
 
         $alreadyInCart = collect($request->session()->get('cart', []))
@@ -173,6 +189,7 @@ class CartController extends Controller
             && (string) ($item['size_id'] ?? '') === (string) $sizeId);
 
         if ($index !== false) {
+            $this->recordRemoval([$cart[$index]], false);
             array_splice($cart, $index, 1);
             $request->session()->put('cart', $cart);
         }
@@ -189,11 +206,29 @@ class CartController extends Controller
 
     public function delCart(Request $request)
     {
+        $this->recordRemoval((array) $request->session()->get('cart', []), true);
         $request->session()->forget('cart');
         $request->session()->forget('coupon_data');
         Session::flash('iconMessage', 'success');
 
         return redirect()->route('empty.cart')->with('message', 'Xóa giỏ hàng thành công!');
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $lines  cart lines leaving the cart
+     */
+    private function recordRemoval(array $lines, bool $emptiedCart): void
+    {
+        $productIds = Product::whereIn('pro_slug', array_column($lines, 'proSlug'))->pluck('pro_id', 'pro_slug');
+
+        foreach ($lines as $line) {
+            $this->events->record(UserEventModel::REMOVE_CART, [
+                'pro_id' => $productIds[$line['proSlug'] ?? ''] ?? null,
+                'size_id' => $line['size_id'] ?? null,
+                'color_id' => $line['color_id'] ?? null,
+                'meta' => ['quantity' => (int) ($line['quantity'] ?? 0), 'emptied_cart' => $emptiedCart],
+            ]);
+        }
     }
 
     public function checkCoupon(CouponCheckRequest $request)

@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Frontend\Concerns\SharesStorefrontLayout;
+use App\Models\UserEventModel;
 use App\Models\WishListModel;
+use App\Services\UserEventLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -12,7 +14,7 @@ class WishListController extends Controller
 {
     use SharesStorefrontLayout;
 
-    public function __construct()
+    public function __construct(private readonly UserEventLog $events)
     {
         $this->shareStorefrontLayout();
     }
@@ -37,6 +39,7 @@ class WishListController extends Controller
             $pro_id = $request->input('product-id');
             if (WishListModel::where('user_id', Auth::id())->where('pro_id', $pro_id)->exists()) {
                 WishListModel::where('user_id', Auth::id())->where('pro_id', $pro_id)->delete();
+                $this->events->record(UserEventModel::WISHLIST, ['pro_id' => $pro_id, 'meta' => ['action' => 'remove']]);
 
                 return response()->json([
                     'status' => 'Đã xóa khỏi mục yêu thích',
@@ -47,6 +50,7 @@ class WishListController extends Controller
                 $wishList->pro_id = $pro_id;
                 $wishList->user_id = Auth::id();
                 $wishList->save();
+                $this->events->record(UserEventModel::WISHLIST, ['pro_id' => $pro_id, 'meta' => ['action' => 'add']]);
 
                 return response()->json([
                     'status' => 'Thêm mục yêu thích thành công',
@@ -81,6 +85,7 @@ class WishListController extends Controller
             if (WishListModel::where('pro_id', $pro_id)->where('user_id', Auth::id())->exists()) {
                 $wishList = WishListModel::where('pro_id', $pro_id)->where('user_id', Auth::id())->first();
                 $wishList->delete();
+                $this->events->record(UserEventModel::WISHLIST, ['pro_id' => $pro_id, 'meta' => ['action' => 'remove']]);
 
                 return response()->json([
                     'status' => 'Xóa thành công',

@@ -14,6 +14,7 @@ use App\Services\Payment\OrderPayments;
 use App\Services\Payment\PaymentCallback;
 use App\Services\Payment\PaymentGatewayManager;
 use App\Services\Payment\PaymentOutcome;
+use App\Services\UserEventLog;
 use App\Services\Wallet\WalletTopups;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -37,6 +38,7 @@ class PaymentCallbackController extends Controller
         private readonly OrderPayments $payments,
         private readonly OrderMailer $mailer,
         private readonly WalletTopups $topups,
+        private readonly UserEventLog $events,
     ) {}
 
     /**
@@ -153,6 +155,7 @@ class PaymentCallbackController extends Controller
     {
         if ($order = $this->confirmPayment->execute($callback)) {
             $this->mailer->sendConfirmation($order);
+            $this->events->recordPurchase($order);
         }
     }
 

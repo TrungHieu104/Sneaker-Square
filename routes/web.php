@@ -29,6 +29,7 @@ use App\Http\Controllers\Frontend\CheckoutController;
 use App\Http\Controllers\Frontend\CommentController;
 use App\Http\Controllers\Frontend\CustomerOrderController;
 use App\Http\Controllers\Frontend\DeliveryInfoController;
+use App\Http\Controllers\Frontend\EventBeaconController;
 use App\Http\Controllers\Frontend\FootMeasureController;
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\OrderPaymentController;
@@ -89,6 +90,7 @@ Route::group(['middleware' => 'web'], function () {
     Route::get('/co-chan-cua-toi', [FootMeasureController::class, 'show'])->name('foot.show')->middleware('doNotCacheResponse');
     Route::post('/co-chan-cua-toi', [FootMeasureController::class, 'store'])->name('foot.store');
     Route::post('/binh-luan/{pro_id}', [CommentController::class, 'store'])->name('comments.store');
+    Route::post('/su-kien', [EventBeaconController::class, 'store'])->name('events.beacon')->middleware('throttle:120,1');
     Route::get('/tim-kiem', [SearchController::class, 'search'])->name('search.frontend');
 
     // Route Product WishList
