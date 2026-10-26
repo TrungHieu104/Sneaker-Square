@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enums\OrderStatus;
+use App\Logging\LogChannel;
 use App\Models\OrderModel;
 use App\Models\PaymentAttemptModel;
 use App\Services\Payment\InvalidPaymentCallbackException;
@@ -99,7 +100,7 @@ class ConfirmPaymentAction
 
     private function handBack(OrderModel $order, ?PaymentAttemptModel $attempt, PaymentCallback $callback): void
     {
-        Log::warning('Payment arrived for an order that could not use it', [
+        Log::channel(LogChannel::PAYMENT)->warning('Payment arrived for an order that could not use it', [
             'order_code' => $order->order_code,
             'attempt' => $attempt?->code,
             'amount' => $callback->amount,

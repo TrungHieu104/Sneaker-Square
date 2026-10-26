@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Logging\LogChannel;
 use App\Mail\ConfirmOrder;
 use App\Models\OrderModel;
 use Illuminate\Support\Facades\Log;
@@ -23,7 +24,7 @@ class OrderMailer
         $recipient = $order->order_email ?: $order->User?->email;
 
         if (! $recipient) {
-            Log::warning('No address to send the order confirmation to', [
+            Log::channel(LogChannel::MAIL)->warning('No address to send the order confirmation to', [
                 'order_code' => $order->order_code,
             ]);
 

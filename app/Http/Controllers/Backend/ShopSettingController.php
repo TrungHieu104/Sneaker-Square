@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Backend\CartReminderSettingRequest;
 use App\Http\Requests\Backend\ShopInfoRequest;
 use App\Http\Requests\Backend\ShopSettingRequest;
 use App\Services\ShopSettings;
@@ -30,6 +31,7 @@ class ShopSettingController extends Controller
             'returnDays' => $settings->returnDays(),
             'paymentWindow' => $settings->paymentWindowMinutes(),
             'shopInfo' => $settings->shopInfo(),
+            'cartReminder' => $settings->cartReminder(),
         ]);
     }
 
@@ -55,5 +57,14 @@ class ShopSettingController extends Controller
         Session::flash('iconMessage', 'success');
 
         return redirect()->to(route('setting.edit').'#tab-chung')->with('message', 'Đã lưu thông tin cửa hàng.');
+    }
+
+    public function updateCartReminder(CartReminderSettingRequest $request, ShopSettings $settings): RedirectResponse
+    {
+        $settings->setCartReminder($request->validated());
+
+        Session::flash('iconMessage', 'success');
+
+        return redirect()->to(route('setting.edit').'#tab-nhac-gio-hang')->with('message', 'Đã lưu cấu hình nhắc giỏ hàng.');
     }
 }

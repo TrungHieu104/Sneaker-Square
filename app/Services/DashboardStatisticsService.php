@@ -10,8 +10,8 @@ use App\Models\OrderModel;
 use App\Models\ProductModel;
 use App\Models\PromotionModel;
 use App\Models\StatisticModel;
+use App\Models\UserEventModel;
 use App\Models\UserModel;
-use App\Models\VisitorModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -115,14 +115,19 @@ class DashboardStatisticsService
         ];
     }
 
+    /**
+     * Visitors are browsers, told apart by their cookie.
+     */
     public function totalVisitorCount(): int
     {
-        return VisitorModel::count();
+        return UserEventModel::distinct()->count('session_id');
     }
 
     public function onlineVisitorCount(): int
     {
-        return VisitorModel::where('visitor_date', '>=', now()->subMinutes(self::ONLINE_WINDOW_MINUTES))->count();
+        return UserEventModel::where('created_at', '>=', now()->subMinutes(self::ONLINE_WINDOW_MINUTES))
+            ->distinct()
+            ->count('session_id');
     }
 
     /**

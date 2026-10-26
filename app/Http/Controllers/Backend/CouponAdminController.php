@@ -111,6 +111,8 @@ class CouponAdminController extends Controller
         $cou->coupon_end = $time_end;
         $cou->coupon_condition = $condition;
         $cou->coupon_value = $money;
+        $cou->coupon_min_order = $request->integer('min_order');
+        $cou->coupon_max_discount = $request->filled('max_discount') ? $request->integer('max_discount') : null;
         $cou->save();
         Session::flash('iconMessage', 'success');
 
@@ -171,6 +173,8 @@ class CouponAdminController extends Controller
         $cou->coupon_end = $time_end;
         $cou->coupon_condition = $condition;
         $cou->coupon_value = $money;
+        $cou->coupon_min_order = $request->integer('min_order');
+        $cou->coupon_max_discount = $request->filled('max_discount') ? $request->integer('max_discount') : null;
         $cou->save();
         Session::flash('iconMessage', 'success');
 

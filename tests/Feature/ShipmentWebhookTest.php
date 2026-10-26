@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Actions\PlaceOrderAction;
+use App\Logging\LogChannel;
 use App\Models\OrderModel;
 use App\Models\ShipmentEventModel;
 use App\Models\UserModel;
 use App\Services\Shipping\FakeCarrier;
 use App\Services\Shipping\ShippingCarrier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\CapturesLogs;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
 
@@ -21,6 +23,7 @@ use Tests\TestCase;
  */
 class ShipmentWebhookTest extends TestCase
 {
+    use CapturesLogs;
     use RefreshDatabase;
     use ShopFixtures;
 
@@ -227,5 +230,24 @@ class ShipmentWebhookTest extends TestCase
             ->get(route('orderBill.checkout', $order->order_code))
             ->assertOk()
             ->assertSee('Đơn hàng chưa được bàn giao cho đơn vị vận chuyển');
+    }
+
+    // ---------------------------------------------------------------- logs
+
+    public function test_moi_webhook_ghi_vao_shipping_log_ke_ca_don_khong_khop(): void
+    {
+        $log = $this->captureLog(LogChannel::SHIPPING);
+        $order = $this->makeOrder();
+        $order->forceFill(['order_shipping_code' => 'LFV3G8'])->save();
+
+        $this->send($this->ghnPayload());
+        $this->send($this->ghnPayload(['OrderCode' => 'KHONGCO']));
+
+        $matched = $this->logged($log, 'GHN webhook');
+        $this->assertSame([['LFV3G8', 'ready_to_pick', $order->order_code, true]], array_map(
+            fn (array $line) => [$line['OrderCode'], $line['Status'], $line['order_code'], $line['recorded']],
+            $matched,
+        ));
+        $this->assertSame(['KHONGCO'], array_column($this->logged($log, 'GHN webhook for an unknown order'), 'OrderCode'));
     }
 }

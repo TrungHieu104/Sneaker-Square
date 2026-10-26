@@ -10,6 +10,9 @@ use App\Models\LikeModel;
 use App\Models\ProductModel as Product;
 use App\Models\ProductQuantityModel as Quantity;
 use App\Models\SizeModel as Size;
+use App\Models\UserEventModel;
+use App\Services\Analytics\Recommender;
+use App\Services\UserEventLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +29,7 @@ class ProductController extends Controller
 
     public function __construct(
         Request $request,
+        private readonly UserEventLog $events,
     ) {
         $this->shareStorefrontLayout();
         View::share('keyword', $request->input('keyword'));
@@ -65,7 +69,10 @@ class ProductController extends Controller
         $this->applySort($getAllProduct, $request['sort']);
 
         $reqSort = $request['sort'];
-        if ($getAllProduct->count() === 0) {
+        $found = $getAllProduct->count();
+        $this->recordBrowsing($request, $keyword, $found);
+
+        if ($found === 0) {
             Session::flash('iconMessage', 'info');
 
             return redirect()->back()->with('message', 'Không tìm thấy sản phẩm nào.');
@@ -79,6 +86,28 @@ class ProductController extends Controller
             ]);
         } else {
             return view('frontend.pages.product.product_page', compact('getAllCate', 'getAllProduct', 'getHotProduct', 'getSaleProduct', 'url', 'reqSort', 'getOneCate', 'getAccessories', 'keyword'));
+        }
+    }
+
+    /**
+     * The search and the sort the listing was asked for, once per listing
+     * rather than once per page of it.
+     */
+    private function recordBrowsing(Request $request, string $keyword, int $found): void
+    {
+        if ((int) $request->input('page', 1) > 1) {
+            return;
+        }
+
+        if ($keyword !== '') {
+            $this->events->record(UserEventModel::SEARCH, ['meta' => ['keyword' => $keyword, 'results' => $found]]);
+        }
+
+        if ($request->filled('sort')) {
+            $this->events->record(UserEventModel::FILTER, ['meta' => [
+                'sort' => (string) $request->input('sort'),
+                'category' => $request->route('cate_slug'),
+            ]]);
         }
     }
 
@@ -99,7 +128,7 @@ class ProductController extends Controller
         };
     }
 
-    public function detail(string $proSlug = '')
+    public function detail(Request $request, string $proSlug = '')
     {
         $proId = Product::where('pro_slug', $proSlug)
             ->where('pro_hidden', 1)
@@ -125,6 +154,10 @@ class ProductController extends Controller
             ->first();
         $detailProduct->pro_views++;
         $detailProduct->save();
+        // A visit that came from a recommendation says which block, so the
+        // block's clicks can be counted.
+        $source = Recommender::URL_SOURCES[(string) $request->query('tu')] ?? null;
+        $this->events->record(UserEventModel::VIEW_PRODUCT, ['pro_id' => $proId] + ($source ? ['meta' => ['source' => $source]] : []));
 
         $getColor = Quantity::select('pro_id', 'products_quantity.color_id', 'color')
             ->where('pro_id', $proId)
@@ -136,13 +169,6 @@ class ProductController extends Controller
             ->where('pro_id', $proId)
             ->join('size', 'products_quantity.size_id', '=', 'size.size_id')
             ->groupBy('pro_id', 'products_quantity.size_id', 'size')
-            ->get();
-
-        $relatedProduct = Product::withRatingSummary()->withPriceRange()->where('cate_id', $detailProduct->cate_id)
-            ->where('pro_id', '!=', $detailProduct->pro_id)
-            ->where('pro_hidden', 1)
-            ->orderBy('pro_views', 'desc')
-            ->limit(5)
             ->get();
 
         $hotProduct = Product::withRatingSummary()->withPriceRange()->where('pro_hot', 1)
@@ -182,6 +208,6 @@ class ProductController extends Controller
         // to learn the shelf is empty is to fill in the form and be turned away.
         $stockTotal = (int) $detailProduct->getQuantities->sum('quantity');
 
-        return view('frontend.pages.product.product_detail', compact('detailProduct', 'getColor', 'getSize', 'relatedProduct', 'hotProduct', 'likeStatus', 'hasPurchased', 'variantPrices', 'variantStock', 'stockTotal'));
+        return view('frontend.pages.product.product_detail', compact('detailProduct', 'getColor', 'getSize', 'hotProduct', 'likeStatus', 'hasPurchased', 'variantPrices', 'variantStock', 'stockTotal'));
     }
 }

@@ -228,6 +228,12 @@
                 <div data-i18n="Form Layouts">Đơn hàng</div>
             </a>
         </li>
+        <li class="menu-item {{(url()->current() == route('open_cart.index')) ? 'active' : ''}}">
+            <a href="{{route('open_cart.index')}}" class="menu-link">
+                <i class='bx bx-cart menu-icon'></i>
+                <div data-i18n="Form Layouts">Giỏ hàng đang treo</div>
+            </a>
+        </li>
         <li class="menu-item {{(url()->current() == route('wallet_admin.index')) ? 'active' : ''}}">
             <a href="{{route('wallet_admin.index')}}" class="menu-link">
                 <i class='bx bx-wallet menu-icon'></i>
@@ -288,7 +294,7 @@
         </li>
         @endif
         @can('Thống kê truy cập')
-        <li class="menu-item {{(url()->current() == route('admin.statistical')) ? 'active open' : ''}}">
+        <li class="menu-item {{in_array(url()->current(), [route('admin.statistical')]) ? 'active open' : ''}}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class='bx bx-user menu-icon' ></i>
                 <div data-i18n="Form Elements">Truy cập</div>

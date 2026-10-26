@@ -637,6 +637,9 @@
                                                 : $coupon_data->coupon_value . '%' }}
                                             cho đơn hàng này.
                                         </b> <br>
+                                        @if ($dieuKienMa = app(\App\Services\CartPricingService::class)->couponTerms($coupon_data))
+                                            <small>Áp dụng: {{ $dieuKienMa }}</small><br>
+                                        @endif
                                         <button type="button" class="btn-close" data-bs-dismiss="alert"
                                             aria-label="Close"></button>
                                         <form action="{{ route('removeCoupon.cart') }}" method="post">@csrf
@@ -673,13 +676,9 @@
                                         </h6>
                                         <label class="font__size">
                                             @php
-                                                if ($coupon_data->coupon_condition == 0) {
-                                                    $discount = $giatri_donhang * ($coupon_data->coupon_value / 100);
-                                                }
+                                                $discount = app(\App\Services\CartPricingService::class)->discountFor($coupon_data, (int) $giatri_donhang);
                                             @endphp
-                                            {{ $coupon_data->coupon_condition == 1
-                                                ? '- ' . number_format($coupon_data->coupon_value, 0, ',', '.') . ' VNĐ'
-                                                : '- ' . number_format($discount, 0, ',', '.') . ' VNĐ' }}
+                                            {{ '- ' . number_format($discount, 0, ',', '.') . ' VNĐ' }}
                                         </label>
                                     </div>
                                 @endisset
@@ -689,17 +688,10 @@
                                     <h6 class="fw-bold text-uppercase mb-0">Thành tiền: </h6>
                                     <h4 class="fw-bold mb-0">
                                         @if ($coupon_data)
-                                            @if (isset($discount))
-                                                @php
-                                                    $thanhtien = $giatri_donhang - $discount + $phivanchuyen;
-                                                @endphp
-                                                {{ number_format($thanhtien, 0, ',', '.') }}
-                                            @else
-                                                @php
-                                                    $thanhtien = $giatri_donhang - $coupon_data->coupon_value + $phivanchuyen;
-                                                @endphp
-                                                {{ number_format($thanhtien, 0, ',', '.') }}
-                                            @endif
+                                            @php
+                                                $thanhtien = $giatri_donhang - $discount + $phivanchuyen;
+                                            @endphp
+                                            {{ number_format($thanhtien, 0, ',', '.') }}
                                         @else
                                             @php
                                                 $thanhtien = $giatri_donhang + $phivanchuyen;

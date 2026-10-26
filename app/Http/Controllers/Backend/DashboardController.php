@@ -6,7 +6,6 @@ use App\Exports\ExportStatistic;
 use App\Http\Controllers\Controller;
 use App\Models\StatisticModel;
 use App\Models\UserModel;
-use App\Models\VisitorModel;
 use App\Services\DashboardStatisticsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -81,13 +80,10 @@ class DashboardController extends Controller
             'couponName'));
     }
 
-    public function indexPost(Request $request)
+    public function indexPost(Request $request, DashboardStatisticsService $stats)
     {
-        // Online users counted by IP address.
-        $onlineVisitors = VisitorModel::where('visitor_date', '>=', now()->subMinutes(10))->get();
-        $onlineVisitorCount = $onlineVisitors->count();
         if ($request->ajax()) {
-            return response()->json(['visitorTotal' => $onlineVisitorCount]);
+            return response()->json(['visitorTotal' => $stats->onlineVisitorCount()]);
         }
 
         return response()->json(['error' => 'Không tìm thấy dữ liệu']);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
+use App\Logging\LogChannel;
 use App\Services\Shipping\ShipmentTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,7 +45,7 @@ class ShippingWebhookController extends Controller
         } catch (Throwable $e) {
             // A crash is the one case worth a retry: the event is real and the
             // failure is ours.
-            Log::error('GHN webhook failed', [
+            Log::channel(LogChannel::SHIPPING)->error('GHN webhook failed', [
                 'message' => $e->getMessage(),
                 'order_code' => $payload['OrderCode'] ?? null,
             ]);
@@ -52,13 +53,15 @@ class ShippingWebhookController extends Controller
             return response()->json(['message' => 'Lỗi xử lý'], 500);
         }
 
-        if (! $result['order']) {
-            Log::info('GHN webhook for an unknown order', [
-                'OrderCode' => $payload['OrderCode'] ?? null,
-                'ClientOrderCode' => $payload['ClientOrderCode'] ?? null,
-                'Status' => $payload['Status'] ?? null,
-            ]);
+        Log::channel(LogChannel::SHIPPING)->info($result['order'] ? 'GHN webhook' : 'GHN webhook for an unknown order', [
+            'OrderCode' => $payload['OrderCode'] ?? null,
+            'ClientOrderCode' => $payload['ClientOrderCode'] ?? null,
+            'Status' => $payload['Status'] ?? null,
+            'order_code' => $result['order']?->order_code,
+            'recorded' => $result['recorded'],
+        ]);
 
+        if (! $result['order']) {
             return response()->json(['message' => 'Không khớp đơn hàng nào'], 200);
         }
 

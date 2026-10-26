@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Frontend\Concerns\SharesStorefrontLayout;
 use App\Models\NewsModel;
 use App\Models\ProductModel;
+use App\Models\UserEventModel;
+use App\Services\UserEventLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
@@ -15,7 +17,7 @@ class SearchController extends Controller
 {
     use SharesStorefrontLayout;
 
-    public function __construct(Request $request)
+    public function __construct(Request $request, private readonly UserEventLog $events)
     {
         $this->shareStorefrontLayout();
         View::share('keyword', $request->input('keyword'));
@@ -37,6 +39,12 @@ class SearchController extends Controller
             ->paginate(8)
             ->search($keyword);
         $countRecord = $results->count();
+
+        // Searches that find nothing are the shop learning what it does not
+        // sell, so the total is kept rather than just this page of it.
+        if ($results->currentPage() === 1) {
+            $this->events->record(UserEventModel::SEARCH, ['meta' => ['keyword' => $keyword, 'results' => $results->total()]]);
+        }
 
         return view('frontend.pages.search', compact('results', 'keyword', 'countRecord'));
     }

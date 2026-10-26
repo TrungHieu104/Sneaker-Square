@@ -2,7 +2,9 @@
 
 namespace App\Services\Shipping;
 
+use App\Logging\LogChannel;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
@@ -165,6 +167,13 @@ class GhnCarrier implements ShippingCarrier
 
         $estimated = $data['expected_delivery_time'] ?? null;
 
+        Log::channel(LogChannel::SHIPPING)->info('GHN parcel booked', [
+            'reference' => $order->reference,
+            'shipping_code' => $code,
+            'fee' => (int) ($data['total_fee'] ?? 0),
+            'cod_amount' => max(0, $order->codAmount),
+        ]);
+
         return new ShipmentBooking(
             code: $code,
             fee: (int) ($data['total_fee'] ?? 0),
@@ -191,11 +200,13 @@ class GhnCarrier implements ShippingCarrier
                 throw new ShippingUnavailable('GHN từ chối: '.($row['message'] ?? 'không rõ lý do'));
             }
         }
+
+        Log::channel(LogChannel::SHIPPING)->info('GHN parcel status switched', ['shipping_code' => $code, 'status' => $status]);
     }
 
     /**
      * A route GHN has no leadtime for still has a price, so a failure here is
-     * logged and swallowed rather than losing the quote.
+     * swallowed rather than losing the quote; call() has already logged it.
      */
     private function leadtime(Shipment $shipment, int $serviceId): ?CarbonImmutable
     {
@@ -207,9 +218,7 @@ class GhnCarrier implements ShippingCarrier
                 'to_ward_code' => $shipment->toWardCode,
                 'service_id' => $serviceId,
             ]);
-        } catch (Throwable $e) {
-            Log::warning('GHN leadtime failed', ['message' => $e->getMessage()]);
-
+        } catch (Throwable) {
             return null;
         }
 
@@ -260,7 +269,7 @@ class GhnCarrier implements ShippingCarrier
      */
     private function get(string $path): array
     {
-        return $this->unwrap($this->client()->get($this->url($path)));
+        return $this->call('GET', $path, fn () => $this->client()->get($this->url($path)));
     }
 
     /**
@@ -269,7 +278,29 @@ class GhnCarrier implements ShippingCarrier
      */
     private function post(string $path, array $payload): array
     {
-        return $this->unwrap($this->client()->post($this->url($path), $payload));
+        return $this->call('POST', $path, fn () => $this->client()->post($this->url($path), $payload));
+    }
+
+    /**
+     * Every failed call is logged here, once, whoever catches it afterwards:
+     * GHN refusing, GHN not answering, or the token missing.
+     *
+     * @param  Closure(): Response  $send
+     * @return array<mixed>
+     */
+    private function call(string $method, string $path, Closure $send): array
+    {
+        try {
+            return $this->unwrap($send());
+        } catch (Throwable $e) {
+            Log::channel(LogChannel::SHIPPING)->warning('GHN API call failed', [
+                'method' => $method,
+                'path' => $path,
+                'message' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
     }
 
     private function url(string $path): string

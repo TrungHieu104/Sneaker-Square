@@ -25,6 +25,7 @@
     <meta property="og:image" content="@yield('img', asset('uploads/images/banner_meta.png'))" />
     <!-- Meta Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="event-beacon" content="{{ route('events.beacon') }}">
     <!-- meta character set -->
     <meta charset="UTF-8">
     <!-- Favicon-->
@@ -90,7 +91,8 @@
 
     <!-- JavaScript Main -->
     <script src="{{ asset('frontend/js/main.js') }}"></script>
-    <script src="{{ asset('frontend/js/app.js') }}"></script>
+    {{-- Versioned: pages call functions defined here, and a copy cached from before they existed breaks them. --}}
+    <script src="{{ asset('frontend/js/app.js') }}?v={{ filemtime(public_path('frontend/js/app.js')) }}"></script>
     <script src="{{ asset('frontend/js/easing.js') }}"></script>
 
     <!-- JavaScript Mmenu -->
@@ -112,6 +114,7 @@
 	<script src="{{asset('frontend/js/vendor/bootstrap.min.js')}}"></script>
 	<script src="{{asset('frontend/js/jquery.sticky.js')}}"></script>
 	<script src="{{asset('frontend/js/nouislider.min.js')}}"></script>
+	<script src="{{ asset_v('frontend/js/track.js') }}"></script>
 	<script src="{{asset('frontend/ajax/wishlist.js')}}"></script>
 	<script src="{{ asset_v('frontend/ajax/delivery.js') }}"></script>
 	<script src="{{asset('frontend/ajax/filter_product.js')}}"></script>

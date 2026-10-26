@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend;
 use App\Actions\ConfirmPaymentAction;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
+use App\Logging\LogChannel;
 use App\Models\OrderModel;
 use App\Models\PaymentAttemptModel;
 use App\Models\WalletTopupModel;
@@ -14,6 +15,7 @@ use App\Services\Payment\OrderPayments;
 use App\Services\Payment\PaymentCallback;
 use App\Services\Payment\PaymentGatewayManager;
 use App\Services\Payment\PaymentOutcome;
+use App\Services\UserEventLog;
 use App\Services\Wallet\WalletTopups;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -31,12 +33,17 @@ use Illuminate\Support\Facades\Session;
  */
 class PaymentCallbackController extends Controller
 {
+    private const VIA_RETURN = 'return';
+
+    private const VIA_IPN = 'ipn';
+
     public function __construct(
         private readonly PaymentGatewayManager $gateways,
         private readonly ConfirmPaymentAction $confirmPayment,
         private readonly OrderPayments $payments,
         private readonly OrderMailer $mailer,
         private readonly WalletTopups $topups,
+        private readonly UserEventLog $events,
     ) {}
 
     /**
@@ -53,9 +60,9 @@ class PaymentCallbackController extends Controller
 
         try {
             $callback = $this->gateways->verify($params);
-            $this->apply($callback);
+            $this->apply($callback, self::VIA_RETURN);
         } catch (InvalidPaymentCallbackException $e) {
-            $this->logRejection($request, $e);
+            $this->logRejection($request, $e, self::VIA_RETURN);
             Session::flash('iconMessage', 'error');
 
             return redirect()->route('failed.checkout');
@@ -110,9 +117,9 @@ class PaymentCallbackController extends Controller
 
         try {
             $callback = $this->gateways->verify($params);
-            $this->apply($callback);
+            $this->apply($callback, self::VIA_IPN);
         } catch (InvalidPaymentCallbackException $e) {
-            $this->logRejection($request, $e);
+            $this->logRejection($request, $e, self::VIA_IPN);
 
             return response()->json(['resultCode' => 1, 'message' => $e->getMessage()], 400);
         }
@@ -121,12 +128,23 @@ class PaymentCallbackController extends Controller
     }
 
     /**
-     * Applies a verified callback to the order it names.
+     * Applies a verified callback to the order it names. Logged before it is
+     * applied, so a callback that then fails on the amount still shows up.
      *
      * @throws InvalidPaymentCallbackException
      */
-    private function apply(PaymentCallback $callback): void
+    private function apply(PaymentCallback $callback, string $via): void
     {
+        Log::channel(LogChannel::PAYMENT)->info('Payment callback', [
+            'via' => $via,
+            'gateway' => $callback->gateway,
+            'code' => $callback->orderCode,
+            'outcome' => $callback->outcome->name,
+            'amount' => $callback->amount,
+            'reference' => $callback->reference,
+            'message' => $callback->message,
+        ]);
+
         if (WalletTopupModel::looksLikeTopupCode($callback->orderCode)) {
             $this->applyTopup($callback);
 
@@ -152,7 +170,13 @@ class PaymentCallbackController extends Controller
     private function settle(PaymentCallback $callback): void
     {
         if ($order = $this->confirmPayment->execute($callback)) {
+            Log::channel(LogChannel::PAYMENT)->info('Order paid', [
+                'order_code' => $order->order_code,
+                'gateway' => $callback->gateway,
+                'amount' => $callback->amount,
+            ]);
             $this->mailer->sendConfirmation($order);
+            $this->events->recordPurchase($order);
         }
     }
 
@@ -202,9 +226,10 @@ class PaymentCallbackController extends Controller
         );
     }
 
-    private function logRejection(Request $request, InvalidPaymentCallbackException $e): void
+    private function logRejection(Request $request, InvalidPaymentCallbackException $e, string $via): void
     {
-        Log::warning('Rejected a payment callback', [
+        Log::channel(LogChannel::PAYMENT)->warning('Rejected a payment callback', [
+            'via' => $via,
             'reason' => $e->getMessage(),
             'ip' => $request->ip(),
             'params' => $request->except(['signature', 'vnp_SecureHash']),

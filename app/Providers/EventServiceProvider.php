@@ -2,9 +2,15 @@
 
 namespace App\Providers;
 
+use App\Listeners\ClaimVisitorEvents;
+use App\Listeners\LogFailedMail;
+use App\Listeners\LogSentMail;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Illuminate\Mail\Events\MessageSent;
+use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Event;
 
 class EventServiceProvider extends ServiceProvider
@@ -18,7 +24,15 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
-
+        Login::class => [
+            ClaimVisitorEvents::class,
+        ],
+        MessageSent::class => [
+            LogSentMail::class,
+        ],
+        JobFailed::class => [
+            LogFailedMail::class,
+        ],
     ];
 
     /**

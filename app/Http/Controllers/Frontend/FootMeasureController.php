@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Frontend\Concerns\SharesStorefrontLayout;
 use App\Models\ProductModel;
 use App\Services\FootSize;
+use App\Services\ShoeSizeMemory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,7 @@ class FootMeasureController extends Controller
 {
     use SharesStorefrontLayout;
 
-    private const SESSION_KEY = 'shoe_size';
+    public function __construct(private readonly ShoeSizeMemory $memory) {}
 
     public function index(Request $request, FootSize $sizes)
     {
@@ -30,14 +31,18 @@ class FootMeasureController extends Controller
 
         return view('frontend.pages.foot.measure', [
             'product' => $product,
-            'shoeSize' => $this->shoeSize(),
+            'shoeSize' => $this->memory->measured(),
             'sizeChart' => $sizes->chart(),
         ]);
     }
 
+    /**
+     * The size the product page picks in advance: measured if there is one,
+     * otherwise the one this shopper last bought or put in the cart.
+     */
     public function show(): JsonResponse
     {
-        return response()->json(['size' => $this->shoeSize()]);
+        return response()->json($this->memory->remembered());
     }
 
     public function store(Request $request): JsonResponse
@@ -59,15 +64,8 @@ class FootMeasureController extends Controller
 
         // Kept for a guest too, and for the moment a guest logs in before the
         // account has a size of its own.
-        $request->session()->put(self::SESSION_KEY, $size);
+        $request->session()->put(ShoeSizeMemory::SESSION_KEY, $size);
 
         return response()->json(['size' => $size]);
-    }
-
-    private function shoeSize(): ?int
-    {
-        $size = Auth::user()?->shoe_size ?? session(self::SESSION_KEY);
-
-        return $size === null ? null : (int) $size;
     }
 }

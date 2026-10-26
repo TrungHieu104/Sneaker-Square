@@ -17,7 +17,7 @@ class CouponModel extends Model
 
     public $timestamps = true;
 
-    protected $fillable = ['coupon_name', 'coupon_code', 'coupon_value', 'coupon_quantity', 'coupon_used', 'coupon_condition', 'coupon_date', 'coupon_start', 'coupon_end'];
+    protected $fillable = ['coupon_name', 'coupon_code', 'coupon_value', 'coupon_min_order', 'coupon_max_discount', 'coupon_quantity', 'coupon_used', 'coupon_condition', 'coupon_date', 'coupon_start', 'coupon_end'];
 
     /** @return HasMany<OrderModel, $this> */
     public function Coupon(): HasMany

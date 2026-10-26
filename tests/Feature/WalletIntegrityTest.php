@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Logging\LogChannel;
 use App\Models\UserModel;
 use App\Models\WalletModel;
 use App\Models\WalletTransactionModel;
@@ -9,6 +10,7 @@ use App\Services\Wallet\WalletService;
 use App\Services\Wallet\WalletTampered;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CapturesLogs;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
 
@@ -22,6 +24,7 @@ use Tests\TestCase;
  */
 class WalletIntegrityTest extends TestCase
 {
+    use CapturesLogs;
     use RefreshDatabase;
     use ShopFixtures;
 
@@ -229,5 +232,22 @@ class WalletIntegrityTest extends TestCase
         config(['services.wallet.signing_key' => 'khoa-khac-hoan-toan']);
 
         $this->assertSame(1, $this->reconcile());
+    }
+
+    public function test_vi_bi_sua_ghi_canh_bao_ca_payment_log_va_log_chung(): void
+    {
+        $wallet = $this->fund(100_000);
+        $this->tamper($wallet, ['balance' => 99_000_000]);
+        $payment = $this->captureLog(LogChannel::PAYMENT);
+        $general = $this->captureLog('daily');
+
+        try {
+            $this->wallets()->for($this->customer);
+        } catch (WalletTampered) {
+        }
+
+        foreach ([$payment, $general] as $log) {
+            $this->assertSame([$wallet->wallet_id], array_column($this->logged($log, 'Wallet balance does not match its signature'), 'wallet_id'));
+        }
     }
 }

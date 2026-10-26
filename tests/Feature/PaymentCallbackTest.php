@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Actions\PlaceOrderAction;
 use App\Enums\OrderStatus;
+use App\Logging\LogChannel;
 use App\Mail\ConfirmOrder;
 use App\Models\CouponModel;
 use App\Models\OrderModel;
@@ -13,6 +14,7 @@ use App\Services\Payment\OrderPayments;
 use App\Services\Wallet\WalletService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Tests\Support\CapturesLogs;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
 
@@ -32,6 +34,7 @@ use Tests\TestCase;
  */
 class PaymentCallbackTest extends TestCase
 {
+    use CapturesLogs;
     use RefreshDatabase;
     use ShopFixtures;
 
@@ -461,5 +464,52 @@ class PaymentCallbackTest extends TestCase
 
         $this->get(route('process.checkout', $this->vnpayCallback($order)))
             ->assertRedirect(route('success.checkout'));
+    }
+
+    // ---------------------------------------------------------------- logs
+
+    public function test_moi_callback_ghi_vao_payment_log_nhung_don_chi_ghi_da_thanh_toan_mot_lan(): void
+    {
+        $log = $this->captureLog(LogChannel::PAYMENT);
+        $order = $this->placeOrder();
+
+        $this->get(route('process.checkout', $this->vnpayCallback($order)));
+        $this->post(route('payment.ipn'), $this->vnpayCallback($order));
+
+        $callbacks = $this->logged($log, 'Payment callback');
+        $this->assertSame(['return', 'ipn'], array_column($callbacks, 'via'));
+        $this->assertSame(['redirect', $order->order_code, 'Paid', (int) $order->order_total], [
+            $callbacks[0]['gateway'], $callbacks[0]['code'], $callbacks[0]['outcome'], $callbacks[0]['amount'],
+        ]);
+        $this->assertSame([$order->order_code], array_column($this->logged($log, 'Order paid'), 'order_code'));
+    }
+
+    public function test_callback_bi_tu_choi_ghi_canh_bao_khong_kem_chu_ky(): void
+    {
+        $log = $this->captureLog(LogChannel::PAYMENT);
+        $params = $this->vnpayCallback($this->placeOrder());
+        $params['vnp_Amount'] = '100';
+
+        $this->get(route('process.checkout', $params));
+
+        $rejected = $this->logged($log, 'Rejected a payment callback');
+        $this->assertCount(1, $rejected);
+        $this->assertSame('return', $rejected[0]['via']);
+        $this->assertArrayNotHasKey('vnp_SecureHash', $rejected[0]['params'], 'Chữ ký không được ghi ra log');
+        $this->assertSame([], $this->logged($log, 'Payment callback'), 'Chưa xác thực thì không ghi như callback hợp lệ');
+    }
+
+    public function test_tien_ve_cho_don_da_huy_ghi_canh_bao_va_giao_dich_vi(): void
+    {
+        $order = $this->placeOrder();
+        $this->expireOverdue();
+        $log = $this->captureLog(LogChannel::PAYMENT);
+
+        $this->get(route('process.checkout', $this->vnpayCallback($order)));
+
+        $this->assertSame([$order->order_code], array_column($this->logged($log, 'Payment arrived for an order that could not use it'), 'order_code'));
+        $moves = $this->logged($log, 'Wallet transaction');
+        $this->assertCount(1, $moves);
+        $this->assertSame([(int) $order->user_id, 'in', (int) $order->order_total], [$moves[0]['user_id'], $moves[0]['direction'], $moves[0]['amount']]);
     }
 }

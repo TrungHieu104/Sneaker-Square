@@ -2,6 +2,7 @@
 
 namespace App\Services\Wallet;
 
+use App\Logging\LogChannel;
 use App\Models\OrderModel;
 use App\Models\OrderReturnModel;
 use App\Models\PaymentAttemptModel;
@@ -84,8 +85,9 @@ class WalletService
         if (! $this->signature->balanceMatches($wallet)) {
             // Which wallet and what it now says is for whoever investigates.
             // The customer gets told their wallet is held and nothing else:
-            // naming the mechanism only helps somebody probing it.
-            Log::critical('Wallet balance does not match its signature', [
+            // naming the mechanism only helps somebody probing it. Kept in the
+            // general log too: this is the one wallet event that is an alarm.
+            Log::stack([LogChannel::PAYMENT, 'daily'])->critical('Wallet balance does not match its signature', [
                 'wallet_id' => $wallet->wallet_id,
                 'user_id' => $wallet->user_id,
                 'balance' => $wallet->balance,
@@ -243,7 +245,7 @@ class WalletService
             throw new InsufficientBalance('Số tiền giao dịch phải lớn hơn 0.');
         }
 
-        return DB::transaction(function () use ($wallet, $amount, $direction, $type, $description, $referenceType, $referenceId) {
+        $entry = DB::transaction(function () use ($wallet, $amount, $direction, $type, $description, $referenceType, $referenceId) {
             // Re-read under the lock: the instance handed in may have been
             // loaded before another request moved the same money.
             $locked = WalletModel::where('wallet_id', $wallet->wallet_id)->lockForUpdate()->firstOrFail();
@@ -291,5 +293,19 @@ class WalletService
 
             return $entry;
         });
+
+        // After the outermost commit: a refund made inside a payment that is
+        // then rolled back never moved any money.
+        DB::afterCommit(fn () => Log::channel(LogChannel::PAYMENT)->info('Wallet transaction', [
+            'wallet_id' => $entry->wallet_id,
+            'user_id' => $wallet->user_id,
+            'type' => $entry->type,
+            'direction' => $entry->direction,
+            'amount' => $entry->amount,
+            'balance_after' => $entry->balance_after,
+            'reference' => $entry->reference_type ? $entry->reference_type.'#'.$entry->reference_id : null,
+        ]));
+
+        return $entry;
     }
 }
