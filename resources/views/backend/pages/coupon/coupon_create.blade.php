@@ -113,6 +113,38 @@
                         @endif
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-lg-6 mb-3">
+                        <label for="min_order" class="form-label">Đơn tối thiểu</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="min_order" name="min_order" value="{{ old('min_order') }}" min=0 />
+                            <span class="input-group-text">VNĐ</span>
+                        </div>
+                        <div class="form-text">Tổng tiền hàng (chưa tính phí ship) phải từ mức này. Để trống nếu không giới hạn.</div>
+                        @if ($errors->has("min_order"))
+                            @foreach ($errors->get("min_order") as $error)
+                                <small class="text-danger fst-italic">
+                                    {{ $error }}
+                                </small>
+                            @endforeach
+                        @endif
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="max_discount" class="form-label">Giảm tối đa</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="max_discount" name="max_discount" value="{{ old('max_discount') }}" min=0 />
+                            <span class="input-group-text">VNĐ</span>
+                        </div>
+                        <div class="form-text">Chỉ áp dụng cho mã giảm theo %. Để trống nếu không giới hạn.</div>
+                        @if ($errors->has("max_discount"))
+                            @foreach ($errors->get("max_discount") as $error)
+                                <small class="text-danger fst-italic">
+                                    {{ $error }}
+                                </small>
+                            @endforeach
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
     </form>

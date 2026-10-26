@@ -15,7 +15,6 @@ use App\Services\CartPricingService;
 use App\Services\CartService;
 use App\Services\UserEventLog;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 
@@ -42,13 +41,15 @@ class CartController extends Controller
     {
         $get = $this->checkProduct($request);
         $cart = $request->session()->get('cart');
-        $coupon_data = $request->session()->get('coupon_data');
 
         if (! is_array($cart) || empty($cart)) {
             $request->session()->forget('coupon_data');
 
             return redirect('/gio-hang-trong');
         }
+
+        $this->dropUnusableCoupon($request);
+        $coupon_data = $request->session()->get('coupon_data');
 
         if (isset($get['isRemove']) && $get['isRemove']) {
             Session::flash('iconMessage', 'error');
@@ -177,8 +178,6 @@ class CartController extends Controller
     public function delPro(Request $request, string $proSlug = '')
     {
         $cart = $request->session()->get('cart');
-        $coupon_data = $request->session()->get('coupon_data');
-        $giatri_donhang = $request['giatri_donhang'];
         // Matched on the variant, not the product: the same shoe in two colours is
         // two cart lines, and slug alone removes whichever comes first.
         $colorId = $request->input('color_id');
@@ -193,12 +192,8 @@ class CartController extends Controller
             array_splice($cart, $index, 1);
             $request->session()->put('cart', $cart);
         }
-        if ($coupon_data !== null && ($coupon_data->coupon_value >= $giatri_donhang)) {
-            session()->forget('coupon_data');
-            Session::flash('iconMessage', 'warning');
-
-            return redirect()->back()->with('message', 'Cần đặt hàng có giá trị cao hơn để sử dụng mã giảm giá này.');
-        }
+        // A coupon the smaller cart no longer qualifies for comes off on the
+        // cart page, which this lands on.
         Session::flash('iconMessage', 'success');
 
         return redirect()->route('product.cart')->with('message', 'Xóa sản phẩm thành công!');
@@ -231,62 +226,37 @@ class CartController extends Controller
         }
     }
 
-    public function checkCoupon(CouponCheckRequest $request)
+    /**
+     * The coupon is judged on the cart as the server prices it: the total the
+     * form posts is the customer's to edit.
+     */
+    public function checkCoupon(CouponCheckRequest $request, CartPricingService $pricing)
     {
-        $today = Carbon::now()->format('Y/m/d');
-        $coupon = trim($request['coupon']);
-        $giatri_donhang = $request['giatri_donhang'];
-
-        $coupon_data = Coupon::where('coupon_code', $coupon)->first();
+        $coupon_data = Coupon::where('coupon_code', trim($request['coupon']))->first();
 
         if (! $coupon_data) {
             Session::flash('iconMessage', 'error');
 
             return redirect()->back()->with('message', 'Opps!!! Mã giảm giá này không khả dụng.');
         }
-        if ($coupon_data->coupon_quantity == 0) {
+
+        $refusal = $pricing->couponRefusal($coupon_data, $pricing->cartSubtotal((array) $request->session()->get('cart', [])));
+
+        if ($refusal !== null) {
             Session::flash('iconMessage', 'warning');
 
-            return redirect()->back()->with('message', 'Rất tiếc! Mã giảm giá đã hết lượt sử dụng.');
-        }
-
-        if (
-            ! ((
-                date('Y-m-d', strtotime($coupon_data->coupon_end))
-                >=
-                date('Y-m-d', strtotime($today))
-            ))
-        ) {
-            Session::flash('iconMessage', 'warning');
-
-            return redirect()->back()->with('message', 'Opps!!! Mã giảm giá đã quá hạn sử dụng.');
-        }
-
-        if ($coupon_data->coupon_value >= $giatri_donhang) {
-            session()->forget('coupon_data');
-            Session::flash('iconMessage', 'warning');
-
-            return redirect()->back()->with('message', 'Cần đặt hàng có giá trị cao hơn để sử dụng mã giảm giá này.');
+            return redirect()->back()->with('message', $refusal);
         }
 
         session()->put('coupon_data', $coupon_data);
 
         Session::flash('iconMessage', 'success');
-        if ($coupon_data->coupon_condition == 1) {
-            return redirect()
-                ->back()
-                ->with(
-                    'message',
-                    'Tuyệt quá! Bạn đã sử dụng thành công mã giảm giá '.number_format($coupon_data->coupon_value, 0, ',', '.').'VNĐ'
-                );
-        } else {
-            return redirect()
-                ->back()
-                ->with(
-                    'message',
-                    'Tuyệt quá! Bạn đã sử dụng thành công mã giảm giá '.number_format($coupon_data->coupon_value, 0, ',', '.').'%'
-                );
-        }
+
+        return redirect()->back()->with(
+            'message',
+            'Tuyệt quá! Bạn đã sử dụng thành công mã giảm giá '.number_format($coupon_data->coupon_value, 0, ',', '.')
+                .($coupon_data->coupon_condition == 1 ? 'VNĐ' : '%'),
+        );
     }
 
     public function removeCoupon(Request $request)

@@ -436,6 +436,9 @@
                                     <b>Bạn đã giảm được
                                         {{ $coupon_data->coupon_condition == 1 ? number_format($coupon_data->coupon_value, 0, ',', '.') . ' VNĐ' : $coupon_data->coupon_value . '%' }}
                                         cho đơn hàng này.</b> <br>
+                                    @if ($dieuKienMa = app(\App\Services\CartPricingService::class)->couponTerms($coupon_data))
+                                        <small>Áp dụng: {{ $dieuKienMa }}</small><br>
+                                    @endif
                                     <button type="button" class="btn-close" data-bs-dismiss="alert"
                                         aria-label="Close"></button>
                                     <form action="{{ route('removeCoupon.cart') }}" method="post">@csrf
@@ -458,9 +461,7 @@
                             @isset($coupon_data)
                                 <div class="d-flex justify-content-between  ">
                                     @php
-                                        if ($coupon_data->coupon_condition == 0) {
-                                            $discount = $giatri_donhang * ($coupon_data->coupon_value / 100);
-                                        }
+                                        $discount = app(\App\Services\CartPricingService::class)->discountFor($coupon_data, (int) $giatri_donhang);
                                     @endphp
                                     <div class="d-flex mb-2 align-items-center gap-1">
                                         <h6 class="fw-bold mb-0">MÃ GIẢM GIÁ:</h6>
@@ -470,9 +471,7 @@
                                     </div>
 
                                     <h5>
-                                        {{ $coupon_data->coupon_condition == 1
-                                            ? '- ' . number_format($coupon_data->coupon_value, 0, ',', '.') . ' VNĐ'
-                                            : '- ' . number_format($discount, 0, ',', '.') . ' VNĐ' }}
+                                        {{ '- ' . number_format($discount, 0, ',', '.') . ' VNĐ' }}
                                     </h5>
                                 </div>
                                 <hr>
@@ -483,11 +482,7 @@
                                     </div>
                                     <h4 class="mb-0 fw-bold">
                                         @if ($coupon_data)
-                                            @if (isset($discount))
-                                                {{ number_format($giatri_donhang - $discount, 0, ',', '.') }}
-                                            @else
-                                                {{ number_format($giatri_donhang - $coupon_data->coupon_value, 0, ',', '.') }}
-                                            @endif
+                                            {{ number_format($giatri_donhang - $discount, 0, ',', '.') }}
                                         @else
                                             {{ number_format($giatri_donhang, 0, ',', '.') }}
                                         @endif

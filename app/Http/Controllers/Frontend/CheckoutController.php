@@ -67,12 +67,13 @@ class CheckoutController extends Controller
         $InfoDeli = Info::where('user_id', $user_id)->get();
         $get = $this->checkProduct($request);
         $cart = $request->session()->get('cart');
-        $coupon_data = $request->session()->get('coupon_data');
         if (! is_array($cart) || empty($cart)) {
             $request->session()->forget('coupon_data');
 
             return redirect('/gio-hang-trong');
         }
+        $this->dropUnusableCoupon($request);
+        $coupon_data = $request->session()->get('coupon_data');
         if (isset($get['isRemove']) && $get['isRemove']) {
             Session::flash('iconMessage', 'error');
 

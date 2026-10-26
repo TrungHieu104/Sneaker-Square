@@ -94,6 +94,9 @@
                                     </td> 
                                     <td class="text-center">
                                         {{($data->coupon_condition == 0) ? $data->coupon_value.'%' : number_format($data->coupon_value,0,",",".").'đ' }}
+                                        @if ($dieuKienMa = app(\App\Services\CartPricingService::class)->couponTerms($data))
+                                            <div class="small text-muted">{{ $dieuKienMa }}</div>
+                                        @endif
                                     </td>
                                     <td class="text-center">
                                         @if(date('Y-m-d', strtotime($data->coupon_end)) >= date('Y-m-d', strtotime($today)))

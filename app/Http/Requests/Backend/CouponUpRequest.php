@@ -30,6 +30,8 @@ class CouponUpRequest extends FormRequest
             'end_coupon' => ['required', 'after:start_coupon'],
             'quantity' => ['required', 'min:0', 'max:100000000', 'numeric', 'integer'],
             'money' => ['required', 'min:0', 'numeric', 'integer'],
+            'min_order' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
+            'max_discount' => ['nullable', 'integer', 'min:1000', 'max:1000000000'],
         ];
     }
 
@@ -57,6 +59,12 @@ class CouponUpRequest extends FormRequest
             'money.required' => 'Vui lòng nhập giá trị!',
             'money.numeric' => 'Giá trị giảm không được nhập chữ!',
             'money.integer' => 'Vui lòng nhập số nguyên',
+            'min_order.integer' => 'Vui lòng nhập số nguyên',
+            'min_order.min' => 'Đơn tối thiểu không được âm',
+            'min_order.max' => 'Đơn tối thiểu quá lớn',
+            'max_discount.integer' => 'Vui lòng nhập số nguyên',
+            'max_discount.min' => 'Giảm tối đa ít nhất 1.000 VNĐ',
+            'max_discount.max' => 'Giảm tối đa quá lớn',
         ];
     }
 }

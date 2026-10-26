@@ -92,8 +92,9 @@ class CartPricingService
     /**
      * The amount discounted.
      *
-     * `coupon_condition == 1` is a fixed amount off, anything else a percentage.
-     * Capped at the subtotal so the total can never go negative.
+     * `coupon_condition == 1` is a fixed amount off, anything else a percentage
+     * of the goods, never of the shipping, up to the coupon's ceiling if it
+     * has one. Capped at the subtotal so the total can never go negative.
      */
     public function discountFor(?CouponModel $coupon, int $subtotal): int
     {
@@ -105,35 +106,82 @@ class CartPricingService
             ? (int) $coupon->coupon_value
             : (int) round($subtotal * ((int) $coupon->coupon_value) / 100);
 
+        if ($coupon->coupon_condition != 1 && $coupon->coupon_max_discount) {
+            $discount = min($discount, (int) $coupon->coupon_max_discount);
+        }
+
         return max(0, min($discount, $subtotal));
     }
 
     /**
      * Re-checks the coupon at the moment the order is placed: between applying it
-     * and paying, it may have run out, expired, or been deleted.
+     * and paying, it may have run out, expired, or been deleted, and the cart
+     * may have shrunk below what the coupon asks for.
      */
     public function couponIsUsable(?CouponModel $coupon, int $subtotal): bool
     {
-        if (! $coupon) {
-            return false;
-        }
+        return $coupon !== null && $this->couponRefusal($coupon, $subtotal) === null;
+    }
 
+    /**
+     * Why the coupon cannot be used on goods worth $subtotal, in the words the
+     * customer is shown, or null when it can.
+     */
+    public function couponRefusal(CouponModel $coupon, int $subtotal): ?string
+    {
         $fresh = CouponModel::find($coupon->coupon_id);
 
-        if (! $fresh || $fresh->coupon_quantity <= 0) {
-            return false;
+        if (! $fresh) {
+            return 'Opps!!! Mã giảm giá này không khả dụng.';
+        }
+
+        if ($fresh->coupon_quantity <= 0) {
+            return 'Rất tiếc! Mã giảm giá đã hết lượt sử dụng.';
         }
 
         if ($fresh->coupon_end && Carbon::parse($fresh->coupon_end)->endOfDay()->isPast()) {
-            return false;
+            return 'Opps!!! Mã giảm giá đã quá hạn sử dụng.';
+        }
+
+        if ($subtotal < (int) $fresh->coupon_min_order) {
+            return 'Mã giảm giá này áp dụng cho đơn có tiền hàng từ '.number_format((int) $fresh->coupon_min_order, 0, ',', '.')
+                .' VNĐ, giỏ của bạn hiện là '.number_format($subtotal, 0, ',', '.').' VNĐ.';
         }
 
         // A fixed-amount coupon must be smaller than the subtotal, same as when applied.
         if ($fresh->coupon_condition == 1 && $fresh->coupon_value >= $subtotal) {
-            return false;
+            return 'Cần đặt hàng có giá trị cao hơn để sử dụng mã giảm giá này.';
         }
 
-        return true;
+        return null;
+    }
+
+    /**
+     * The coupon's terms beyond its value, for wherever the coupon is shown.
+     */
+    public function couponTerms(CouponModel $coupon): string
+    {
+        $terms = [];
+
+        if ((int) $coupon->coupon_min_order > 0) {
+            $terms[] = 'đơn từ '.number_format((int) $coupon->coupon_min_order, 0, ',', '.').' VNĐ';
+        }
+
+        if ($coupon->coupon_condition != 1 && $coupon->coupon_max_discount) {
+            $terms[] = 'giảm tối đa '.number_format((int) $coupon->coupon_max_discount, 0, ',', '.').' VNĐ';
+        }
+
+        return implode(' · ', $terms);
+    }
+
+    /**
+     * What the goods in a session cart come to at today's prices.
+     *
+     * @param  array<int, array<string, mixed>>  $cart
+     */
+    public function cartSubtotal(array $cart): int
+    {
+        return $this->subtotal($this->priceCart($cart));
     }
 
     /**
