@@ -30,7 +30,14 @@ class UserEventLog
 
     private const BOT = '/bot|crawl|spider|slurp/i';
 
-    public function __construct(private readonly Request $request) {}
+    /**
+     * Read at the moment of use rather than held: a service built for one
+     * request must not go on reporting that request's visitor for the next.
+     */
+    private function request(): Request
+    {
+        return request();
+    }
 
     /**
      * Gives the visitor an id, from their cookie or a new one, for the rest of
@@ -38,18 +45,18 @@ class UserEventLog
      */
     public function identify(): ?string
     {
-        if (preg_match(self::BOT, (string) $this->request->userAgent())) {
+        if (preg_match(self::BOT, (string) $this->request()->userAgent())) {
             return null;
         }
 
-        $id = $this->request->cookie(self::COOKIE);
+        $id = $this->request()->cookie(self::COOKIE);
 
         if (! is_string($id) || ! preg_match('/^[A-Za-z0-9]{'.self::ID_LENGTH.'}$/', $id)) {
             $id = Str::random(self::ID_LENGTH);
             Cookie::queue(self::COOKIE, $id, self::COOKIE_MINUTES);
         }
 
-        $this->request->attributes->set(self::COOKIE, $id);
+        $this->request()->attributes->set(self::COOKIE, $id);
 
         return $id;
     }
@@ -59,7 +66,7 @@ class UserEventLog
      */
     public function record(string $type, array $fields = []): void
     {
-        $visitor = $this->visitor();
+        $visitor = $this->visitorId();
 
         if ($visitor === null) {
             return;
@@ -69,7 +76,7 @@ class UserEventLog
             'session_id' => $visitor,
             'user_id' => Auth::id(),
             'device' => $this->device(),
-            'ip' => $this->request->ip(),
+            'ip' => $this->request()->ip(),
         ]);
     }
 
@@ -91,7 +98,7 @@ class UserEventLog
         $placed = UserEventModel::where('event_type', UserEventModel::PLACE_ORDER)
             ->where('order_id', $order->order_id)
             ->first();
-        $visitor = $placed->session_id ?? $this->visitor();
+        $visitor = $placed->session_id ?? $this->visitorId();
 
         if ($visitor === null) {
             return;
@@ -107,7 +114,7 @@ class UserEventLog
                 'order_id' => $order->order_id,
                 'meta' => ['quantity' => (int) $line->quantity, 'price' => (int) $line->price],
                 'device' => $placed->device ?? $this->device(),
-                'ip' => $placed->ip ?? $this->request->ip(),
+                'ip' => $placed->ip ?? $this->request()->ip(),
             ]);
         }
     }
@@ -118,7 +125,7 @@ class UserEventLog
      */
     public function claimFor(UserModel $user): void
     {
-        $visitor = $this->visitor();
+        $visitor = $this->visitorId();
 
         if ($visitor === null) {
             return;
@@ -129,9 +136,9 @@ class UserEventLog
             ->update(['user_id' => $user->user_id]);
     }
 
-    private function visitor(): ?string
+    public function visitorId(): ?string
     {
-        $id = $this->request->attributes->get(self::COOKIE);
+        $id = $this->request()->attributes->get(self::COOKIE);
 
         return is_string($id) ? $id : null;
     }
@@ -143,13 +150,13 @@ class UserEventLog
     {
         // A form post or a beacon happened on the page that sent it, so that
         // page is the event's url rather than the endpoint it posted to.
-        $isPage = $this->request->isMethod('GET');
-        $referer = $this->request->headers->get('referer');
+        $isPage = $this->request()->isMethod('GET');
+        $referer = $this->request()->headers->get('referer');
 
         try {
             UserEventModel::create($fields + [
                 'event_type' => $type,
-                'url' => Str::limit($isPage ? $this->request->fullUrl() : ($referer ?? $this->request->fullUrl()), self::URL_LENGTH, ''),
+                'url' => Str::limit($isPage ? $this->request()->fullUrl() : ($referer ?? $this->request()->fullUrl()), self::URL_LENGTH, ''),
                 'referrer' => $isPage && $referer ? Str::limit($referer, self::URL_LENGTH, '') : null,
                 'created_at' => now(),
             ]);
@@ -160,7 +167,7 @@ class UserEventLog
 
     private function device(): string
     {
-        $agent = (string) $this->request->userAgent();
+        $agent = (string) $this->request()->userAgent();
 
         return match (true) {
             (bool) preg_match('/iPad|Tablet|Android(?!.*Mobile)/i', $agent) => 'tablet',

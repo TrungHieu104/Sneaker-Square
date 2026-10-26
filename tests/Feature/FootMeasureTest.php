@@ -68,7 +68,7 @@ class FootMeasureTest extends TestCase
 
         $this->actingAs($user)
             ->getJson(route('foot.show'))
-            ->assertExactJson(['size' => 40]);
+            ->assertExactJson(['size' => 40, 'source' => 'measured']);
     }
 
     public function test_khach_chua_dang_nhap_van_duoc_goi_y_trong_lan_truy_cap(): void
@@ -77,12 +77,12 @@ class FootMeasureTest extends TestCase
             ->assertOk()
             ->assertExactJson(['size' => 40]);
 
-        $this->getJson(route('foot.show'))->assertExactJson(['size' => 40]);
+        $this->getJson(route('foot.show'))->assertExactJson(['size' => 40, 'source' => 'measured']);
     }
 
     public function test_chua_chon_size_thi_khong_goi_y_size_nao(): void
     {
-        $this->getJson(route('foot.show'))->assertExactJson(['size' => null]);
+        $this->getJson(route('foot.show'))->assertExactJson(['size' => null, 'source' => null]);
     }
 
     public function test_size_khong_hop_le_bi_tu_choi_va_khong_luu(): void

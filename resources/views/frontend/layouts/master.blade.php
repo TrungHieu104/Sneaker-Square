@@ -91,7 +91,8 @@
 
     <!-- JavaScript Main -->
     <script src="{{ asset('frontend/js/main.js') }}"></script>
-    <script src="{{ asset('frontend/js/app.js') }}"></script>
+    {{-- Versioned: pages call functions defined here, and a copy cached from before they existed breaks them. --}}
+    <script src="{{ asset('frontend/js/app.js') }}?v={{ filemtime(public_path('frontend/js/app.js')) }}"></script>
     <script src="{{ asset('frontend/js/easing.js') }}"></script>
 
     <!-- JavaScript Mmenu -->

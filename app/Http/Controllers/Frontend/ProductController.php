@@ -11,6 +11,7 @@ use App\Models\ProductModel as Product;
 use App\Models\ProductQuantityModel as Quantity;
 use App\Models\SizeModel as Size;
 use App\Models\UserEventModel;
+use App\Services\Analytics\Recommender;
 use App\Services\UserEventLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -127,7 +128,7 @@ class ProductController extends Controller
         };
     }
 
-    public function detail(string $proSlug = '')
+    public function detail(Request $request, string $proSlug = '')
     {
         $proId = Product::where('pro_slug', $proSlug)
             ->where('pro_hidden', 1)
@@ -153,7 +154,10 @@ class ProductController extends Controller
             ->first();
         $detailProduct->pro_views++;
         $detailProduct->save();
-        $this->events->record(UserEventModel::VIEW_PRODUCT, ['pro_id' => $proId]);
+        // A visit that came from a recommendation says which block, so the
+        // block's clicks can be counted.
+        $source = Recommender::URL_SOURCES[(string) $request->query('tu')] ?? null;
+        $this->events->record(UserEventModel::VIEW_PRODUCT, ['pro_id' => $proId] + ($source ? ['meta' => ['source' => $source]] : []));
 
         $getColor = Quantity::select('pro_id', 'products_quantity.color_id', 'color')
             ->where('pro_id', $proId)
@@ -165,13 +169,6 @@ class ProductController extends Controller
             ->where('pro_id', $proId)
             ->join('size', 'products_quantity.size_id', '=', 'size.size_id')
             ->groupBy('pro_id', 'products_quantity.size_id', 'size')
-            ->get();
-
-        $relatedProduct = Product::withRatingSummary()->withPriceRange()->where('cate_id', $detailProduct->cate_id)
-            ->where('pro_id', '!=', $detailProduct->pro_id)
-            ->where('pro_hidden', 1)
-            ->orderBy('pro_views', 'desc')
-            ->limit(5)
             ->get();
 
         $hotProduct = Product::withRatingSummary()->withPriceRange()->where('pro_hot', 1)
@@ -211,6 +208,6 @@ class ProductController extends Controller
         // to learn the shelf is empty is to fill in the form and be turned away.
         $stockTotal = (int) $detailProduct->getQuantities->sum('quantity');
 
-        return view('frontend.pages.product.product_detail', compact('detailProduct', 'getColor', 'getSize', 'relatedProduct', 'hotProduct', 'likeStatus', 'hasPurchased', 'variantPrices', 'variantStock', 'stockTotal'));
+        return view('frontend.pages.product.product_detail', compact('detailProduct', 'getColor', 'getSize', 'hotProduct', 'likeStatus', 'hasPurchased', 'variantPrices', 'variantStock', 'stockTotal'));
     }
 }

@@ -40,6 +40,8 @@ class UserEventModel extends Model
 
     public const REVIEW = 'review';
 
+    public const RECOMMEND = 'recommend';
+
     protected $table = 'user_events';
 
     protected $primaryKey = 'event_id';
@@ -67,5 +69,23 @@ class UserEventModel extends Model
     public function scopeReal(Builder $query): Builder
     {
         return $query->where('is_simulated', false);
+    }
+
+    /**
+     * One shopper's events: those of this browser, and the account's from any
+     * browser. Matches nothing when neither is known.
+     *
+     * @param  Builder<UserEventModel>  $query
+     * @return Builder<UserEventModel>
+     */
+    public function scopeMine(Builder $query, ?string $visitor, ?int $userId): Builder
+    {
+        if ($visitor === null && $userId === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(fn (Builder $mine) => $mine
+            ->when($visitor !== null, fn (Builder $q) => $q->orWhere('session_id', $visitor))
+            ->when($userId !== null, fn (Builder $q) => $q->orWhere('user_id', $userId)));
     }
 }

@@ -405,61 +405,9 @@
     </section>
     <!-- End Product Description  -->
 
-    <!-- Start Product new  -->
-    @if ($relatedProduct->isNotEmpty())
-        <section class="product-list__relate">
-            <div class="container-fluid px-5">
-                <div class="row justify-content-center">
-                    <div class="col-lg-6 text-center">
-                        <div class="section-title">
-                            <h1>Sản phẩm liên quan</h1>
-                        </div>
-                    </div>
-                </div>
-                <div class="product-relate_item mb-5">
-                    <!-- Product Item  -->
-                    @foreach ($relatedProduct as $relatedPro)
-                        <div class="rounded item__product border">
-                            <div class="overflow-hidden rounded-top border-bottom img_product-relate">
-                                <a href="{{ route('product.detail', $relatedPro->pro_slug) }}">
-                                    <img class="img-fluid w-100 h-100 zoom" onerror="this.src='/uploads/img_error2.jpg'"
-                                        src="{{ asset($relatedPro->pro_img) }}" alt="{{ $relatedPro->pro_name }}">
-                                </a>
-                            </div>
-                            <div class="product-details">
-                                <a href="{{ route('product.detail', $relatedPro->pro_slug) }}">
-                                    <h6 class="px-2 title__truncate">
-                                        {{ $relatedPro->pro_name }}
-                                    </h6>
-                                </a>
-                                <div class="price d-flex gap-3 justify-content-center mb-3">
-                                    @if ($relatedPro->isOnSale())
-                                        <h6 class="price__product">
-                                            {{ $relatedPro->displaySellingPrice() }} VNĐ
-                                        </h6>
-                                        <h6 class="price__product l-through px-0">
-                                            {{ $relatedPro->displayListPrice() }} VNĐ
-                                        </h6>
-                                    @else
-                                        <h6 class="price__product">
-                                            {{ $relatedPro->displayListPrice() }} VNĐ
-                                        </h6>
-                                    @endif
-                                </div>
-                                <div class="prd-bottom d-flex justify-content-center">
-                                    <a href="{{ route('product.detail', $relatedPro->pro_slug) }}"
-                                        class="btn btn-order mb-3 px-3 text-white">
-                                        Mua ngay
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </section>
-    @endif
-    <!-- End Product new  -->
+    {{-- Filled after load by RecommendationController: the blocks are this shopper's own. --}}
+    <div id="recommendations" data-url="{{ route('product.recommendations', $detailProduct->pro_slug) }}"></div>
+
 
 @endsection
 
@@ -506,6 +454,27 @@
             color: var(--color-orange-hover);
         }
 
+        .product-relate_item.is-static {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .product-relate_item.is-static .item__product {
+            flex: 0 1 300px;
+            min-width: 0;
+        }
+
+        .product-reason {
+            font-size: 11px;
+            line-height: 1.4;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: #f1f1f1;
+            color: #555;
+        }
+
         .foot-suggest {
             font-size: 14px;
             color: #555;
@@ -547,6 +516,12 @@
 
         // Fetched rather than rendered: this page is served from the shared
         // response cache, and the suggestion belongs to one person.
+        const FOOT_SOURCES = {
+            measured: 'size bạn đã đo',
+            purchased: 'size bạn mua lần trước',
+            carted: 'size bạn chọn lần trước',
+        };
+
         function showFootSuggestion() {
             const box = $('#foot-suggest');
 
@@ -560,16 +535,67 @@
                 }
 
                 const label = $('.product-list_size label[data-size="' + foot.size + '"]');
-                $('#foot-measure-link span').text('Đo lại');
+                const why = FOOT_SOURCES[foot.source] ?? 'size của bạn';
 
-                if (label.length) {
+                if (foot.source === 'measured') {
+                    $('#foot-measure-link span').text('Đo lại');
+                }
+
+                if (!label.length) {
+                    box.html('Mẫu này không có size <b>' + foot.size + '</b> (' + why + ').');
+                } else if (!sizeInStock(label.attr('for'))) {
                     label.addClass('is-suggested');
-                    box.html('Size gợi ý cho bạn: <b>' + foot.size + '</b>');
+                    box.html('Size <b>' + foot.size + '</b> (' + why + ') đã hết hàng ở mẫu này.');
                 } else {
-                    box.html('Mẫu này không có size <b>' + foot.size + '</b> của bạn.');
+                    label.addClass('is-suggested');
+                    pickSize(label.attr('for'));
+                    box.html('Đã chọn sẵn size <b>' + foot.size + '</b> (' + why + ').');
                 }
 
                 box.removeClass('d-none');
+            });
+        }
+
+        // Any colour still carrying this size.
+        function sizeInStock(inputId) {
+            const sizeId = document.getElementById(inputId).value;
+
+            return Object.keys(variantStock).some(function (key) {
+                return key.split('-')[1] === sizeId && variantStock[key] > 0;
+            });
+        }
+
+        // Only when the shopper has not picked a size of their own while the
+        // suggestion was on its way.
+        function pickSize(inputId) {
+            if ($("input[name='options-size']:checked").length) {
+                return;
+            }
+
+            document.getElementById(inputId).checked = true;
+            refreshColors();
+            refreshSizes();
+            refreshPrice();
+            refreshQuantity();
+        }
+
+        const STRIP_VISIBLE = 4;
+
+        function loadRecommendations() {
+            const box = $('#recommendations');
+
+            $.get(box.data('url'), function (html) {
+                box.html(html);
+
+                // A carousel of fewer tiles than it shows at once drifts off
+                // centre; a short list is laid out as a plain row instead.
+                box.find('.product-relate_item').each(function () {
+                    if ($(this).children().length > STRIP_VISIBLE) {
+                        initProductStrip(this);
+                    } else {
+                        $(this).addClass('is-static');
+                    }
+                });
             });
         }
 
@@ -776,6 +802,7 @@
             refreshPrice();
             refreshQuantity();
             showFootSuggestion();
+            loadRecommendations();
             $('#product-form').submit(function(event) {
                 let colorError = false;
                 let sizeError = false;
