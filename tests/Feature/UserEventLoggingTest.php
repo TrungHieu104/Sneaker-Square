@@ -9,7 +9,6 @@ use App\Models\UserModel;
 use App\Services\Shipping\FakeCarrier;
 use App\Services\Shipping\ShippingCarrier;
 use App\Services\UserEventLog;
-use Database\Seeders\UserEventSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -284,24 +283,6 @@ class UserEventLoggingTest extends TestCase
         ])->assertUnprocessable();
 
         $this->assertSame(0, Event::count());
-    }
-
-    // ------------------------------------------------------------- seeder
-
-    public function test_du_lieu_mo_phong_duoc_danh_dau_va_khong_tinh_vao_luot_khach(): void
-    {
-        $product = $this->makeProduct(slug: 'giay-mo-phong');
-        $this->addVariant($product, colorId: 2);
-
-        $this->seed(UserEventSeeder::class);
-        $simulated = Event::count();
-
-        $this->assertGreaterThan(0, $simulated);
-        $this->assertSame($simulated, Event::where('is_simulated', true)->count());
-        $this->assertSame(0, Event::real()->count());
-
-        $this->seed(UserEventSeeder::class);
-        $this->assertSame($simulated, Event::count(), 'A second run replaces the simulation rather than doubling it');
     }
 
     /**

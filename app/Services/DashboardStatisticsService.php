@@ -116,18 +116,16 @@ class DashboardStatisticsService
     }
 
     /**
-     * Visitors are browsers, told apart by their cookie, and only real ones:
-     * the simulated sessions would pass themselves off as traffic.
+     * Visitors are browsers, told apart by their cookie.
      */
     public function totalVisitorCount(): int
     {
-        return UserEventModel::real()->distinct()->count('session_id');
+        return UserEventModel::distinct()->count('session_id');
     }
 
     public function onlineVisitorCount(): int
     {
-        return UserEventModel::real()
-            ->where('created_at', '>=', now()->subMinutes(self::ONLINE_WINDOW_MINUTES))
+        return UserEventModel::where('created_at', '>=', now()->subMinutes(self::ONLINE_WINDOW_MINUTES))
             ->distinct()
             ->count('session_id');
     }

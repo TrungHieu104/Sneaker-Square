@@ -23,7 +23,6 @@ return new class extends Migration
             $table->string('referrer', 2048)->nullable();
             $table->string('device', 16)->nullable();
             $table->string('ip', 45)->nullable();
-            $table->boolean('is_simulated')->default(false);
             $table->timestamp('created_at')->nullable();
 
             $table->index(['event_type', 'created_at']);

@@ -50,26 +50,13 @@ class UserEventModel extends Model
 
     protected $fillable = [
         'session_id', 'user_id', 'event_type', 'pro_id', 'size_id', 'color_id', 'order_id',
-        'meta', 'url', 'referrer', 'device', 'ip', 'is_simulated', 'created_at',
+        'meta', 'url', 'referrer', 'device', 'ip', 'created_at',
     ];
 
     protected $casts = [
         'meta' => 'array',
-        'is_simulated' => 'boolean',
         'created_at' => 'datetime',
     ];
-
-    /**
-     * Leaves out the rows the seeder made up, for any figure that claims to be
-     * about real visitors.
-     *
-     * @param  Builder<UserEventModel>  $query
-     * @return Builder<UserEventModel>
-     */
-    public function scopeReal(Builder $query): Builder
-    {
-        return $query->where('is_simulated', false);
-    }
 
     /**
      * One shopper's events: those of this browser, and the account's from any

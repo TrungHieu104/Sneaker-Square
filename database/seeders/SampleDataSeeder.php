@@ -2,23 +2,31 @@
 
 namespace Database\Seeders;
 
+use App\Models\CartReminderModel;
 use App\Models\UserEventModel as Event;
+use App\Services\CartReminders\AbandonedCarts;
+use App\Services\CartReminders\CartLines;
+use App\Services\SampleData;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 /**
- * Simulated shopping sessions, for the analytics to have something to show
- * before the shop has real visitors. Every row is flagged is_simulated, and any
- * figure built on them has to say so.
+ * Sample shopping sessions, for the analytics to have something to show on a
+ * local copy. Run through `php artisan sample:seed`, taken out again with
+ * `php artisan sample:clear`; SampleData says how the rows are recognised.
+ *
+ * The shoppers who log in are sample accounts of their own, never the shop's
+ * real customers, and their mail goes to a domain that cannot receive it.
  *
  * The sessions walk the real catalogue: products are picked in proportion to
  * their view counts, each shopper has one foot size, and a pair the shop never
  * stocked turns into a stock_out_hit just as it would on the page. Nothing here
  * writes an order or touches stock.
  */
-class UserEventSeeder extends Seeder
+class SampleDataSeeder extends Seeder
 {
     private const SESSIONS = 2000;
 
@@ -28,6 +36,18 @@ class UserEventSeeder extends Seeder
     private const RANDOM_SEED = 20261013;
 
     private const LOGGED_IN_RATE = 35;
+
+    private const CUSTOMERS = 60;
+
+    // Known, so a developer can log in as a sample shopper to try things.
+    public const PASSWORD = 'Sample@123';
+
+    private const FAMILY_NAMES = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng', 'Bùi', 'Đỗ'];
+
+    private const GIVEN_NAMES = [
+        'Minh Anh', 'Gia Bảo', 'Quốc Huy', 'Thu Trang', 'Hoàng Nam', 'Ngọc Hân', 'Đức Thịnh', 'Khánh Linh',
+        'Tuấn Kiệt', 'Bảo Ngọc', 'Thanh Tùng', 'Mỹ Duyên', 'Hải Đăng', 'Phương Thảo', 'Anh Khoa', 'Thảo Vy',
+    ];
 
     private const SEARCH_RATE = 35;
 
@@ -46,6 +66,21 @@ class UserEventSeeder extends Seeder
     private const CHECKOUT_RATE = 50;
 
     private const PURCHASE_RATE = 55;
+
+    private const SIMILAR_CLICK_RATE = 18;
+
+    private const RECENT_CLICK_RATE = 5;
+
+    private const RECOMMENDED = 5;
+
+    // The reminder settings' defaults, and how shoppers answer each email.
+    private const REMINDER_HOURS = [1 => 4, 2 => 24];
+
+    private const REMINDER_OPEN_RATE = [1 => 45, 2 => 40];
+
+    private const REMINDER_CLICK_RATE = [1 => 25, 2 => 35];
+
+    private const REMINDER_RETURN_RATE = [1 => 35, 2 => 45];
 
     private const FOOT_SIZE_MEAN = 41.0;
 
@@ -80,6 +115,9 @@ class UserEventSeeder extends Seeder
     /** @var array<int, array<string, mixed>> */
     private array $rows = [];
 
+    /** @var array<int, array<string, mixed>> */
+    private array $reminders = [];
+
     /** @var array<string, mixed> the session being written */
     private array $session = [];
 
@@ -90,11 +128,13 @@ class UserEventSeeder extends Seeder
         mt_srand(self::RANDOM_SEED);
         $this->loadCatalogue();
 
-        DB::table('user_events')->where('is_simulated', true)->delete();
+        app(SampleData::class)->clear();
 
         if ($this->products->isEmpty()) {
             return;
         }
+
+        $this->customers = $this->createCustomers();
 
         for ($i = 0; $i < self::SESSIONS; $i++) {
             $this->simulateSession();
@@ -105,6 +145,8 @@ class UserEventSeeder extends Seeder
         }
 
         $this->flush();
+        DB::table('cart_reminders')->insert($this->reminders);
+        $this->remindOpenCarts();
     }
 
     private function loadCatalogue(): void
@@ -112,7 +154,7 @@ class UserEventSeeder extends Seeder
         $this->products = DB::table('products')
             ->where('pro_hidden', 1)
             ->whereNull('deleted_at')
-            ->get(['pro_id', 'pro_slug', 'pro_name', 'pro_price', 'pro_views']);
+            ->get(['pro_id', 'cate_id', 'pro_slug', 'pro_name', 'pro_price', 'pro_views']);
 
         foreach (DB::table('products_quantity')->get(['pro_id', 'color_id', 'size_id', 'quantity']) as $variant) {
             $this->stock[$variant->pro_id][$variant->color_id.'-'.$variant->size_id] = (int) $variant->quantity;
@@ -120,7 +162,6 @@ class UserEventSeeder extends Seeder
 
         $this->sizes = DB::table('size')->pluck('size', 'size_id')->map(fn ($size) => (int) $size)->all();
         $this->totalViews = (int) $this->products->sum(fn ($product) => $product->pro_views + 1);
-        $this->customers = DB::table('users')->where('user_role', 0)->pluck('user_id')->all();
     }
 
     private function simulateSession(): void
@@ -134,13 +175,15 @@ class UserEventSeeder extends Seeder
             'foot' => $this->footSize(),
             'cart' => [],
             'url' => null,
+            'shown' => [],
+            'viewed' => [],
         ];
 
         $this->pageView(route('home.page'), 'home.page', $this->pick(self::REFERRERS) ?: null);
         $this->browse();
 
         for ($n = $this->weighted([1 => 45, 2 => 30, 3 => 15, 4 => 10]); $n > 0; $n--) {
-            $this->viewProduct($this->popularProduct());
+            $this->viewNext();
         }
 
         $this->leaveCart();
@@ -164,10 +207,25 @@ class UserEventSeeder extends Seeder
         }
     }
 
-    private function viewProduct(object $product): void
+    /**
+     * The next product, reached through a recommendation now and then.
+     */
+    private function viewNext(): void
+    {
+        if ($this->session['shown'] !== [] && $this->chance(self::SIMILAR_CLICK_RATE)) {
+            $this->viewProduct($this->products->firstWhere('pro_id', $this->pick($this->session['shown'])), 'similar');
+        } elseif (count($this->session['viewed']) > 1 && $this->chance(self::RECENT_CLICK_RATE)) {
+            $this->viewProduct($this->products->firstWhere('pro_id', $this->pick($this->session['viewed'])), 'recent');
+        } else {
+            $this->viewProduct($this->popularProduct());
+        }
+    }
+
+    private function viewProduct(object $product, ?string $source = null): void
     {
         $this->pageView(route('product.detail', $product->pro_slug), 'product.detail');
-        $this->event(Event::VIEW_PRODUCT, ['pro_id' => $product->pro_id]);
+        $this->event(Event::VIEW_PRODUCT, ['pro_id' => $product->pro_id] + ($source ? ['meta' => ['source' => $source]] : []));
+        $this->recommendAfter($product);
 
         if ($this->session['user_id'] && $this->chance(self::WISHLIST_RATE)) {
             $this->event(Event::WISHLIST, ['pro_id' => $product->pro_id, 'meta' => ['action' => 'add']]);
@@ -199,6 +257,31 @@ class UserEventSeeder extends Seeder
             $this->event(Event::ADD_CART, $pair + ['meta' => ['quantity' => $quantity, 'price' => (int) $product->pro_price]]);
             $this->session['cart'][] = $pair + ['quantity' => $quantity, 'price' => (int) $product->pro_price];
         }
+    }
+
+    /**
+     * The two blocks the product page loads under the product: the most viewed
+     * of the same category, and what this visit has already seen.
+     */
+    private function recommendAfter(object $product): void
+    {
+        $similar = $this->products
+            ->where('cate_id', $product->cate_id)
+            ->where('pro_id', '!=', $product->pro_id)
+            ->sortByDesc('pro_views')
+            ->take(self::RECOMMENDED)
+            ->pluck('pro_id')
+            ->all();
+        $recent = array_slice(array_values(array_diff($this->session['viewed'], [$product->pro_id])), 0, self::RECOMMENDED);
+
+        foreach (['similar' => $similar, 'recent' => $recent] as $source => $ids) {
+            if ($ids !== []) {
+                $this->event(Event::RECOMMEND, ['pro_id' => $product->pro_id, 'meta' => ['source' => $source, 'pro_ids' => $ids]]);
+            }
+        }
+
+        $this->session['shown'] = $similar;
+        $this->session['viewed'] = array_values(array_unique(array_merge([$product->pro_id], $this->session['viewed'])));
     }
 
     /**
@@ -237,11 +320,88 @@ class UserEventSeeder extends Seeder
             }
         }
 
-        if ($cart === [] || $this->customers === [] || ! $this->chance(self::CHECKOUT_RATE)) {
+        if ($cart === [] || $this->customers === []) {
+            return;
+        }
+
+        if (! $this->chance(self::CHECKOUT_RATE)) {
+            $this->remindAbandoned(array_values($cart));
+
             return;
         }
 
         $this->checkout(array_values($cart));
+    }
+
+    /**
+     * The reminder emails a logged-in shopper's abandoned cart would get, and
+     * now and then the order that follows a click. A simulated reminder makes
+     * no coupon: the coupon table is the shop's real list.
+     *
+     * @param  array<int, array<string, int>>  $cart
+     */
+    private function remindAbandoned(array $cart): void
+    {
+        if ($this->session['user_id'] === null) {
+            return;
+        }
+
+        $left = $this->clock->copy();
+        $key = $this->session['id'];
+
+        foreach (self::REMINDER_HOURS as $step => $hours) {
+            $sent = $left->copy()->addHours($hours)->addMinutes(mt_rand(0, 59));
+
+            if ($sent->isFuture()) {
+                return;
+            }
+
+            $opened = $this->chance(self::REMINDER_OPEN_RATE[$step]) ? $sent->copy()->addMinutes(mt_rand(5, 600)) : null;
+            $clicked = $opened && $this->chance(self::REMINDER_CLICK_RATE[$step]) ? $opened->copy()->addMinutes(mt_rand(0, 3)) : null;
+
+            $this->reminders[] = [
+                'user_id' => $this->session['user_id'],
+                'cart_key' => $key,
+                'step' => $step,
+                'lines' => json_encode(array_map(fn ($line) => $this->pairOf($line) + ['quantity' => $line['quantity']], $cart)),
+                'cart_value' => array_sum(array_map(fn ($line) => $line['price'] * $line['quantity'], $cart)),
+                'coupon_id' => null,
+                'token' => $this->randomId(),
+                'sent_at' => $sent,
+                'opened_at' => $opened !== null && ! $opened->isFuture() ? $opened : null,
+                'clicked_at' => $clicked !== null && ! $clicked->isFuture() ? $clicked : null,
+                'created_at' => $sent,
+                'updated_at' => $sent,
+            ];
+
+            if ($clicked !== null && $clicked->copy()->addHour()->isPast() && $this->chance(self::REMINDER_RETURN_RATE[$step])) {
+                $this->returnFromReminder($cart, $clicked);
+
+                return;
+            }
+        }
+    }
+
+    /**
+     * Back through the email's button, which restores the cart, and on to pay.
+     *
+     * @param  array<int, array<string, int>>  $cart
+     */
+    private function returnFromReminder(array $cart, Carbon $clicked): void
+    {
+        $this->session['id'] = $this->randomId();
+        $this->clock = $clicked->copy();
+
+        $this->pageView(route('product.cart'), 'product.cart');
+        $this->pageView(route('product.checkout'), 'product.checkout');
+
+        $value = array_sum(array_map(fn ($line) => $line['price'] * $line['quantity'], $cart));
+        $this->event(Event::CHECKOUT_START, ['meta' => ['lines' => count($cart), 'value' => $value]]);
+        $this->event(Event::PLACE_ORDER, ['meta' => ['payment' => 'cod', 'total' => $value]]);
+
+        foreach ($cart as $line) {
+            $this->event(Event::PURCHASE, $this->pairOf($line) + ['meta' => ['quantity' => $line['quantity'], 'price' => $line['price']]]);
+        }
     }
 
     /**
@@ -308,7 +468,6 @@ class UserEventSeeder extends Seeder
             'referrer' => $fields['referrer'] ?? null,
             'device' => $this->session['device'],
             'ip' => $this->session['ip'],
-            'is_simulated' => true,
             'created_at' => $this->clock,
         ];
     }
@@ -328,6 +487,71 @@ class UserEventSeeder extends Seeder
     private function pairOf(array $line): array
     {
         return ['pro_id' => $line['pro_id'], 'color_id' => $line['color_id'], 'size_id' => $line['size_id']];
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function createCustomers(): array
+    {
+        $password = Hash::make(self::PASSWORD);
+        $now = now();
+        $rows = [];
+
+        for ($n = 1; $n <= self::CUSTOMERS; $n++) {
+            $handle = sprintf('khachmau%02d', $n);
+            $rows[] = [
+                'username' => $handle,
+                'name' => $this->pick(self::FAMILY_NAMES).' '.$this->pick(self::GIVEN_NAMES),
+                'email' => $handle.SampleData::EMAIL_DOMAIN,
+                'password' => $password,
+                'user_status' => 1,
+                'user_role' => 0,
+                'created_at' => $now->copy()->subDays(mt_rand(self::DAYS, self::DAYS * 6)),
+                'updated_at' => $now,
+            ];
+        }
+
+        DB::table('users')->insert($rows);
+
+        return DB::table('users')->where('email', 'like', '%'.SampleData::EMAIL_DOMAIN)->pluck('user_id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    /**
+     * The cart each sample shopper still has open has, in this story, already
+     * had both its reminders, opened as often as any other but not acted on.
+     * Without them the hourly carts:remind would write to the sample accounts
+     * the first time it ran.
+     */
+    private function remindOpenCarts(): void
+    {
+        $carts = app(AbandonedCarts::class);
+        $lines = app(CartLines::class);
+
+        foreach ($this->customers as $userId) {
+            $cart = $carts->openCart($userId);
+
+            if ($cart === null) {
+                continue;
+            }
+
+            foreach (self::REMINDER_HOURS as $step => $hours) {
+                $sent = $cart->lastActivity->copy()->addHours($hours);
+                $sent = $sent->isFuture() ? now() : $sent;
+                $opened = $this->chance(self::REMINDER_OPEN_RATE[$step]) ? $sent->copy()->addMinutes(mt_rand(5, 600)) : null;
+                $clicked = $opened && $this->chance(self::REMINDER_CLICK_RATE[$step]) ? $opened->copy()->addMinutes(mt_rand(0, 3)) : null;
+
+                CartReminderModel::firstOrCreate(['cart_key' => $cart->key, 'step' => $step], [
+                    'user_id' => $userId,
+                    'lines' => $cart->lines,
+                    'cart_value' => $lines->value($lines->sellable($cart->lines)),
+                    'token' => $this->randomId(),
+                    'sent_at' => $sent,
+                    'opened_at' => $opened?->isPast() ? $opened : null,
+                    'clicked_at' => $clicked?->isPast() ? $clicked : null,
+                ]);
+            }
+        }
     }
 
     /**
@@ -380,8 +604,8 @@ class UserEventSeeder extends Seeder
     private function randomId(): string
     {
         $alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        $id = '';
-        for ($i = 0; $i < 40; $i++) {
+        $id = SampleData::SESSION_PREFIX;
+        while (strlen($id) < 40) {
             $id .= $alphabet[mt_rand(0, 61)];
         }
 

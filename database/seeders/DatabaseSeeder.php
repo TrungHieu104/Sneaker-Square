@@ -31,7 +31,6 @@ class DatabaseSeeder extends Seeder
         $this->call(FaqSeeder::class);
         $this->call(PermissionSeeder::class);
         $this->call(RoleSeeder::class);
-        $this->call(UserEventSeeder::class);
         $this->call(CateSlideSeeder::class);
         $this->call(PromotionSeeder::class);
     }
