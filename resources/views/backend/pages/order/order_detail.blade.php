@@ -141,91 +141,78 @@
                 
             </div>
         </div>
+        @php
+            $subtotal = $orderDetail->sum(fn ($detail) => $detail->price * $detail->quantity);
+            $pieces = $orderDetail->sum('quantity');
+        @endphp
         <div class="card mb-4">
-            <div class="card-header card-border-top">
-                Chi tiết đơn hàng #{{$order->order_code}}
+            <div class="card-header card-border-top d-flex justify-content-between align-items-center">
+                <span>Chi tiết đơn hàng #{{ $order->order_code }}</span>
+                <small class="text-muted text-nowrap ms-3">{{ $pieces }} sản phẩm</small>
             </div>
             <div class="card-body">
                 <div class="table-responsive text-nowrap">
-                    <table class="table table-bordered w-100">
-                        <thead class="text-center">
+                    <table class="table order-lines align-middle mb-0">
+                        <thead>
                             <tr>
-                                <th>STT</th>
-                                <th>Tên sản phẩm</th>
-                                <th>Size</th>
-                                <th>Màu sắc</th>
-                                <th>Giá</th >
-                                <th>Số lượng</th>
-                                <th>Thành tiền</th>
+                                <th>Sản phẩm</th>
+                                <th class="text-end">Đơn giá</th>
+                                <th class="text-center">SL</th>
+                                <th class="text-end">Thành tiền</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @php
-                                $stt=1;
-                            @endphp
-                                @foreach($orderDetail as $detail)                              
-                                    <tr>
-                                        <input type="hidden" name="order_product_id[]" value="{{$detail->product->pro_id}}">
-                                        <input type="hidden" name="quantity[]" value="{{$detail->quantity}}">
-                                        <td class="text-center">{{$stt}}</td>
-                                        <td class="pro-name">
-                                            {{ $detail->product->pro_name }}
-                                        </td>
-                                        <td class="text-center">
-                                            @if($detail->size == 0)
-
-                                            @else
-                                                {{ $detail->size }}
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            {{-- @if($detail->color=='Đen')
-                                                <div title="Đen" class="centered rounded-circle bg-dark">
-                                                </div>
-                                            @elseif($detail->color == 'Trắng')
-                                                <div title="Trắng" class="colorwhite rounded-circle">
-                                                </div>
-                                            @elseif($detail->color == 'Đỏ')
-                                                <div title="Đỏ" class="colorred rounded-circle">
-                                                </div>
-                                            @elseif($detail->color == 'Xanh dương')
-                                                <div title="Xanh dương" class="colorblue rounded-circle">
-                                                </div>
-                                            @elseif($detail->color == 'Xám')
-                                                <div title="Xám" class="colorgray rounded-circle">
-                                                </div>
-                                            @elseif($detail->color == 6)
-                                                <div title="Hồng" class="colorpink rounded-circle">
-                                                </div>
-                                            @elseif($detail->color == 7)
-                                                <div title="Cam" class="colororange rounded-circle">
-                                                </div>
-                                            @endif --}}
-                                            {{$detail->color}}
-                                        </td>
-                                        <td class="text-center">{{number_format($detail->price,0,',','.')}}đ</td>
-                                        <td class="text-center">{{ $detail->quantity }}</td>
-                                        <td class="text-center">{{number_format($detail->price * $detail->quantity,0,',','.')}}đ</td>
-                                    </tr>
-                                    @php
-                                        $stt++;
-                                    @endphp
-                                @endforeach                      
+                            @foreach ($orderDetail as $detail)
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <img src="{{ asset($detail->product?->pro_img) }}" alt="" width="48" height="48"
+                                                class="rounded border flex-shrink-0" style="object-fit: cover;" onerror="this.src='/uploads/img_error2.jpg'">
+                                            <div>
+                                                <div class="fw-medium text-heading">{{ $detail->product?->pro_name ?? $detail->pro_name }}</div>
+                                                <small class="text-muted">
+                                                    {{ collect([$detail->size ? 'Size '.$detail->size : null, $detail->color])->filter()->implode(' · ') }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">{{ number_format($detail->price, 0, ',', '.') }}đ</td>
+                                    <td class="text-center">× {{ $detail->quantity }}</td>
+                                    <td class="text-end fw-medium text-heading">{{ number_format($detail->price * $detail->quantity, 0, ',', '.') }}đ</td>
+                                </tr>
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
-                <div class="mb-3 mt-3">
-                    <span>Phí vận chuyển: {{number_format($order->order_delivery_fee,0,',','.')}}đ<br></span>
-                    @if ($order->Coupon)
-                        <span>Mã giảm giá: {{ $order->Coupon->coupon_code }}<br></span>
-                        <span class="d-flex">Số tiền giảm: {{ number_format($order->order_coupon_value, 0, ',', '.') }}đ</p></span> <br>
-                    @else
-                        <span>Mã giảm giá: Không áp dụng<br></span><br>
-                        {{-- <span class="d-flex">Số tiền giảm: 0đ</p></span> --}}
-                    @endif
-                        <input type="hidden" value={{$order->order_coupon_value}} name="cou_val">
-                    <span class="d-flex">Tổng tiền:&nbsp; <p class="text-danger">{{number_format($order->order_total,0,',','.')}}đ</p></span>
-                </div>
+                <dl class="order-summary ms-auto mt-4 mb-0">
+                    <div class="d-flex justify-content-between">
+                        <dt>Tiền hàng ({{ $pieces }} sản phẩm)</dt>
+                        <dd>{{ number_format($subtotal, 0, ',', '.') }}đ</dd>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <dt>Phí vận chuyển</dt>
+                        <dd>{{ number_format($order->order_delivery_fee, 0, ',', '.') }}đ</dd>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        @if ($order->Coupon)
+                            @php($terms = app(\App\Services\CartPricingService::class)->couponTerms($order->Coupon))
+                            <dt>
+                                Mã giảm giá <span class="badge bg-label-success ms-1">{{ $order->Coupon->coupon_code }}</span>
+                                <small class="d-block text-muted fw-normal mt-1">
+                                    Giảm {{ $order->Coupon->coupon_condition == 1 ? number_format($order->Coupon->coupon_value, 0, ',', '.').'đ' : $order->Coupon->coupon_value.'%' }}{{ $terms ? ' · '.$terms : '' }}
+                                </small>
+                            </dt>
+                            <dd class="text-success">− {{ number_format($order->order_coupon_value, 0, ',', '.') }}đ</dd>
+                        @else
+                            <dt>Mã giảm giá</dt>
+                            <dd class="text-muted">Không áp dụng</dd>
+                        @endif
+                    </div>
+                    <div class="d-flex justify-content-between align-items-baseline border-top pt-3 mt-1">
+                        <dt class="text-heading">Tổng thanh toán</dt>
+                        <dd class="fs-5 fw-bold text-danger">{{ number_format($order->order_total, 0, ',', '.') }}đ</dd>
+                    </div>
+                </dl>
             </div>
         </div>
         <div class="card mb-4">
@@ -327,4 +314,14 @@
             });
         })();
     </script>
+@endpush
+
+@push('css-backend')
+    <style>
+        .order-lines thead th { font-size: .75rem; }
+        .order-lines td { padding-top: .75rem; padding-bottom: .75rem; }
+        .order-summary { max-width: 420px; }
+        .order-summary dt { font-weight: 400; }
+        .order-summary dd { margin-bottom: .6rem; margin-left: 1rem; white-space: nowrap; }
+    </style>
 @endpush
