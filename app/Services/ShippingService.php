@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\OrderStatus;
+use App\Logging\LogChannel;
 use App\Models\DeliveryInfoModel;
 use App\Models\OrderModel;
 use App\Models\OrderReturnItemModel;
@@ -78,7 +79,7 @@ class ShippingService
         try {
             return $this->quoteForCart($cart, (int) $address->info_district_id, (string) $address->info_ward_code);
         } catch (ShippingUnavailable $e) {
-            Log::warning('Shipping quote failed', [
+            Log::channel(LogChannel::SHIPPING)->warning('Shipping quote failed', [
                 'address' => $address->info_id,
                 'message' => $e->getMessage(),
             ]);

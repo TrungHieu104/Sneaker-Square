@@ -1,5 +1,6 @@
 <?php
 
+use App\Logging\LogChannel;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -54,7 +55,7 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'channels' => ['daily'],
             'ignore_exceptions' => false,
         ],
 
@@ -69,7 +70,31 @@ return [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'days' => 14,
+            'days' => LogChannel::DAYS_KEPT,
+            'replace_placeholders' => true,
+        ],
+
+        LogChannel::PAYMENT => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/'.LogChannel::PAYMENT.'.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => LogChannel::DAYS_KEPT,
+            'replace_placeholders' => true,
+        ],
+
+        LogChannel::SHIPPING => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/'.LogChannel::SHIPPING.'.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => LogChannel::DAYS_KEPT,
+            'replace_placeholders' => true,
+        ],
+
+        LogChannel::MAIL => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/'.LogChannel::MAIL.'.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => LogChannel::DAYS_KEPT,
             'replace_placeholders' => true,
         ],
 

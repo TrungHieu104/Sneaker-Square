@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Logging\LogChannel;
 use App\Services\Shipping\GhnCarrier;
 use App\Services\Shipping\Shipment;
 use App\Services\Shipping\ShipmentOrder;
@@ -9,6 +10,7 @@ use App\Services\Shipping\ShipmentSender;
 use App\Services\Shipping\ShippingUnavailable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Tests\Support\CapturesLogs;
 use Tests\TestCase;
 
 /**
@@ -20,6 +22,8 @@ use Tests\TestCase;
  */
 class GhnCarrierTest extends TestCase
 {
+    use CapturesLogs;
+
     private const HOST = 'https://online-gateway.ghn.vn';
 
     protected function setUp(): void
@@ -305,5 +309,37 @@ class GhnCarrierTest extends TestCase
 
         Http::assertSent(fn ($request) => str_contains($request->url(), '/switch-status/cancel')
             && $request['order_codes'] === ['L8TY76']);
+    }
+
+    // ---------------------------------------------------------------- logs
+
+    public function test_goi_ghn_that_bai_ghi_vao_shipping_log(): void
+    {
+        $log = $this->captureLog(LogChannel::SHIPPING);
+        Http::fake([
+            self::HOST.'/*' => Http::response(['code' => 400, 'code_message_value' => 'Sai thông tin đầu vào.'], 200),
+        ]);
+
+        try {
+            (new GhnCarrier)->quote(new Shipment(1442, '20110', 1200));
+        } catch (ShippingUnavailable) {
+        }
+
+        $failed = $this->logged($log, 'GHN API call failed');
+        $this->assertSame('POST', $failed[0]['method']);
+        $this->assertStringContainsString('available-services', $failed[0]['path']);
+        $this->assertStringContainsString('Sai thông tin đầu vào.', $failed[0]['message']);
+    }
+
+    public function test_tao_van_don_ghi_ma_van_don_va_phi_vao_shipping_log(): void
+    {
+        $log = $this->captureLog(LogChannel::SHIPPING);
+
+        $this->bookAndCapture(null);
+
+        $this->assertSame([['DH01-TH', 'LTEST1', 27000]], array_map(
+            fn (array $line) => [$line['reference'], $line['shipping_code'], $line['fee']],
+            $this->logged($log, 'GHN parcel booked'),
+        ));
     }
 }
