@@ -14,7 +14,7 @@ Updated: 2026-10-05.
 | SonarQube | Reliability / Security / Maintainability rating | A / A / A |
 | SonarQube | Remaining code smells | 34 Major, 10 Minor |
 | gitleaks | Secrets in the current source and the whole Git history | 0 (2 old leaks revoked, listed in `.gitleaksignore`) |
-| PHPUnit | Feature tests | 640 passing |
+| PHPUnit | Feature tests | 709 passing |
 
 The SonarQube scope, and the reason each part is excluded, is in `sonar-project.properties`.
 
