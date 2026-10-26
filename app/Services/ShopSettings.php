@@ -41,6 +41,104 @@ class ShopSettings
     public const MAX_PAYMENT_WINDOW = 1440;
 
     /**
+     * The abandoned-cart reminder, keyed by the form field that edits each
+     * value.
+     *
+     * @var array<string, string>
+     */
+    public const CART_REMINDER = [
+        'enabled' => 'cart_reminder.enabled',
+        'first_hours' => 'cart_reminder.first_hours',
+        'second_enabled' => 'cart_reminder.second_enabled',
+        'second_hours' => 'cart_reminder.second_hours',
+        'max_age_days' => 'cart_reminder.max_age_days',
+        'coupon_percent' => 'cart_reminder.coupon_percent',
+        'coupon_days' => 'cart_reminder.coupon_days',
+        'offer_min_value' => 'cart_reminder.offer_min_value',
+        'offer_cooldown_days' => 'cart_reminder.offer_cooldown_days',
+    ];
+
+    public const CART_REMINDER_DEFAULTS = [
+        'enabled' => 1,
+        'first_hours' => 4,
+        'second_enabled' => 1,
+        'second_hours' => 24,
+        'max_age_days' => 7,
+        'coupon_percent' => 5,
+        'coupon_days' => 3,
+        'offer_min_value' => 1_000_000,
+        'offer_cooldown_days' => 90,
+    ];
+
+    /**
+     * Bounds for the numeric values: an hour is the soonest a reminder stops
+     * feeling like being watched, a week the longest a second one still
+     * refers to a cart the shopper remembers. A cooldown of 0 suggests a
+     * coupon to the same customer as often as they qualify.
+     *
+     * @var array<string, array{int, int}>
+     */
+    public const CART_REMINDER_LIMITS = [
+        'first_hours' => [1, 72],
+        'second_hours' => [2, 168],
+        'max_age_days' => [1, 30],
+        'coupon_percent' => [1, 30],
+        'coupon_days' => [1, 30],
+        'offer_min_value' => [0, 100_000_000],
+        'offer_cooldown_days' => [0, 365],
+    ];
+
+    /**
+     * The coupon values are what an admin offering one by hand starts from:
+     * the automatic reminders never carry a coupon, or shoppers would learn
+     * that leaving a cart is how to get one.
+     *
+     * @return array{enabled: bool, first_hours: int, second_enabled: bool, second_hours: int, max_age_days: int, coupon_percent: int, coupon_days: int, offer_min_value: int, offer_cooldown_days: int}
+     */
+    public function cartReminder(): array
+    {
+        $values = [];
+
+        foreach (self::CART_REMINDER as $field => $key) {
+            $value = (int) $this->get($key, (string) self::CART_REMINDER_DEFAULTS[$field]);
+
+            if (isset(self::CART_REMINDER_LIMITS[$field])) {
+                [$min, $max] = self::CART_REMINDER_LIMITS[$field];
+                $value = max($min, min($max, $value));
+            }
+
+            $values[$field] = $value;
+        }
+
+        // The second reminder has to come after the first, whatever is stored.
+        $values['second_hours'] = max($values['second_hours'], $values['first_hours'] + 1);
+
+        return [
+            'enabled' => $values['enabled'] === 1,
+            'first_hours' => $values['first_hours'],
+            'second_enabled' => $values['second_enabled'] === 1,
+            'second_hours' => $values['second_hours'],
+            'max_age_days' => $values['max_age_days'],
+            'coupon_percent' => $values['coupon_percent'],
+            'coupon_days' => $values['coupon_days'],
+            'offer_min_value' => $values['offer_min_value'],
+            'offer_cooldown_days' => $values['offer_cooldown_days'],
+        ];
+    }
+
+    /**
+     * @param  array<string, int|bool>  $values  keyed as CART_REMINDER is
+     */
+    public function setCartReminder(array $values): void
+    {
+        foreach (self::CART_REMINDER as $field => $key) {
+            if (array_key_exists($field, $values)) {
+                $this->put($key, (string) (int) $values[$field]);
+            }
+        }
+    }
+
+    /**
      * The shop's own details as the storefront prints them, keyed by the
      * form field that edits each one.
      *

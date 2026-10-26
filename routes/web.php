@@ -13,6 +13,7 @@ use App\Http\Controllers\Backend\FaqAdminController;
 use App\Http\Controllers\Backend\GhnSimulatorController;
 use App\Http\Controllers\Backend\ImageController;
 use App\Http\Controllers\Backend\MenusAdminController;
+use App\Http\Controllers\Backend\OpenCartController;
 use App\Http\Controllers\Backend\OrderAdminController;
 use App\Http\Controllers\Backend\ProductAdminController;
 use App\Http\Controllers\Backend\ProductCateController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\Backend\WalletAdminController;
 use App\Http\Controllers\Frontend\AuthUserController;
 use App\Http\Controllers\Frontend\BlogController;
 use App\Http\Controllers\Frontend\CartController;
+use App\Http\Controllers\Frontend\CartReminderController;
 use App\Http\Controllers\Frontend\CheckoutController;
 use App\Http\Controllers\Frontend\CommentController;
 use App\Http\Controllers\Frontend\CustomerOrderController;
@@ -109,6 +111,12 @@ Route::group(['middleware' => 'web'], function () {
     Route::post('/xoa-san-pham/{pro_slug}', [CartController::class, 'delPro'])->name('delProduct.cart');
     Route::get('/xoa-gio-hang', [CartController::class, 'delcart'])->name('del.cart')->middleware('doNotCacheResponse');
     Route::get('/gio-hang-trong', [CartController::class, 'emptyCart'])->name('empty.cart')->middleware('doNotCacheResponse');
+
+    // The links in an abandoned-cart reminder, each reached by the reminder's token.
+    Route::get('/gio-hang/khoi-phuc/{token}', [CartReminderController::class, 'restore'])->name('cart.restore')->middleware('doNotCacheResponse');
+    Route::get('/nhac-gio-hang/{token}/da-mo', [CartReminderController::class, 'opened'])->name('cart.reminder.opened')->middleware('doNotCacheResponse');
+    Route::get('/nhac-gio-hang/{token}/huy-nhan', [CartReminderController::class, 'confirmUnsubscribe'])->name('cart.reminder.unsubscribe')->middleware('doNotCacheResponse');
+    Route::post('/nhac-gio-hang/{token}/huy-nhan', [CartReminderController::class, 'unsubscribe'])->name('cart.reminder.unsubscribe.confirm');
 
     // Route Payment
     Route::get('/thanh-toan', [CheckoutController::class, 'checkout'])->name('product.checkout')->middleware('doNotCacheResponse');
@@ -418,6 +426,9 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
         Route::post('/da-nhan', [ReturnAdminController::class, 'receive'])->name('receive');
         Route::post('/hoan-tien', [ReturnAdminController::class, 'refund'])->name('refund');
     });
+    Route::get('/gio-hang-treo', [OpenCartController::class, 'index'])->name('open_cart.index')->middleware($can['orders']);
+    // Giving a discount is the coupon managers' call as much as the order desk's.
+    Route::post('/gio-hang-treo/{user_id}/tang-ma', [OpenCartController::class, 'offer'])->name('open_cart.offer')->middleware([$can['orders'], $can['coupons']]);
     Route::middleware($can['orders'])->prefix('/vi-khach-hang')->name('wallet_admin.')->group(function () {
         Route::get('/', [WalletAdminController::class, 'index'])->name('index');
         Route::post('/rut-tien/{withdrawal_id}/da-chuyen', [WalletAdminController::class, 'markPaid'])->name('withdrawal_paid');
@@ -434,6 +445,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     Route::get('/cau-hinh', [ShopSettingController::class, 'edit'])->name('setting.edit')->middleware($can['ordersOrShopInfo']);
     Route::put('/cau-hinh', [ShopSettingController::class, 'update'])->name('setting.update')->middleware($can['orders']);
     Route::put('/cau-hinh/chung', [ShopSettingController::class, 'updateGeneral'])->name('setting.update_general')->middleware($can['shopInfo']);
+    Route::put('/cau-hinh/nhac-gio-hang', [ShopSettingController::class, 'updateCartReminder'])->name('setting.update_cart_reminder')->middleware($can['orders']);
 
     // Hình ảnh Slide
     Route::resource('promotion', (PromotionAdminController::class))->middleware($can['slides']);

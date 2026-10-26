@@ -20,6 +20,7 @@ class Kernel extends ConsoleKernel
         // past the deadline the customer was shown.
         $schedule->command('orders:expire-unpaid')->withoutOverlapping()->everyMinute();
         $schedule->command('wallet:doi-soat')->withoutOverlapping()->dailyAt('03:00');
+        $schedule->command('carts:remind')->withoutOverlapping()->hourly();
         $schedule->call(function () {
             Artisan::call('cache:clear');
         })->dailyAt('16:00');
