@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\CartReminderModel;
 use App\Models\UserEventModel as Event;
+use App\Services\Analytics\EventAggregator;
 use App\Services\CartReminders\AbandonedCarts;
 use App\Services\CartReminders\CartLines;
 use App\Services\SampleData;
@@ -147,6 +148,14 @@ class SampleDataSeeder extends Seeder
         $this->flush();
         DB::table('cart_reminders')->insert($this->reminders);
         $this->remindOpenCarts();
+
+        // The report reads the daily tables, which the nightly run would only
+        // fill for yesterday.
+        $aggregator = app(EventAggregator::class);
+
+        for ($day = Carbon::today()->subDays(self::DAYS); $day->lte(Carbon::today()); $day->addDay()) {
+            $aggregator->aggregate($day);
+        }
     }
 
     private function loadCatalogue(): void

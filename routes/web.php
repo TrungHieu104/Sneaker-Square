@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Backend\AboutAdminController;
 use App\Http\Controllers\Backend\AuthAdminController;
+use App\Http\Controllers\Backend\BehaviourController;
 use App\Http\Controllers\Backend\BlogAdminController;
 use App\Http\Controllers\Backend\BlogCateController;
 use App\Http\Controllers\Backend\CateSlideAdminController;
@@ -271,6 +272,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
 
     // Visitor
     Route::get('/statistical', [DashboardController::class, 'statistical'])->name('admin.statistical')->middleware($can['visitors']);
+    Route::get('/behaviour', [BehaviourController::class, 'index'])->name('admin.behaviour')->middleware($can['visitors']);
 
     // Product
     Route::resource('product', (ProductAdminController::class))->middleware($can['products']);

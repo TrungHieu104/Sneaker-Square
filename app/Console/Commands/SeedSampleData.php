@@ -11,7 +11,7 @@ class SeedSampleData extends Command
 {
     protected $signature = 'sample:seed';
 
-    protected $description = 'Nạp dữ liệu hành vi mẫu (lượt xem, giỏ hàng, đơn, email nhắc), thay bản mẫu cũ nếu có (chỉ chạy ở local)';
+    protected $description = 'Nạp dữ liệu hành vi mẫu cho trang phân tích, thay bản mẫu cũ nếu có (chỉ chạy ở local)';
 
     public function handle(): int
     {

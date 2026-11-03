@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Services\Analytics\EventAggregator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -20,8 +22,11 @@ class SampleData
 
     public const EMAIL_DOMAIN = '@sample.sneakersquare.test';
 
+    public function __construct(private readonly EventAggregator $aggregator) {}
+
     /**
-     * Removes the sample visits and accounts.
+     * Removes the sample visits and accounts, then recounts the daily figures
+     * of every day they touched.
      *
      * An account somebody went on to place a real order with is kept, since
      * the order points at it.
@@ -31,6 +36,7 @@ class SampleData
     public function clear(): array
     {
         $users = DB::table('users')->where('email', 'like', '%'.self::EMAIL_DOMAIN)->pluck('user_id');
+        $firstDay = DB::table('user_events')->where('session_id', 'like', self::SESSION_PREFIX.'%')->min('created_at');
 
         $reminders = DB::table('cart_reminders')->whereIn('user_id', $users);
         $couponIds = (clone $reminders)->whereNotNull('coupon_id')->pluck('coupon_id');
@@ -43,6 +49,12 @@ class SampleData
             ->whereIn('user_id', $users)
             ->whereNotExists(fn ($orders) => $orders->select(DB::raw(1))->from('order')->whereColumn('order.user_id', 'users.user_id'));
         $userCount = $removable->delete();
+
+        if ($firstDay !== null) {
+            for ($day = Carbon::parse($firstDay)->startOfDay(); $day->lte(Carbon::today()); $day->addDay()) {
+                $this->aggregator->aggregate($day);
+            }
+        }
 
         return [
             'events' => $events,
