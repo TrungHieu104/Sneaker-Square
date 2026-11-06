@@ -6,6 +6,7 @@ use App\Mail\CartReminderMail;
 use App\Models\CartReminderModel;
 use App\Models\CouponModel;
 use App\Models\UserModel;
+use App\Services\OneUseCoupons;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -15,10 +16,10 @@ class CartReminderSender
 {
     private const TOKEN_LENGTH = 40;
 
-    // A percentage, in the coupon table's terms; 1 there is a fixed amount.
-    private const PERCENT_OFF = 0;
-
-    public function __construct(private readonly CartLines $lines) {}
+    public function __construct(
+        private readonly CartLines $lines,
+        private readonly OneUseCoupons $coupons,
+    ) {}
 
     /**
      * Records the reminder and queues its email. Nothing is sent when none of
@@ -42,7 +43,7 @@ class CartReminderSender
         return $this->deliver(
             $cart,
             ['step' => CartReminderModel::OFFER, 'sent_by' => $adminId],
-            fn (CartReminderModel $reminder) => $this->couponFor($reminder, $terms),
+            fn (CartReminderModel $reminder) => $this->coupons->create('Tặng mã giỏ hàng #'.$reminder->id, 'GIOHANG', $terms),
         );
     }
 
@@ -80,27 +81,5 @@ class CartReminderSender
         Mail::to($user->email)->queue(new CartReminderMail($reminder));
 
         return $reminder;
-    }
-
-    /**
-     * A one-use code made for this email alone, so it cannot be passed around
-     * and its use can be traced back to it.
-     *
-     * @param  array{percent: int, days: int, min_order: int, max_discount: ?int}  $terms
-     */
-    private function couponFor(CartReminderModel $reminder, array $terms): CouponModel
-    {
-        return CouponModel::create([
-            'coupon_name' => 'Tặng mã giỏ hàng #'.$reminder->id,
-            'coupon_code' => 'GIOHANG'.Str::upper(Str::random(6)),
-            'coupon_value' => $terms['percent'],
-            'coupon_min_order' => $terms['min_order'],
-            'coupon_max_discount' => $terms['max_discount'],
-            'coupon_quantity' => 1,
-            'coupon_used' => 0,
-            'coupon_condition' => self::PERCENT_OFF,
-            'coupon_start' => now()->toDateString(),
-            'coupon_end' => now()->addDays($terms['days'])->toDateString(),
-        ]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Enums\CustomerSegment;
 use App\Exports\ExportAccounts;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Backend\AccountRequest;
@@ -28,6 +29,9 @@ use Spatie\Permission\Models\Role;
 class AuthAdminController extends Controller
 {
     private const USER_NOT_FOUND = 'Không tồn tại thông tin user';
+
+    // The customer list's filter value for accounts with no completed order.
+    public const NOT_SEGMENTED = 'chua-mua';
 
     private const ACCOUNT_LIST_URL = 'admin/account';
 
@@ -76,12 +80,20 @@ class AuthAdminController extends Controller
         $keyword = $request->input('keyword');
         $searchableFields = ['name', 'email'];
 
-        $account = $this->performSearch(UserModel::where('user_role', 0)
-            ->orderBy($orderBy, $orderType), $keyword, $searchableFields)
+        $filter = (string) $request->input('phan-khuc');
+        $customers = UserModel::with('segment')->where('user_role', 0)->orderBy($orderBy, $orderType);
+
+        if ($filter === self::NOT_SEGMENTED) {
+            $customers->whereDoesntHave('segment');
+        } elseif ($segment = CustomerSegment::tryFrom($filter)) {
+            $customers->whereHas('segment', fn ($row) => $row->where('segment', $segment->value));
+        }
+
+        $account = $this->performSearch($customers, $keyword, $searchableFields)
             ->paginate($perpage)
             ->withQueryString();
 
-        return view('backend.pages.account.user.user_list', compact('account', 'orderBy', 'orderType'));
+        return view('backend.pages.account.user.user_list', compact('account', 'orderBy', 'orderType', 'filter'));
     }
 
     public function loginCheck(LoginRequest $request)

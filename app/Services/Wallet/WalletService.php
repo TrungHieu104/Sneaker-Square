@@ -52,6 +52,8 @@ class WalletService
 
     public const REF_WITHDRAWAL = 'withdrawal';
 
+    public const REF_ORDER_CASHBACK = 'order_cashback';
+
     /**
      * The customer's wallet, created the first time it is looked at.
      *
@@ -153,6 +155,38 @@ class WalletService
                 WalletTransactionModel::TYPE_REFUND,
                 $description,
                 self::REF_ORDER_REFUND,
+                (int) $order->order_id,
+            );
+
+            return true;
+        });
+    }
+
+    /**
+     * Pays the cashback an order was promised. Safe to call twice: the
+     * reference is the order, so a second run pays nothing more.
+     *
+     * @return bool whether this call is the one that paid it
+     */
+    public function payCashback(OrderModel $order, int $amount, string $description): bool
+    {
+        if ($amount <= 0) {
+            return false;
+        }
+
+        return (bool) DB::transaction(function () use ($order, $amount, $description) {
+            $wallet = $this->for((int) $order->user_id);
+
+            if ($this->alreadyRecorded($wallet, self::REF_ORDER_CASHBACK, (int) $order->order_id)) {
+                return false;
+            }
+
+            $this->credit(
+                $wallet,
+                $amount,
+                WalletTransactionModel::TYPE_CASHBACK,
+                $description,
+                self::REF_ORDER_CASHBACK,
                 (int) $order->order_id,
             );
 

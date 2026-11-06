@@ -12,6 +12,7 @@ use App\Models\ProductQuantityModel;
 use App\Models\UserModel;
 use App\Models\WalletTransactionModel;
 use App\Services\CartPricingService;
+use App\Services\CustomerSegments\Cashback;
 use App\Services\Payment\OrderPayments;
 use App\Services\Shipping\ShippingUnavailable;
 use App\Services\ShippingService;
@@ -34,6 +35,7 @@ class PlaceOrderAction
         private readonly CartPricingService $pricing,
         private readonly ShippingService $shipping,
         private readonly WalletService $wallets,
+        private readonly Cashback $cashback,
     ) {}
 
     /**
@@ -117,6 +119,8 @@ class PlaceOrderAction
             if ($summary['coupon']) {
                 $this->consumeCoupon($summary['coupon']);
             }
+
+            $this->cashback->promise($order, $summary['subtotal'] - $summary['discount']);
 
             if ($order->order_payment === self::PAY_FROM_WALLET) {
                 $this->payFromWallet($user, $order);

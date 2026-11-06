@@ -10,6 +10,15 @@
     <div class="card mb-4 card-border-top">
         <div class="d-flex justify-content-between align-items-center">
             <h5 class="card-header">Quản lý tài khoản</h5>
+            <form method="GET" action="{{ route('account.user') }}" class="ms-auto">
+                <select name="phan-khuc" class="form-select form-select-sm w-auto" aria-label="Lọc theo phân khúc" onchange="this.form.submit()">
+                    <option value="">Tất cả phân khúc</option>
+                    @foreach (\App\Enums\CustomerSegment::cases() as $phanKhuc)
+                        <option value="{{ $phanKhuc->value }}" @selected($filter === $phanKhuc->value)>{{ $phanKhuc->label() }}</option>
+                    @endforeach
+                    <option value="{{ \App\Http\Controllers\Backend\AuthAdminController::NOT_SEGMENTED }}" @selected($filter === \App\Http\Controllers\Backend\AuthAdminController::NOT_SEGMENTED)>Chưa mua</option>
+                </select>
+            </form>
             {{-- <div class="px-4">
                 <a href="" class="btn btn-success">Thêm mới &nbsp;<i class="bi bi-plus-circle"></i></a>
             </div> --}}
@@ -47,6 +56,7 @@
                                     Vai trò
                                 </a>
                             </th>
+                            <th class="text-center dx-res" style="width: 60px;">Phân khúc</th>
                             <th class="text-center dx-res" style="width: 60px;">
                                 <a class="tab-sort" href="?sort-by=user_status&sort-type={{ $orderBy === 'user_status' ? $orderType : 'desc' }}">
                                     Trạng thái
@@ -61,7 +71,7 @@
                         @endphp
                             @if($account->isEmpty())
                             <tr>
-                                <td colspan="6" class="text-center">
+                                <td colspan="7" class="text-center">
                                     Không có dữ liệu để hiển thị.
                                 </td>
                             </tr>
@@ -83,6 +93,13 @@
                                                 <span style="color: green">Khách hàng</span>
                                             @else
                                                 <span style="color: red">Quản trị viên</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if ($data->segment)
+                                                <span class="badge {{ $data->segment->segment->badgeClass() }}" style="text-transform: none; font-size: .8125rem;">{{ $data->segment->segment->label() }}</span>
+                                            @else
+                                                <span class="badge bg-label-dark" style="text-transform: none; font-size: .8125rem;">Chưa mua</span>
                                             @endif
                                         </td>
                                         <td class="text-center">

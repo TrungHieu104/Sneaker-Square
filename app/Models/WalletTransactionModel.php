@@ -30,6 +30,8 @@ class WalletTransactionModel extends Model
 
     public const TYPE_ADJUSTMENT = 'adjustment';
 
+    public const TYPE_CASHBACK = 'cashback';
+
     /** @var array<string, string> */
     private const TYPE_LABELS = [
         self::TYPE_TOPUP => 'Nạp tiền',
@@ -38,6 +40,7 @@ class WalletTransactionModel extends Model
         self::TYPE_WITHDRAW => 'Rút về ngân hàng',
         self::TYPE_WITHDRAW_REVERSED => 'Hoàn lại tiền rút bị từ chối',
         self::TYPE_ADJUSTMENT => 'Điều chỉnh từ cửa hàng',
+        self::TYPE_CASHBACK => 'Hoàn tiền ưu đãi',
     ];
 
     protected $table = 'wallet_transactions';

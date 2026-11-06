@@ -59,6 +59,12 @@ class UserModel extends Authenticatable
         'password' => 'hashed',
     ];
 
+    /** @return HasOne<CustomerSegmentModel, $this> */
+    public function segment(): HasOne
+    {
+        return $this->hasOne(CustomerSegmentModel::class, 'user_id', 'user_id');
+    }
+
     /** @return HasOne<WalletModel, $this> */
     public function wallet(): HasOne
     {

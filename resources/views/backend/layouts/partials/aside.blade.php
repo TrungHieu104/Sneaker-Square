@@ -294,7 +294,7 @@
         </li>
         @endif
         @can('Thống kê truy cập')
-        <li class="menu-item {{in_array(url()->current(), [route('admin.statistical'), route('admin.behaviour')]) ? 'active open' : ''}}">
+        <li class="menu-item {{(in_array(url()->current(), [route('admin.statistical'), route('admin.behaviour')]) || request()->routeIs('admin.segments*', 'admin.campaigns*')) ? 'active open' : ''}}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class='bx bx-user menu-icon' ></i>
                 <div data-i18n="Form Elements">Truy cập</div>
@@ -308,6 +308,11 @@
                 <li class="menu-item {{(url()->current() == route('admin.behaviour')) ? 'active' : ''}}">
                     <a href="{{route('admin.behaviour')}}" class="menu-link">
                         <div data-i18n="Basic Inputs">Hành vi khách hàng</div>
+                    </a>
+                </li>
+                <li class="menu-item {{request()->routeIs('admin.segments*', 'admin.campaigns*') ? 'active' : ''}}">
+                    <a href="{{route('admin.segments')}}" class="menu-link">
+                        <div data-i18n="Basic Inputs">Phân khúc khách hàng</div>
                     </a>
                 </li>
             </ul>
