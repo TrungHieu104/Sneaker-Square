@@ -11,7 +11,7 @@ class SeedSampleData extends Command
 {
     protected $signature = 'sample:seed';
 
-    protected $description = 'Nạp dữ liệu hành vi mẫu (lượt xem, giỏ hàng, đơn, email nhắc), thay bản mẫu cũ nếu có (chỉ chạy ở local)';
+    protected $description = 'Nạp dữ liệu hành vi mẫu cho trang phân tích, thay bản mẫu cũ nếu có (chỉ chạy ở local)';
 
     public function handle(): int
     {
@@ -27,6 +27,7 @@ class SeedSampleData extends Command
             ['Phiên hành vi', DB::table('user_events')->where('session_id', 'like', SampleData::SESSION_PREFIX.'%')->distinct()->count('session_id')],
             ['Sự kiện', DB::table('user_events')->where('session_id', 'like', SampleData::SESSION_PREFIX.'%')->count()],
             ['Tài khoản khách mẫu', DB::table('users')->where('email', 'like', '%'.SampleData::EMAIL_DOMAIN)->count()],
+            ['Đơn hàng thành công', DB::table('order')->where('order_code', 'like', SampleData::ORDER_PREFIX.'%')->count()],
             ['Email nhắc giỏ hàng', DB::table('cart_reminders')
                 ->whereIn('user_id', DB::table('users')->where('email', 'like', '%'.SampleData::EMAIL_DOMAIN)->select('user_id'))
                 ->count()],

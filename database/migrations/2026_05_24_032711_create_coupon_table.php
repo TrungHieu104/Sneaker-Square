@@ -18,6 +18,8 @@ return new class extends Migration
             $table->unsignedInteger('coupon_quantity')->nullable();
             $table->unsignedInteger('coupon_used')->default(0);
             $table->boolean('coupon_condition');
+            $table->unsignedBigInteger('coupon_user_id')->nullable();
+            $table->foreign('coupon_user_id')->references('user_id')->on('users')->nullOnDelete()->cascadeOnUpdate();
             $table->timestamp('coupon_date')->useCurrent();
             $table->date('coupon_start');
             $table->date('coupon_end');

@@ -172,7 +172,9 @@
                                                 data-user="{{ $gio['user']->user_id }}"
                                                 data-name="{{ $gio['user']->name }}"
                                                 data-value="{{ $gio['value'] }}"
-                                                data-min-order="{{ $gio['minOrder'] }}">
+                                                data-min-order="{{ $gio['minOrder'] }}"
+                                                data-percent="{{ $gio['suggestedPercent'] }}"
+                                                data-segment="{{ $gio['segment']?->label() }}">
                                                 Tặng mã
                                             </button>
                                         @else
@@ -217,6 +219,7 @@
                                         value="{{ old('coupon_percent', $config['coupon_percent']) }}">
                                     <span class="input-group-text">%</span>
                                 </div>
+                                <div class="form-text" data-field="percent-hint"></div>
                             </div>
                             <div class="col-6">
                                 <label class="form-label" for="tm-max">Giảm tối đa</label>
@@ -292,6 +295,7 @@
             const o = (ten) => form.elements[ten];
             const dong = (v) => new Intl.NumberFormat('vi-VN').format(v) + 'đ';
             const modal = bootstrap.Modal.getOrCreateInstance(hop);
+            const mucChung = o('coupon_percent').value;
 
             // What the customer will read, so the admin sees the deal before sending it.
             function tomTat() {
@@ -314,6 +318,8 @@
                 if (!giuGiaTri) {
                     o('min_order').value = nut.dataset.minOrder;
                     o('max_discount').value = '';
+                    o('coupon_percent').value = nut.dataset.percent || mucChung;
+                    hop.querySelector('[data-field="percent-hint"]').textContent = nut.dataset.segment ? 'Gợi ý theo nhóm ' + nut.dataset.segment : '';
                 }
                 tomTat();
                 modal.show();

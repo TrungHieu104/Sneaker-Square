@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Enums\CustomerSegment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Backend\CartReminderSettingRequest;
+use App\Http\Requests\Backend\SegmentOfferSettingRequest;
 use App\Http\Requests\Backend\ShopInfoRequest;
 use App\Http\Requests\Backend\ShopSettingRequest;
 use App\Services\ShopSettings;
@@ -32,6 +34,8 @@ class ShopSettingController extends Controller
             'paymentWindow' => $settings->paymentWindowMinutes(),
             'shopInfo' => $settings->shopInfo(),
             'cartReminder' => $settings->cartReminder(),
+            'cashbackEnabled' => $settings->segmentCashbackEnabled(),
+            'segmentOffers' => collect(CustomerSegment::cases())->mapWithKeys(fn (CustomerSegment $segment) => [$segment->value => $settings->segmentOffer($segment)])->all(),
         ]);
     }
 
@@ -57,6 +61,16 @@ class ShopSettingController extends Controller
         Session::flash('iconMessage', 'success');
 
         return redirect()->to(route('setting.edit').'#tab-chung')->with('message', 'Đã lưu thông tin cửa hàng.');
+    }
+
+    public function updateSegmentOffers(SegmentOfferSettingRequest $request, ShopSettings $settings): RedirectResponse
+    {
+        $settings->setSegmentOffers($request->offers());
+        $settings->setSegmentCashbackEnabled($request->boolean('cashback_enabled'));
+
+        Session::flash('iconMessage', 'success');
+
+        return redirect()->to(route('setting.edit').'#tab-phan-khuc')->with('message', 'Đã lưu ưu đãi theo phân khúc.');
     }
 
     public function updateCartReminder(CartReminderSettingRequest $request, ShopSettings $settings): RedirectResponse

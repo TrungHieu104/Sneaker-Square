@@ -2,10 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Enums\OrderStatus;
 use App\Models\CartReminderModel;
 use App\Models\UserEventModel as Event;
+use App\Services\Analytics\EventAggregator;
 use App\Services\CartReminders\AbandonedCarts;
 use App\Services\CartReminders\CartLines;
+use App\Services\CustomerSegments\SegmentCalculator;
 use App\Services\SampleData;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -23,8 +26,9 @@ use Illuminate\Support\Facades\Hash;
  *
  * The sessions walk the real catalogue: products are picked in proportion to
  * their view counts, each shopper has one foot size, and a pair the shop never
- * stocked turns into a stock_out_hit just as it would on the page. Nothing here
- * writes an order or touches stock.
+ * stocked turns into a stock_out_hit just as it would on the page. The completed
+ * orders exist so customers have a history to be segmented by; they touch
+ * neither stock nor the revenue report.
  */
 class SampleDataSeeder extends Seeder
 {
@@ -66,6 +70,25 @@ class SampleDataSeeder extends Seeder
     private const CHECKOUT_RATE = 50;
 
     private const PURCHASE_RATE = 55;
+
+    private const SAMPLE_DELIVERY_FEE = 30_000;
+
+    /**
+     * Past buying habits, one per sample customer in this order: how many
+     * shoppers, how many orders each, how many days ago the last one was, and
+     * whether they buy from the cheap end of the catalogue.
+     *
+     * @var list<array{customers: int, orders: array{int, int}, lastOrderDays: array{int, int}, cheap: bool}>
+     */
+    private const ORDER_HABITS = [
+        ['customers' => 7, 'orders' => [4, 6], 'lastOrderDays' => [1, 20], 'cheap' => false],
+        ['customers' => 14, 'orders' => [1, 1], 'lastOrderDays' => [1, 25], 'cheap' => false],
+        ['customers' => 22, 'orders' => [2, 3], 'lastOrderDays' => [30, 90], 'cheap' => false],
+        ['customers' => 6, 'orders' => [4, 6], 'lastOrderDays' => [110, 150], 'cheap' => false],
+        ['customers' => 11, 'orders' => [1, 1], 'lastOrderDays' => [180, 300], 'cheap' => true],
+    ];
+
+    private const DAYS_BETWEEN_ORDERS = [15, 45];
 
     private const SIMILAR_CLICK_RATE = 18;
 
@@ -147,6 +170,16 @@ class SampleDataSeeder extends Seeder
         $this->flush();
         DB::table('cart_reminders')->insert($this->reminders);
         $this->remindOpenCarts();
+        $this->placePastOrders();
+        app(SegmentCalculator::class)->rebuild();
+
+        // The report reads the daily tables, which the nightly run would only
+        // fill for yesterday.
+        $aggregator = app(EventAggregator::class);
+
+        for ($day = Carbon::today()->subDays(self::DAYS); $day->lte(Carbon::today()); $day->addDay()) {
+            $aggregator->aggregate($day);
+        }
     }
 
     private function loadCatalogue(): void
@@ -515,6 +548,64 @@ class SampleDataSeeder extends Seeder
         DB::table('users')->insert($rows);
 
         return DB::table('users')->where('email', 'like', '%'.SampleData::EMAIL_DOMAIN)->pluck('user_id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    private function placePastOrders(): void
+    {
+        $sellable = $this->products->filter(fn (object $product) => $product->pro_price > 0 && isset($this->stock[$product->pro_id]))->sortBy('pro_price')->values();
+        $cheap = $sellable->take(max(1, intdiv($sellable->count(), 4)));
+        $customers = DB::table('users')->whereIn('user_id', $this->customers)->orderBy('user_id')->get(['user_id', 'name', 'email'])->all();
+        $number = 0;
+
+        foreach (self::ORDER_HABITS as $habit) {
+            foreach (array_splice($customers, 0, $habit['customers']) as $customer) {
+                $completed = now()->subDays(mt_rand(...$habit['lastOrderDays']));
+
+                for ($left = mt_rand(...$habit['orders']); $left > 0; $left--) {
+                    $product = $this->pick(($habit['cheap'] ? $cheap : $sellable)->all());
+                    $this->placeOrder($customer, $product, $completed, ++$number);
+                    $completed = $completed->copy()->subDays(mt_rand(...self::DAYS_BETWEEN_ORDERS));
+                }
+            }
+        }
+    }
+
+    private function placeOrder(object $customer, object $product, Carbon $completed, int $number): void
+    {
+        [$colorId, $sizeId] = array_map(intval(...), explode('-', (string) array_key_first($this->stock[$product->pro_id])));
+        $price = (int) $product->pro_price;
+
+        $orderId = DB::table('order')->insertGetId([
+            'order_code' => SampleData::ORDER_PREFIX.sprintf('%05d', $number),
+            'order_name' => $customer->name,
+            'order_email' => $customer->email,
+            'order_address' => '1 Võ Văn Ngân',
+            'order_local' => 'Thủ Đức, TP.HCM',
+            'order_phone' => '0900000000',
+            'order_delivery_fee' => self::SAMPLE_DELIVERY_FEE,
+            'order_total' => $price + self::SAMPLE_DELIVERY_FEE,
+            'order_payment' => 'cod',
+            'order_payment_status' => 1,
+            'order_payment_time' => $completed,
+            'order_delivered_at' => $completed,
+            'order_completed_at' => $completed,
+            'order_date' => $completed->toDateString(),
+            'order_status' => OrderStatus::Completed->value,
+            'user_id' => $customer->user_id,
+            'created_at' => $completed,
+            'updated_at' => $completed,
+        ], 'order_id');
+
+        DB::table('order_details')->insert([
+            'order_id' => $orderId,
+            'pro_id' => $product->pro_id,
+            'pro_name' => $product->pro_name,
+            'size' => $this->sizes[$sizeId] ?? null,
+            'size_id' => $sizeId ?: null,
+            'color_id' => $colorId ?: null,
+            'price' => $price,
+            'quantity' => 1,
+        ]);
     }
 
     /**

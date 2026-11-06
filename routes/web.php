@@ -2,12 +2,15 @@
 
 use App\Http\Controllers\Backend\AboutAdminController;
 use App\Http\Controllers\Backend\AuthAdminController;
+use App\Http\Controllers\Backend\BehaviourController;
 use App\Http\Controllers\Backend\BlogAdminController;
 use App\Http\Controllers\Backend\BlogCateController;
+use App\Http\Controllers\Backend\CampaignController;
 use App\Http\Controllers\Backend\CateSlideAdminController;
 use App\Http\Controllers\Backend\CommentAdminController;
 use App\Http\Controllers\Backend\ContactFormController;
 use App\Http\Controllers\Backend\CouponAdminController;
+use App\Http\Controllers\Backend\CustomerSegmentController;
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\FaqAdminController;
 use App\Http\Controllers\Backend\GhnSimulatorController;
@@ -25,6 +28,7 @@ use App\Http\Controllers\Backend\TagsAdminController;
 use App\Http\Controllers\Backend\WalletAdminController;
 use App\Http\Controllers\Frontend\AuthUserController;
 use App\Http\Controllers\Frontend\BlogController;
+use App\Http\Controllers\Frontend\CampaignLinkController;
 use App\Http\Controllers\Frontend\CartController;
 use App\Http\Controllers\Frontend\CartReminderController;
 use App\Http\Controllers\Frontend\CheckoutController;
@@ -117,6 +121,10 @@ Route::group(['middleware' => 'web'], function () {
     Route::get('/nhac-gio-hang/{token}/da-mo', [CartReminderController::class, 'opened'])->name('cart.reminder.opened')->middleware('doNotCacheResponse');
     Route::get('/nhac-gio-hang/{token}/huy-nhan', [CartReminderController::class, 'confirmUnsubscribe'])->name('cart.reminder.unsubscribe')->middleware('doNotCacheResponse');
     Route::post('/nhac-gio-hang/{token}/huy-nhan', [CartReminderController::class, 'unsubscribe'])->name('cart.reminder.unsubscribe.confirm');
+    Route::get('/uu-dai/{token}', [CampaignLinkController::class, 'visit'])->name('campaign.visit')->middleware('doNotCacheResponse');
+    Route::get('/uu-dai/{token}/da-mo', [CampaignLinkController::class, 'opened'])->name('campaign.opened')->middleware('doNotCacheResponse');
+    Route::get('/uu-dai/{token}/huy-nhan', [CampaignLinkController::class, 'confirmUnsubscribe'])->name('campaign.unsubscribe')->middleware('doNotCacheResponse');
+    Route::post('/uu-dai/{token}/huy-nhan', [CampaignLinkController::class, 'unsubscribe'])->name('campaign.unsubscribe.confirm');
 
     // Route Payment
     Route::get('/thanh-toan', [CheckoutController::class, 'checkout'])->name('product.checkout')->middleware('doNotCacheResponse');
@@ -271,6 +279,11 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
 
     // Visitor
     Route::get('/statistical', [DashboardController::class, 'statistical'])->name('admin.statistical')->middleware($can['visitors']);
+    Route::get('/behaviour', [BehaviourController::class, 'index'])->name('admin.behaviour')->middleware($can['visitors']);
+    Route::get('/phan-khuc', [CustomerSegmentController::class, 'index'])->name('admin.segments')->middleware($can['visitors']);
+    Route::get('/phan-khuc/{segment}', [CustomerSegmentController::class, 'show'])->name('admin.segments.show')->middleware($can['visitors']);
+    Route::get('/phan-khuc/{segment}/gui-uu-dai', [CampaignController::class, 'create'])->name('admin.campaigns.create')->middleware([$can['visitors'], $can['coupons']]);
+    Route::post('/phan-khuc/{segment}/gui-uu-dai', [CampaignController::class, 'store'])->name('admin.campaigns.store')->middleware([$can['visitors'], $can['coupons']]);
 
     // Product
     Route::resource('product', (ProductAdminController::class))->middleware($can['products']);
@@ -446,6 +459,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     Route::put('/cau-hinh', [ShopSettingController::class, 'update'])->name('setting.update')->middleware($can['orders']);
     Route::put('/cau-hinh/chung', [ShopSettingController::class, 'updateGeneral'])->name('setting.update_general')->middleware($can['shopInfo']);
     Route::put('/cau-hinh/nhac-gio-hang', [ShopSettingController::class, 'updateCartReminder'])->name('setting.update_cart_reminder')->middleware($can['orders']);
+    Route::put('/cau-hinh/phan-khuc', [ShopSettingController::class, 'updateSegmentOffers'])->name('setting.update_segments')->middleware($can['orders']);
 
     // Hình ảnh Slide
     Route::resource('promotion', (PromotionAdminController::class))->middleware($can['slides']);

@@ -30,6 +30,7 @@ class ClearSampleData extends Command
         $this->table(['Đã xoá', 'Số dòng'], [
             ['Sự kiện hành vi', $removed['events']],
             ['Email nhắc giỏ hàng', $removed['reminders']],
+            ['Đơn hàng thành công', $removed['orders']],
             ['Tài khoản khách mẫu', $removed['users']],
         ]);
 

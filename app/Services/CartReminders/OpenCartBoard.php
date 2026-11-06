@@ -2,8 +2,10 @@
 
 namespace App\Services\CartReminders;
 
+use App\Enums\CustomerSegment;
 use App\Models\CartReminderModel;
 use App\Models\ColorModel;
+use App\Models\CustomerSegmentModel;
 use App\Models\ProductModel;
 use App\Models\SizeModel;
 use App\Models\UserModel;
@@ -41,7 +43,7 @@ class OpenCartBoard
     ) {}
 
     /**
-     * @return list<array{cart: AbandonedCart, user: UserModel, lines: list<array{product: ProductModel, size_id: ?int, color_id: ?int, size: ?string, color: ?string, quantity: int, price: int}>, value: int, reminders: Collection<int, CartReminderModel>, optedOut: bool, lastOffer: ?Carbon, reasons: list<string>, minOrder: int}>
+     * @return list<array{cart: AbandonedCart, user: UserModel, lines: list<array{product: ProductModel, size_id: ?int, color_id: ?int, size: ?string, color: ?string, quantity: int, price: int}>, value: int, reminders: Collection<int, CartReminderModel>, optedOut: bool, lastOffer: ?Carbon, reasons: list<string>, minOrder: int, segment: ?CustomerSegment, suggestedPercent: ?int}>
      */
     public function rows(string $sort = self::SORT_VALUE, bool $suggestedOnly = false): array
     {
@@ -59,6 +61,7 @@ class OpenCartBoard
             ->selectRaw('user_id, max(sent_at) as last_sent')
             ->pluck('last_sent', 'user_id');
         $optedOut = $this->carts->optedOut();
+        $segments = CustomerSegmentModel::whereIn('user_id', $userIds)->pluck('segment', 'user_id');
         $rows = [];
 
         foreach ($carts as $cart) {
@@ -77,6 +80,8 @@ class OpenCartBoard
             ];
             $row['reasons'] = $this->reasons($row, $config);
             $row['minOrder'] = intdiv($row['value'] * self::MIN_ORDER_SHARE, 100 * self::MIN_ORDER_STEP) * self::MIN_ORDER_STEP;
+            $row['segment'] = $segments->get($cart->userId);
+            $row['suggestedPercent'] = $row['segment'] ? $this->settings->segmentOffer($row['segment'])['discount'] : null;
 
             if (! $suggestedOnly || $row['reasons'] !== []) {
                 $rows[] = $row;

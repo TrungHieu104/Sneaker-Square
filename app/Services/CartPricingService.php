@@ -7,6 +7,7 @@ use App\Models\CouponModel;
 use App\Models\ProductModel;
 use App\Models\SizeModel;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Works out every amount on an order from the data in the database.
@@ -16,6 +17,8 @@ use Illuminate\Support\Carbon;
  */
 class CartPricingService
 {
+    public const NOT_YOUR_COUPON = 'Mã giảm giá này không dành cho tài khoản này.';
+
     /**
      * The price a product actually sells at, mirroring what product_detail
      * displays.
@@ -124,6 +127,15 @@ class CartPricingService
     }
 
     /**
+     * A guest may hold someone's coupon, as the email's link works logged out;
+     * it is judged again the moment there is an account to judge it against.
+     */
+    public function couponBelongsToAnother(CouponModel $coupon): bool
+    {
+        return $coupon->coupon_user_id !== null && Auth::check() && (int) $coupon->coupon_user_id !== (int) Auth::id();
+    }
+
+    /**
      * Why the coupon cannot be used on goods worth $subtotal, in the words the
      * customer is shown, or null when it can.
      */
@@ -133,6 +145,10 @@ class CartPricingService
 
         if (! $fresh) {
             return 'Opps!!! Mã giảm giá này không khả dụng.';
+        }
+
+        if ($this->couponBelongsToAnother($fresh)) {
+            return self::NOT_YOUR_COUPON;
         }
 
         if ($fresh->coupon_quantity <= 0) {

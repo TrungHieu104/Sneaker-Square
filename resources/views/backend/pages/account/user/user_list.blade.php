@@ -10,6 +10,46 @@
     <div class="card mb-4 card-border-top">
         <div class="d-flex justify-content-between align-items-center">
             <h5 class="card-header">Quản lý tài khoản</h5>
+            @php
+                $dangLoc = ($search !== '' ? 1 : 0) + ($filter !== '' ? 1 : 0);
+            @endphp
+            <div class="dropdown ms-auto" id="bo-loc">
+                <button type="button" class="btn btn-sm btn-icon position-relative {{ $dangLoc ? 'btn-outline-primary' : 'btn-outline-secondary' }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="Lọc danh sách" title="Lọc">
+                    <i class="bx bx-filter-alt"></i>
+                    @if ($dangLoc)
+                        <span class="badge rounded-pill bg-primary position-absolute top-0 start-100 translate-middle" style="font-size: .625rem; padding: .2em .45em;" data-so-dieu-kien="{{ $dangLoc }}">{{ $dangLoc }}</span>
+                    @endif
+                </button>
+                <div class="dropdown-menu dropdown-menu-end p-3" style="width: 320px;">
+                    <form method="GET" action="{{ route('account.user') }}">
+                        {{-- From the URL, not $orderType: that one is already flipped for the column headers. --}}
+                        @if (request()->filled('sort-by'))
+                            <input type="hidden" name="sort-by" value="{{ request('sort-by') }}">
+                            <input type="hidden" name="sort-type" value="{{ request('sort-type', 'asc') }}">
+                        @endif
+                        <div class="mb-3">
+                            <label class="form-label" for="loc-tim-kiem">Tên hoặc email</label>
+                            <input type="search" class="form-control" id="loc-tim-kiem" name="tim-kiem" value="{{ $search }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="loc-phan-khuc">Phân khúc</label>
+                            <select class="form-select" id="loc-phan-khuc" name="phan-khuc">
+                                <option value="">Tất cả</option>
+                                @foreach (\App\Enums\CustomerSegment::cases() as $phanKhuc)
+                                    <option value="{{ $phanKhuc->value }}" @selected($filter === $phanKhuc->value)>{{ $phanKhuc->label() }}</option>
+                                @endforeach
+                                <option value="{{ \App\Http\Controllers\Backend\AuthAdminController::NOT_SEGMENTED }}" @selected($filter === \App\Http\Controllers\Backend\AuthAdminController::NOT_SEGMENTED)>Chưa mua</option>
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            @if ($dangLoc)
+                                <a href="{{ route('account.user') }}" class="btn btn-sm btn-outline-secondary">Xoá lọc</a>
+                            @endif
+                            <button type="submit" class="btn btn-sm btn-primary">Áp dụng</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
             {{-- <div class="px-4">
                 <a href="" class="btn btn-success">Thêm mới &nbsp;<i class="bi bi-plus-circle"></i></a>
             </div> --}}
@@ -33,22 +73,18 @@
                         <tr>
                             <th class="text-center" style="width: 40px;">STT</th>
                             <th class="text-center dx-info">
-                                <a class="tab-sort" href="?sort-by=name&sort-type={{ $orderBy === 'name' ? $orderType : 'desc' }}">
+                                <a class="tab-sort" href="{{ request()->fullUrlWithQuery(['sort-by' => 'name', 'sort-type' => $orderBy === 'name' ? $orderType : 'desc', 'page' => null]) }}">
                                     Họ tên
                                 </a>
                             </th>
                             <th class="text-center" style="width: 50px;">
-                                <a class="tab-sort" href="?sort-by=email&sort-type={{ $orderBy === 'email' ? $orderType : 'desc' }}">
+                                <a class="tab-sort" href="{{ request()->fullUrlWithQuery(['sort-by' => 'email', 'sort-type' => $orderBy === 'email' ? $orderType : 'desc', 'page' => null]) }}">
                                     Email
                                 </a>
                             </th>
+                            <th class="text-center dx-res" style="width: 60px;">Phân khúc</th>
                             <th class="text-center dx-res" style="width: 60px;">
-                                <a class="tab-sort" href="?sort-by=user_role&sort-type={{ $orderBy === 'user_role' ? $orderType : 'desc' }}">
-                                    Vai trò
-                                </a>
-                            </th>
-                            <th class="text-center dx-res" style="width: 60px;">
-                                <a class="tab-sort" href="?sort-by=user_status&sort-type={{ $orderBy === 'user_status' ? $orderType : 'desc' }}">
+                                <a class="tab-sort" href="{{ request()->fullUrlWithQuery(['sort-by' => 'user_status', 'sort-type' => $orderBy === 'user_status' ? $orderType : 'desc', 'page' => null]) }}">
                                     Trạng thái
                                 </a>
                             </th>
@@ -79,10 +115,10 @@
                                             {{$data->email}}
                                         </td>
                                         <td class="text-center">
-                                            @if($data->user_role==0)
-                                                <span style="color: green">Khách hàng</span>
+                                            @if ($data->segment)
+                                                <span class="badge {{ $data->segment->segment->badgeClass() }}" style="text-transform: none; font-size: .8125rem;">{{ $data->segment->segment->label() }}</span>
                                             @else
-                                                <span style="color: red">Quản trị viên</span>
+                                                <span class="badge bg-label-dark" style="text-transform: none; font-size: .8125rem;">Chưa mua</span>
                                             @endif
                                         </td>
                                         <td class="text-center">

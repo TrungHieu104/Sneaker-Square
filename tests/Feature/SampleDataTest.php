@@ -9,6 +9,7 @@ use App\Models\UserEventModel as Event;
 use App\Models\UserModel;
 use App\Services\SampleData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
@@ -54,6 +55,7 @@ class SampleDataTest extends TestCase
         $this->assertSame(Event::count(), $this->sampleEvents());
         $this->assertSame(60, $this->sampleUsers());
         $this->assertSame(0, Event::where('user_id', $this->customer->user_id)->count(), 'Không gắn lịch sử mẫu vào khách thật');
+        $this->assertGreaterThan(0, DB::table('event_daily_totals')->count(), 'Số liệu tổng hợp có ngay sau khi nạp');
     }
 
     public function test_nap_lai_thay_ban_cu_chu_khong_nhan_doi(): void
@@ -91,6 +93,7 @@ class SampleDataTest extends TestCase
         $this->assertSame(0, CartReminderModel::count());
         $this->assertSame([$real->event_id], Event::pluck('event_id')->all());
         $this->assertNotNull($this->customer->fresh());
+        $this->assertSame(1, (int) DB::table('event_daily_totals')->sum('events'), 'Số liệu tổng hợp được tính lại chỉ còn dữ liệu thật');
     }
 
     public function test_tai_khoan_mau_da_co_don_that_thi_duoc_giu_lai(): void

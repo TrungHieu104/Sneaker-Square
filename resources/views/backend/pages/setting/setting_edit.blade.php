@@ -14,8 +14,10 @@
         // failed to save the order form, whose errors would be out of sight.
         $loiDonHang = $errors->hasAny(['auto_complete_days', 'return_days', 'payment_window_minutes']);
         $loiNhacGio = $errors->hasAny(array_keys(ShopSettings::CART_REMINDER));
-        $moTabChung = $quanLyThongTin && ! ($quanLyDon && ($loiDonHang || $loiNhacGio));
+        $loiPhanKhuc = collect($errors->keys())->contains(fn (string $truong) => str_starts_with($truong, 'offers.'));
+        $moTabChung = $quanLyThongTin && ! ($quanLyDon && ($loiDonHang || $loiNhacGio || $loiPhanKhuc));
         $moTabNhacGio = $quanLyDon && $loiNhacGio;
+        $moTabPhanKhuc = $quanLyDon && $loiPhanKhuc;
     @endphp
 
     <h4 class="fw-bold py-3 mb-3">Cấu hình hệ thống</h4>
@@ -31,7 +33,7 @@
         @endif
         @if ($quanLyDon)
             <li class="nav-item">
-                <button type="button" class="nav-link {{ $moTabChung || $moTabNhacGio ? '' : 'active' }}" data-bs-toggle="tab"
+                <button type="button" class="nav-link {{ $moTabChung || $moTabNhacGio || $moTabPhanKhuc ? '' : 'active' }}" data-bs-toggle="tab"
                     data-bs-target="#tab-don-hang" role="tab">
                     <i class="bx bx-printer me-1"></i> Đơn hàng
                 </button>
@@ -40,6 +42,12 @@
                 <button type="button" class="nav-link {{ $moTabNhacGio ? 'active' : '' }}" data-bs-toggle="tab"
                     data-bs-target="#tab-nhac-gio-hang" role="tab">
                     <i class="bx bx-cart me-1"></i> Nhắc giỏ hàng
+                </button>
+            </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link {{ $moTabPhanKhuc ? 'active' : '' }}" data-bs-toggle="tab"
+                    data-bs-target="#tab-phan-khuc" role="tab">
+                    <i class="bx bx-group me-1"></i> Phân khúc khách hàng
                 </button>
             </li>
         @endif
@@ -130,7 +138,7 @@
         @endif
 
         @if ($quanLyDon)
-            <div class="tab-pane fade {{ $moTabChung || $moTabNhacGio ? '' : 'show active' }}" id="tab-don-hang" role="tabpanel">
+            <div class="tab-pane fade {{ $moTabChung || $moTabNhacGio || $moTabPhanKhuc ? '' : 'show active' }}" id="tab-don-hang" role="tabpanel">
                 <form action="{{ route('setting.update') }}" method="post">
                     @csrf
                     @method('PUT')
@@ -317,12 +325,134 @@
                     </div>
                 </form>
             </div>
+
+            <div class="tab-pane fade {{ $moTabPhanKhuc ? 'show active' : '' }}" id="tab-phan-khuc" role="tabpanel">
+                <form action="{{ route('setting.update_segments') }}" method="post" id="form-phan-khuc">
+                    @csrf
+                    @method('PUT')
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-6 mb-3 d-flex align-items-center">
+                                    <h5 class="fs-4 text-primary my-0">Ưu đãi theo phân khúc</h5>
+                                </div>
+                                <div class="col-lg-6 mb-3 d-flex justify-content-end gap-3">
+                                    <button type="submit" class="btn btn-success px-5">Lưu</button>
+                                </div>
+                            </div>
+                            <div class="border rounded px-3 py-2 mb-3 d-flex justify-content-between align-items-center gap-4">
+                                <label class="fw-semibold mb-0" for="cashback-enabled">
+                                    Hoàn tiền vào ví SPay
+                                    <i class="bx bx-help-circle text-muted" data-bs-toggle="tooltip" title="Tắt thì đơn mới không được hoàn. Đơn đã đặt vẫn được trả theo mức đã chốt."></i>
+                                </label>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="cashback-enabled" name="cashback_enabled" value="1" style="width: 2.75em; height: 1.5em;" @checked(old('cashback_enabled', $errors->any() ? null : $cashbackEnabled))>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Nhóm</th>
+                                            <th style="width: 210px;">Mức giảm gợi ý <i class="bx bx-help-circle text-muted" data-bs-toggle="tooltip" title="Mức điền sẵn khi gửi ưu đãi hoặc tặng mã, vẫn đổi được từng lần."></i></th>
+                                            <th style="width: 170px;">Hoàn vào ví <i class="bx bx-help-circle text-muted" data-bs-toggle="tooltip" title="Cộng vào ví khi đơn hết hạn trả hàng mà không có yêu cầu trả. Mức hoàn chốt lúc khách đặt đơn."></i></th>
+                                            <th style="width: 340px;">Hoàn tối đa mỗi đơn</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (\App\Enums\CustomerSegment::cases() as $nhom)
+                                            @php
+                                                $uuDai = $segmentOffers[$nhom->value];
+                                                $ten = 'offers['.$nhom->value.']';
+                                                $truong = 'offers.'.$nhom->value.'.';
+                                                $coTran = old($truong.'cap_enabled', $errors->any() ? null : $uuDai['cap'] !== null);
+                                            @endphp
+                                            <tr class="js-uu-dai">
+                                                <td><span class="badge {{ $nhom->badgeClass() }}" style="text-transform: none; font-size: .8125rem;">{{ $nhom->label() }}</span></td>
+                                                <td>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" class="form-control" name="{{ $ten }}[discount]" aria-label="Mức giảm gợi ý"
+                                                            value="{{ old($truong.'discount', $uuDai['discount']) }}">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                    @error($truong.'discount') <small class="text-danger fst-italic">{{ $message }}</small> @enderror
+                                                </td>
+                                                <td class="js-cot-hoan">
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" class="form-control js-hoan" name="{{ $ten }}[cashback]" aria-label="Hoàn vào ví"
+                                                            value="{{ old($truong.'cashback', $uuDai['cashback']) }}">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                    @error($truong.'cashback') <small class="text-danger fst-italic">{{ $message }}</small> @enderror
+                                                </td>
+                                                <td class="js-cot-hoan">
+                                                    <span class="text-muted small js-khong-hoan">Không hoàn</span>
+                                                    <div class="d-flex align-items-center gap-3 js-tran">
+                                                        <div class="form-check form-switch mb-0">
+                                                            <input class="form-check-input js-co-tran" type="checkbox" id="tran-{{ $nhom->value }}" name="{{ $ten }}[cap_enabled]" value="1" @checked($coTran)>
+                                                            <label class="form-check-label small text-nowrap" for="tran-{{ $nhom->value }}">Giới hạn</label>
+                                                        </div>
+                                                        <div class="input-group input-group-sm">
+                                                            <input type="number" class="form-control js-muc-tran" name="{{ $ten }}[cap]" step="1000" aria-label="Hoàn tối đa mỗi đơn"
+                                                                placeholder="Không giới hạn" value="{{ old($truong.'cap', $uuDai['cap']) }}">
+                                                            <span class="input-group-text">đ</span>
+                                                        </div>
+                                                    </div>
+                                                    @error($truong.'cap') <small class="text-danger fst-italic">{{ $message }}</small> @enderror
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
         @endif
     </div>
 @endsection
 
 @push('script-backend')
     <script>
+        // A group paid nothing back has no ceiling to set; a ceiling switched
+        // off sends no amount.
+        document.querySelectorAll('.js-uu-dai').forEach(function (hang) {
+            const hoan = hang.querySelector('.js-hoan');
+            const coTran = hang.querySelector('.js-co-tran');
+            const mucTran = hang.querySelector('.js-muc-tran');
+
+            function capNhat() {
+                const coHoan = +hoan.value > 0;
+                hang.querySelector('.js-khong-hoan').classList.toggle('d-none', coHoan);
+                hang.querySelector('.js-tran').classList.toggle('d-none', !coHoan);
+                hang.querySelector('.js-tran').classList.toggle('d-flex', coHoan);
+                mucTran.disabled = !coTran.checked;
+            }
+
+            hoan.addEventListener('input', capNhat);
+            coTran.addEventListener('change', capNhat);
+            capNhat();
+        });
+
+        // Inert rather than disabled: a disabled field is not submitted, and the
+        // percentages have to survive being switched off.
+        (function () {
+            const congTac = document.querySelector('#cashback-enabled');
+
+            if (!congTac) return;
+
+            function capNhatCongTac() {
+                document.querySelectorAll('.js-cot-hoan').forEach(function (o) {
+                    o.inert = !congTac.checked;
+                    o.style.opacity = congTac.checked ? '' : '.45';
+                });
+            }
+
+            congTac.addEventListener('change', capNhatCongTac);
+            capNhatCongTac();
+        })();
+
         // Each form comes back with its own tab in the address, so saving the
         // order rules does not land the admin on the shop tab that leads.
         if (location.hash && window.bootstrap) {

@@ -701,6 +701,13 @@
                                         VNĐ
                                     </h4>
                                 </div>
+                                @php
+                                    $hoanTien = app(\App\Services\CustomerSegments\Cashback::class);
+                                    $mucHoan = $hoanTien->quote((int) auth()->id(), (int) $giatri_donhang - (int) ($discount ?? 0));
+                                @endphp
+                                @if ($mucHoan)
+                                    @include('frontend.pages.product.partials.cashback_line', ['quote' => $mucHoan, 'days' => $hoanTien->payoutDays()])
+                                @endif
                                 <input type="hidden" id="order-total" value="{{ (int) $thanhtien }}">
                             </div>
                             @php

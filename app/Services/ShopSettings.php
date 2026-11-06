@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CustomerSegment;
 use App\Models\SettingModel;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -87,6 +88,80 @@ class ShopSettings
         'offer_min_value' => [0, 100_000_000],
         'offer_cooldown_days' => [0, 365],
     ];
+
+    /**
+     * What each segment is offered: the coupon percent a campaign or a hand
+     * given coupon starts from, the share of an order paid back into the
+     * wallet, and the most one order is paid back. A null cap means no ceiling.
+     *
+     * @var array<string, array{discount: int, cashback: int, cap: ?int}>
+     */
+    public const SEGMENT_OFFER_DEFAULTS = [
+        'loyal' => ['discount' => 5, 'cashback' => 5, 'cap' => 100_000],
+        'promising' => ['discount' => 10, 'cashback' => 2, 'cap' => 50_000],
+        'regular' => ['discount' => 10, 'cashback' => 0, 'cap' => null],
+        'at_risk' => ['discount' => 15, 'cashback' => 0, 'cap' => null],
+        'lost' => ['discount' => 10, 'cashback' => 0, 'cap' => null],
+    ];
+
+    /**
+     * @var array<string, array{int, int}>
+     */
+    public const SEGMENT_OFFER_LIMITS = [
+        'discount' => [1, 30],
+        'cashback' => [0, 20],
+        'cap' => [1_000, 10_000_000],
+    ];
+
+    // Stored for "no ceiling", since an empty setting reads as never set.
+    private const NO_CAP = 0;
+
+    private const SEGMENT_CASHBACK_ENABLED = 'segments.cashback_enabled';
+
+    /**
+     * @return array{discount: int, cashback: int, cap: ?int}
+     */
+    public function segmentOffer(CustomerSegment $segment): array
+    {
+        $defaults = self::SEGMENT_OFFER_DEFAULTS[$segment->value];
+        $key = 'segments.'.$segment->value.'.';
+        [$minDiscount, $maxDiscount] = self::SEGMENT_OFFER_LIMITS['discount'];
+        [$minCashback, $maxCashback] = self::SEGMENT_OFFER_LIMITS['cashback'];
+        $cap = (int) $this->get($key.'cap', (string) ($defaults['cap'] ?? self::NO_CAP));
+
+        return [
+            'discount' => max($minDiscount, min($maxDiscount, (int) $this->get($key.'discount', (string) $defaults['discount']))),
+            'cashback' => max($minCashback, min($maxCashback, (int) $this->get($key.'cashback', (string) $defaults['cashback']))),
+            'cap' => $cap > self::NO_CAP ? $cap : null,
+        ];
+    }
+
+    /**
+     * Off until an admin turns it on, since every order it covers costs the
+     * shop money. Turning it off leaves the percentages in place for later.
+     */
+    public function segmentCashbackEnabled(): bool
+    {
+        return $this->get(self::SEGMENT_CASHBACK_ENABLED, '0') === '1';
+    }
+
+    public function setSegmentCashbackEnabled(bool $enabled): void
+    {
+        $this->put(self::SEGMENT_CASHBACK_ENABLED, $enabled ? '1' : '0');
+    }
+
+    /**
+     * @param  array<string, array{discount: int, cashback: int, cap: ?int}>  $offers  keyed by segment value
+     */
+    public function setSegmentOffers(array $offers): void
+    {
+        foreach ($offers as $segment => $offer) {
+            $key = 'segments.'.$segment.'.';
+            $this->put($key.'discount', (string) $offer['discount']);
+            $this->put($key.'cashback', (string) $offer['cashback']);
+            $this->put($key.'cap', (string) ($offer['cap'] ?? self::NO_CAP));
+        }
+    }
 
     /**
      * The coupon values are what an admin offering one by hand starts from:
