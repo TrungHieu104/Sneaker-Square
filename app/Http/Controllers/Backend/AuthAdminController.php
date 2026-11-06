@@ -77,7 +77,9 @@ class AuthAdminController extends Controller
     {
         $perpage = 10;
         [$orderBy, $orderType] = $this->listingSort($request, UserModel::class, 'user_id');
-        $keyword = $request->input('keyword');
+        // Not called `keyword`: the navbar script sends a page whose URL has an empty
+        // keyword back to the dashboard, and this form submits an empty box.
+        $search = trim((string) ($request->input('tim-kiem') ?: $request->input('keyword')));
         $searchableFields = ['name', 'email'];
 
         $filter = (string) $request->input('phan-khuc');
@@ -89,11 +91,11 @@ class AuthAdminController extends Controller
             $customers->whereHas('segment', fn ($row) => $row->where('segment', $segment->value));
         }
 
-        $account = $this->performSearch($customers, $keyword, $searchableFields)
+        $account = $this->performSearch($customers, $search, $searchableFields)
             ->paginate($perpage)
             ->withQueryString();
 
-        return view('backend.pages.account.user.user_list', compact('account', 'orderBy', 'orderType', 'filter'));
+        return view('backend.pages.account.user.user_list', compact('account', 'orderBy', 'orderType', 'filter', 'search'));
     }
 
     public function loginCheck(LoginRequest $request)
