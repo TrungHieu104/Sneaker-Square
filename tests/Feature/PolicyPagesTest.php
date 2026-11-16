@@ -196,6 +196,16 @@ class PolicyPagesTest extends TestCase
         $this->actingAs($this->admin())->post(route('policy.status', 999), ['policy-status' => 1])->assertNotFound();
     }
 
+    public function test_admin_khong_co_quyen_khong_bat_tat_duoc_chinh_sach(): void
+    {
+        $page = $this->policy('Chính sách giao hàng', 'Nội dung.');
+
+        $this->actingAs($this->admin(withPermission: false))
+            ->post(route('policy.status', $page->page_id), ['policy-status' => 0])
+            ->assertForbidden();
+        $this->assertSame(1, (int) $page->refresh()->page_hidden);
+    }
+
     public function test_thung_rac_xoa_tam_khoi_phuc_va_xoa_han(): void
     {
         $admin = $this->admin();

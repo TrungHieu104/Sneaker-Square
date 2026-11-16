@@ -408,7 +408,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     Route::get('/policies/restore-all', [PolicyAdminController::class, 'restoreAll'])->name('policy.restoreAll')->middleware($can['pages']);
     Route::get('/policy/delete/{encryptedPageId}', [PolicyAdminController::class, 'forceDelete'])->name('policy.delete')->middleware($can['pages']);
     Route::get('/policies/delete-all', [PolicyAdminController::class, 'deleteAll'])->name('policy.delete.all')->middleware($can['pages']);
-    Route::post('/policy-status/{id}', [PolicyAdminController::class, 'status'])->name('policy.status');
+    Route::post('/policy-status/{id}', [PolicyAdminController::class, 'status'])->name('policy.status')->middleware($can['pages']);
 
     // Giới thiệu
     Route::resource('about', AboutAdminController::class)->only(['index', 'update'])->middleware($can['about']);
