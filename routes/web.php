@@ -171,6 +171,7 @@ Route::group(['middleware' => 'web'], function () {
     // Route Policy
     Route::get('/chinh-sach/tra-hang-hoan-tien', [HomeController::class, 'returnPolicy'])->name('policy.return');
     Route::get('/chinh-sach/{page_slug}', [HomeController::class, 'policyDetail'])->name('policy.detail');
+    Route::get('/cau-hoi-thuong-gap', [HomeController::class, 'faq'])->name('faq.page');
 
     // Route Authorization
     Route::get('/dang-nhap', [AuthUserController::class, 'login'])->name('user.login');

@@ -30,6 +30,7 @@ class StorefrontPagesTest extends TestCase
             'giới thiệu' => ['about.page'],
             'liên hệ' => ['contact.page'],
             'chính sách trả hàng' => ['policy.return'],
+            'câu hỏi thường gặp' => ['faq.page'],
             'đăng nhập' => ['user.login'],
             'đăng ký' => ['user.register'],
             'quên mật khẩu' => ['user.forgot'],

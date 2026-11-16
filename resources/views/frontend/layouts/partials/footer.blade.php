@@ -8,6 +8,7 @@
                     <li class="mb-2"><a href="{{route('about.page')}}">Giới thiệu</a></li>
                     <li class="mb-2"><a href="{{route('contact.page')}}">Liên hệ</a></li>
                     <li class="mb-2"><a href="{{route('blog.page')}}">Bài viết</a></li>
+                    <li class="mb-2"><a href="{{ route('faq.page') }}">Câu hỏi thường gặp</a></li>
                 </ul>
             </div>
             <div class="col-lg-3 col-md-6 mb-3">

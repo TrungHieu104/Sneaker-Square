@@ -1,0 +1,137 @@
+/* The storefront FAQ page: group list on the left, questions on the right. */
+
+.faq-page .faq-search {
+    max-width: 480px;
+    margin: 0 auto;
+    border-radius: 999px;
+    padding: 10px 18px;
+}
+
+.faq-groups {
+    position: sticky;
+    top: 110px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #E6E8EB;
+    border-radius: 8px;
+    padding: 8px 0;
+    background: #fff;
+}
+
+.faq-groups a {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 16px;
+    color: #423F3E;
+    border-left: 3px solid transparent;
+}
+
+.faq-groups a:hover,
+.faq-groups a.is-current {
+    color: var(--color-primary);
+    border-left-color: var(--color-primary);
+}
+
+.faq-groups small {
+    color: #999;
+}
+
+.faq-group {
+    margin-bottom: 28px;
+    scroll-margin-top: 110px;
+}
+
+.faq-group h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.faq-item {
+    border: 1px solid #E6E8EB;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: #fff;
+    scroll-margin-top: 140px;
+}
+
+.faq-item summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    font-weight: 600;
+    color: #222;
+}
+
+.faq-item summary::-webkit-details-marker {
+    display: none;
+}
+
+.faq-item summary::after {
+    content: "+";
+    font-size: 20px;
+    font-weight: 400;
+    color: #999;
+}
+
+.faq-item[open] summary {
+    color: var(--color-primary);
+    background: #EEF7FF;
+    border-radius: 8px 8px 0 0;
+}
+
+.faq-item[open] summary::after {
+    content: "−";
+}
+
+.faq-answer {
+    padding: 14px 18px 4px;
+    color: #423F3E;
+    line-height: 1.6;
+}
+
+.faq-answer a {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
+.faq-help {
+    margin-top: 12px;
+    padding: 20px 22px;
+    border: 1px solid #FBD9AE;
+    border-radius: 10px;
+    background: #FFF6EC;
+}
+
+.faq-help h3 {
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+
+.faq-help-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.faq-help-links a {
+    padding: 4px 12px;
+    border: 1px solid var(--color-primary);
+    border-radius: 999px;
+    color: var(--color-primary);
+    background: #fff;
+    font-size: 14px;
+}
+
+.faq-help-links a.is-call {
+    background: #FD7E14;
+    border-color: #FD7E14;
+    color: #fff;
+    font-weight: 600;
+}

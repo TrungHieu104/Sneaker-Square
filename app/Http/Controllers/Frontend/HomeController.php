@@ -9,6 +9,7 @@ use App\Mail\ContactMail;
 use App\Models\CategoryModel as Category;
 use App\Models\CateSlideModel as CateSlide;
 use App\Models\ContactFormModel;
+use App\Models\FaqGroupModel;
 use App\Models\NewsModel as News;
 use App\Models\PageModel;
 use App\Models\ProductModel as Product;
@@ -102,6 +103,20 @@ class HomeController extends Controller
         return view('frontend.pages.return_policy', [
             'soNgayTra' => $settings->returnDays(),
             'soNgayTuHoanTat' => $settings->autoCompleteDays(),
+        ]);
+    }
+
+    /**
+     * Every shown question, grouped as the admin ordered them, with the way to
+     * reach a person for anything the page does not answer.
+     */
+    public function faq()
+    {
+        $shop = app(ShopSettings::class)->shopInfoForDisplay();
+
+        return view('frontend.pages.faq', [
+            'groups' => FaqGroupModel::published(),
+            'hotline' => ['tel' => $shop['phone'], 'display' => $shop['phone_display']],
         ]);
     }
 
