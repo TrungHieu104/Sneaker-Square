@@ -12,6 +12,8 @@ use App\Http\Controllers\Backend\ContactFormController;
 use App\Http\Controllers\Backend\CouponAdminController;
 use App\Http\Controllers\Backend\CustomerSegmentController;
 use App\Http\Controllers\Backend\DashboardController;
+use App\Http\Controllers\Backend\FaqAdminController;
+use App\Http\Controllers\Backend\FaqGroupAdminController;
 use App\Http\Controllers\Backend\GhnSimulatorController;
 use App\Http\Controllers\Backend\ImageController;
 use App\Http\Controllers\Backend\MenusAdminController;
@@ -409,6 +411,12 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     Route::get('/policy/delete/{encryptedPageId}', [PolicyAdminController::class, 'forceDelete'])->name('policy.delete')->middleware($can['pages']);
     Route::get('/policies/delete-all', [PolicyAdminController::class, 'deleteAll'])->name('policy.delete.all')->middleware($can['pages']);
     Route::post('/policy-status/{id}', [PolicyAdminController::class, 'status'])->name('policy.status')->middleware($can['pages']);
+
+    // Câu hỏi thường gặp
+    Route::resource('faq', FaqAdminController::class)->except(['show'])->middleware($can['pages']);
+    Route::post('/faq-status/{faq}', [FaqAdminController::class, 'status'])->name('faq.status')->middleware($can['pages']);
+    Route::resource('faq-group', FaqGroupAdminController::class)->only(['index', 'store', 'edit', 'update', 'destroy'])
+        ->names('faq_group')->parameters(['faq-group' => 'group'])->middleware($can['pages']);
 
     // Giới thiệu
     Route::resource('about', AboutAdminController::class)->only(['index', 'update'])->middleware($can['about']);

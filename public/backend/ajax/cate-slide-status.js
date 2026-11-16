@@ -160,6 +160,19 @@ $(document).ready(function() {
         });
     });
 
+    $('input[name="faq-status"]').on('change', function() {
+        var box = $(this);
+
+        $.ajax({
+            type: 'POST',
+            url: box.data('url'),
+            data: { 'faq-status': box.is(':checked') ? 1 : 0 },
+            error: function() {
+                box.prop('checked', !box.is(':checked'));
+            }
+        });
+    });
+
     $('input[name="info-status"]').on('change', function() {
         var id = $(this).data('id');
         var value = $(this).is(':checked') ? 1 : 0;
@@ -190,6 +203,19 @@ $(document).ready(function() {
     $('.nav-link').click(function () {
         var tabId = $(this).attr('id');
         sessionStorage.setItem('currentTab', tabId);
+    });
+
+    $('input[name="faq-status"]').on('change', function() {
+        var box = $(this);
+
+        $.ajax({
+            type: 'POST',
+            url: box.data('url'),
+            data: { 'faq-status': box.is(':checked') ? 1 : 0 },
+            error: function() {
+                box.prop('checked', !box.is(':checked'));
+            }
+        });
     });
 
     $('input[name="info-status"]').on('change', function() {

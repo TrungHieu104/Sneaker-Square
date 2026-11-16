@@ -372,9 +372,27 @@
         @can('Quản trị Chính sách & FAQ')
         <li class="menu-item {{(url()->current() == route('policy.index') || url()->current() == route('policy.create') || url()->current() == route('policy.trashed')) ? 'active' : ''}}">
             <a href="{{route('policy.index')}}" class="menu-link">
-                <i class='bx bx-question-mark menu-icon'></i>
+                <i class='bx bx-file menu-icon'></i>
                 <div data-i18n="Extended UI">Chính sách</div>
             </a>
+        </li>
+        <li class="menu-item {{ request()->routeIs('faq.*', 'faq_group.*') ? 'active open' : '' }}">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class='bx bx-help-circle menu-icon'></i>
+                <div data-i18n="Extended UI">Câu hỏi thường gặp</div>
+            </a>
+            <ul class="menu-sub">
+                <li class="menu-item {{ request()->routeIs('faq.*') ? 'active' : '' }}">
+                    <a href="{{ route('faq.index') }}" class="menu-link">
+                        <div data-i18n="Basic Inputs">Câu hỏi</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ request()->routeIs('faq_group.*') ? 'active' : '' }}">
+                    <a href="{{ route('faq_group.index') }}" class="menu-link">
+                        <div data-i18n="Basic Inputs">Nhóm câu hỏi</div>
+                    </a>
+                </li>
+            </ul>
         </li>
         @endcan
         @can('Giới thiệu')
