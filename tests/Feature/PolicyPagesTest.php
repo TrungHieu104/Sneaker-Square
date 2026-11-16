@@ -7,6 +7,7 @@ use App\Models\PageModel;
 use App\Models\UserModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Spatie\ResponseCache\Facades\ResponseCache;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
 
@@ -83,6 +84,18 @@ class PolicyPagesTest extends TestCase
             ->assertSee('Giới thiệu về Sneaker Square')
             ->assertSee('Shop giày chính hãng.')
             ->assertDontSee('Không hiện ở đây.');
+    }
+
+    public function test_sua_an_hoac_xoa_chinh_sach_thi_xoa_cache_storefront(): void
+    {
+        $page = $this->policy('Chính sách giao hàng', 'Nội dung.');
+        ResponseCache::spy();
+
+        $this->actingAs($this->admin())->post(route('policy.status', $page->page_id), ['policy-status' => 0]);
+        $this->actingAs($this->admin())->delete(route('policy.softDelete', encrypt($page->page_id)));
+        $this->actingAs($this->admin())->get(route('policy.restore', encrypt($page->page_id)));
+
+        ResponseCache::shouldHaveReceived('clear')->times(3);
     }
 
     // --------------------------------------------------------------- admin
