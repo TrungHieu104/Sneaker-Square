@@ -73,3 +73,16 @@ php artisan migrate --force
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 php artisan queue:restart
 ```
+
+### Once, on a database from before `pages`
+
+The policy pages and the about page used to live in a table called `faq`. On a database that
+still has it, run this straight after `migrate`, which has just created the empty `pages` table:
+
+```bash
+php artisan pages:move-from-faq
+```
+
+It copies every row into `pages` with the same id, renames the permission `Quản trị FAQ` to
+`Quản trị Chính sách & FAQ` (roles keep it), drops `faq` and clears the page cache. Until it runs,
+the footer shows no policies. Running it again does nothing.
