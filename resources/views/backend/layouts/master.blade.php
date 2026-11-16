@@ -41,7 +41,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ asset('backend/assets/js/revenue.js')}}"></script>
     <script src="{{ asset('backend/assets/js/getlink.js')}}"></script>
-    <script src="{{ asset('backend/ajax/cate-slide-status.js')}}"></script>
+    <script src="{{ asset_v('backend/ajax/cate-slide-status.js') }}"></script>
     <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 </head>
 

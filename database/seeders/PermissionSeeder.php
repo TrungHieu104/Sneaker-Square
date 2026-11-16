@@ -16,7 +16,7 @@ class PermissionSeeder extends Seeder
             'Quản trị Menu',
             'Quản trị Slide',
             'Quản trị Mã giảm giá',
-            'Quản trị FAQ',
+            'Quản trị Chính sách & FAQ',
             'Quản trị Thông tin',
             'Quản trị Đơn hàng',
             'Thanh toán',

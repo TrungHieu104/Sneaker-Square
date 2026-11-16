@@ -137,15 +137,15 @@ $(document).ready(function() {
         });
     });
 
-    $('input[name="faq-status"]').on('change', function() {
+    $('input[name="policy-status"]').on('change', function() {
         var id = $(this).data('id');
         var value = $(this).is(':checked') ? 1 : 0;
 
         $.ajax({
             type: "POST",
-            url: "/admin/faq-status/" + id,
+            url: "/admin/policy-status/" + id,
             data: {
-                'faq-status': value
+                'policy-status': value
             },
             success: function(response) {
                 var statusElement = $('#status_' + id);

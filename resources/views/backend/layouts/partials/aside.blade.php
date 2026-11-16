@@ -332,7 +332,7 @@
                             auth()->user()->can('Quản trị Slide') ||
                             auth()->user()->can('Quản trị Thông tin') ||
                             auth()->user()->can('Giới thiệu') ||
-                            auth()->user()->can('Quản trị FAQ') ||
+                            auth()->user()->can('Quản trị Chính sách & FAQ') ||
                             auth()->user()->can('Quản trị Đơn hàng');
         @endphp
         @if($canAccessSet)
@@ -369,9 +369,9 @@
             </ul>
         </li>
         @endcan
-        @can('Quản trị FAQ')
-        <li class="menu-item {{(url()->current() == route('faq.index') || url()->current() == route('faq.create') || url()->current() == route('faq.trashed')) ? 'active' : ''}}">
-            <a href="{{route('faq.index')}}" class="menu-link">
+        @can('Quản trị Chính sách & FAQ')
+        <li class="menu-item {{(url()->current() == route('policy.index') || url()->current() == route('policy.create') || url()->current() == route('policy.trashed')) ? 'active' : ''}}">
+            <a href="{{route('policy.index')}}" class="menu-link">
                 <i class='bx bx-question-mark menu-icon'></i>
                 <div data-i18n="Extended UI">Chính sách</div>
             </a>

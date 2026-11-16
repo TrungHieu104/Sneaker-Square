@@ -12,12 +12,12 @@ use App\Http\Controllers\Backend\ContactFormController;
 use App\Http\Controllers\Backend\CouponAdminController;
 use App\Http\Controllers\Backend\CustomerSegmentController;
 use App\Http\Controllers\Backend\DashboardController;
-use App\Http\Controllers\Backend\FaqAdminController;
 use App\Http\Controllers\Backend\GhnSimulatorController;
 use App\Http\Controllers\Backend\ImageController;
 use App\Http\Controllers\Backend\MenusAdminController;
 use App\Http\Controllers\Backend\OpenCartController;
 use App\Http\Controllers\Backend\OrderAdminController;
+use App\Http\Controllers\Backend\PolicyAdminController;
 use App\Http\Controllers\Backend\ProductAdminController;
 use App\Http\Controllers\Backend\ProductCateController;
 use App\Http\Controllers\Backend\ProductQuantityController;
@@ -168,7 +168,7 @@ Route::group(['middleware' => 'web'], function () {
 
     // Route Policy
     Route::get('/chinh-sach/tra-hang-hoan-tien', [HomeController::class, 'returnPolicy'])->name('policy.return');
-    Route::get('/chinh-sach/{faq_slug}', [HomeController::class, 'faqDetail'])->name('faq.detail');
+    Route::get('/chinh-sach/{page_slug}', [HomeController::class, 'policyDetail'])->name('policy.detail');
 
     // Route Authorization
     Route::get('/dang-nhap', [AuthUserController::class, 'login'])->name('user.login');
@@ -234,7 +234,7 @@ $can = [
     'about' => 'permission:Giới thiệu',
     'contactForms' => 'permission:Khách hàng liên hệ',
     'blog' => 'permission:Quản trị Bài viết',
-    'faq' => 'permission:Quản trị FAQ',
+    'pages' => 'permission:Quản trị Chính sách & FAQ',
     'menus' => 'permission:Quản trị Menu',
     'coupons' => 'permission:Quản trị Mã giảm giá',
     'slides' => 'permission:Quản trị Slide',
@@ -399,19 +399,19 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     });
     Route::post('/send-coupon', [CouponAdminController::class, 'sendCoupon'])->name('sendCoupon');
 
-    // FAQ Câu hỏi thường gặp
-    Route::resource('faq', (FaqAdminController::class))->middleware($can['faq']);
-    Route::get('/faqs/trashed', [FaqAdminController::class, 'trashed'])->name('faq.trashed')->middleware($can['faq']);
-    Route::get('/faq/{encryptedFaqId}/edit', [FaqAdminController::class, 'edit'])->name('faqs.edit')->middleware($can['faq']);
-    Route::delete('/faq/soft-delete/{encryptedFaqId}', [FaqAdminController::class, 'softDelete'])->name('faq.softDelete')->middleware($can['faq']);
-    Route::get('/faq/restore/{encryptedFaqId}', [FaqAdminController::class, 'restore'])->name('faq.restore')->middleware($can['faq']);
-    Route::get('/faqs/restore-all', [FaqAdminController::class, 'restoreAll'])->name('faq.restoreAll')->middleware($can['faq']);
-    Route::get('/faq/delete/{encryptedFaqId}', [FaqAdminController::class, 'forceDelete'])->name('faq.delete')->middleware($can['faq']);
-    Route::get('/faqs/delete-all', [FaqAdminController::class, 'deleteAll'])->name('faq.delete.all')->middleware($can['faq']);
-    Route::post('/faq-status/{id}', [FaqAdminController::class, 'status'])->name('faq.status');
+    // Chính sách
+    Route::resource('policy', PolicyAdminController::class)->only(['index', 'create', 'store', 'update'])->middleware($can['pages']);
+    Route::get('/policies/trashed', [PolicyAdminController::class, 'trashed'])->name('policy.trashed')->middleware($can['pages']);
+    Route::get('/policy/{encryptedPageId}/edit', [PolicyAdminController::class, 'edit'])->name('policy.edit')->middleware($can['pages']);
+    Route::delete('/policy/soft-delete/{encryptedPageId}', [PolicyAdminController::class, 'softDelete'])->name('policy.softDelete')->middleware($can['pages']);
+    Route::get('/policy/restore/{encryptedPageId}', [PolicyAdminController::class, 'restore'])->name('policy.restore')->middleware($can['pages']);
+    Route::get('/policies/restore-all', [PolicyAdminController::class, 'restoreAll'])->name('policy.restoreAll')->middleware($can['pages']);
+    Route::get('/policy/delete/{encryptedPageId}', [PolicyAdminController::class, 'forceDelete'])->name('policy.delete')->middleware($can['pages']);
+    Route::get('/policies/delete-all', [PolicyAdminController::class, 'deleteAll'])->name('policy.delete.all')->middleware($can['pages']);
+    Route::post('/policy-status/{id}', [PolicyAdminController::class, 'status'])->name('policy.status');
 
     // Giới thiệu
-    Route::resource('about', (AboutAdminController::class))->middleware($can['about']);
+    Route::resource('about', AboutAdminController::class)->only(['index', 'update'])->middleware($can['about']);
     Route::get('/about/{encryptedAboutId}/edit', [AboutAdminController::class, 'edit'])->name('abouts.edit')->middleware($can['about']);
 
     // Đơn hàng

@@ -2,7 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\FaqModel;
+use App\Enums\PageType;
+use App\Models\PageModel;
 use App\Models\UserModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -18,7 +19,7 @@ class PolicyPagesTest extends TestCase
     use RefreshDatabase;
     use ShopFixtures;
 
-    private const PERMISSION = 'Quản trị FAQ';
+    private const PERMISSION = 'Quản trị Chính sách & FAQ';
 
     private const ABOUT_PERMISSION = 'Giới thiệu';
 
@@ -35,7 +36,7 @@ class PolicyPagesTest extends TestCase
     {
         $this->policy('Chính sách giao hàng', 'Giao toàn quốc qua GHN.');
 
-        $this->get(route('faq.detail', 'chinh-sach-giao-hang.html'))
+        $this->get(route('policy.detail', 'chinh-sach-giao-hang.html'))
             ->assertOk()
             ->assertSee('Chính sách giao hàng')
             ->assertSee('Giao toàn quốc qua GHN.');
@@ -44,7 +45,7 @@ class PolicyPagesTest extends TestCase
     public function test_duong_dan_khong_ton_tai_thi_quay_lai_kem_thong_bao(): void
     {
         $this->from(route('home.page'))
-            ->get(route('faq.detail', 'khong-co.html'))
+            ->get(route('policy.detail', 'khong-co.html'))
             ->assertRedirect(route('home.page'))
             ->assertSessionHas('message', 'Chính sách không tồn tại');
     }
@@ -53,7 +54,7 @@ class PolicyPagesTest extends TestCase
     {
         $this->policy('Chính sách nháp', 'Chưa đăng.', visible: false);
 
-        $this->get(route('faq.detail', 'chinh-sach-nhap.html'))->assertServerError();
+        $this->get(route('policy.detail', 'chinh-sach-nhap.html'))->assertServerError();
     }
 
     public function test_footer_va_trang_san_pham_chi_liet_ke_chinh_sach_dang_hien(): void
@@ -90,7 +91,7 @@ class PolicyPagesTest extends TestCase
     {
         $admin = $this->admin(withPermission: false);
 
-        $this->actingAs($admin)->get(route('faq.index'))->assertForbidden();
+        $this->actingAs($admin)->get(route('policy.index'))->assertForbidden();
         $this->actingAs($admin)->get(route('about.index'))->assertForbidden();
     }
 
@@ -100,12 +101,12 @@ class PolicyPagesTest extends TestCase
         $this->policy('Chính sách thanh toán', 'Nội dung.');
         $this->aboutPage('Giới thiệu về Sneaker Square', 'Về shop.');
 
-        $this->actingAs($this->admin())->get(route('faq.index'))
+        $this->actingAs($this->admin())->get(route('policy.index'))
             ->assertOk()
             ->assertSee('Chính sách giao hàng')
             ->assertDontSee('Giới thiệu về Sneaker Square');
 
-        $this->actingAs($this->admin())->get(route('faq.index', ['keyword' => 'thanh toán']))
+        $this->actingAs($this->admin())->get(route('policy.index', ['keyword' => 'thanh toán']))
             ->assertOk()
             ->assertSee('Chính sách thanh toán')
             ->assertDontSee('Chính sách giao hàng');
@@ -113,27 +114,27 @@ class PolicyPagesTest extends TestCase
 
     public function test_them_chinh_sach_gan_duoi_html_va_tac_gia(): void
     {
-        $this->actingAs($this->admin())->post(route('faq.store'), [
+        $this->actingAs($this->admin())->post(route('policy.store'), [
             'name' => 'Chính sách kiểm hàng',
             'slug' => 'chinh-sach-kiem-hang',
             'author' => 'Quản trị viên',
-            'faq-des' => 'Mô tả ngắn',
+            'description' => 'Mô tả ngắn',
             'content' => 'Được xem hàng trước khi nhận.',
             'key' => 'kiem hang',
             'des' => 'SEO mô tả',
             'status' => '1',
-        ])->assertRedirect('admin/faq')->assertSessionHas('message', 'Thêm thành công');
+        ])->assertRedirect(route('policy.index'))->assertSessionHas('message', 'Thêm thành công');
 
-        $this->assertDatabaseHas('faq', [
-            'faq_name' => 'Chính sách kiểm hàng',
-            'faq_slug' => 'chinh-sach-kiem-hang.html',
-            'faq_description' => 'Mô tả ngắn',
-            'faq_content' => 'Được xem hàng trước khi nhận.',
-            'faq_meta_keywords' => 'kiem hang',
-            'faq_meta_description' => 'SEO mô tả',
-            'faq_created_by' => 'Quản trị viên',
-            'faq_hidden' => 1,
-            'faq_about' => 0,
+        $this->assertDatabaseHas('pages', [
+            'page_name' => 'Chính sách kiểm hàng',
+            'page_slug' => 'chinh-sach-kiem-hang.html',
+            'page_description' => 'Mô tả ngắn',
+            'page_content' => 'Được xem hàng trước khi nhận.',
+            'page_meta_keywords' => 'kiem hang',
+            'page_meta_description' => 'SEO mô tả',
+            'page_created_by' => 'Quản trị viên',
+            'page_hidden' => 1,
+            'page_type' => 'policy',
         ]);
     }
 
@@ -142,7 +143,7 @@ class PolicyPagesTest extends TestCase
         $this->policy('Chính sách giao hàng', 'Nội dung.');
 
         $this->actingAs($this->admin())
-            ->post(route('faq.store'), ['name' => 'Chính sách giao hàng', 'slug' => '', 'content' => 'ab'])
+            ->post(route('policy.store'), ['name' => 'Chính sách giao hàng', 'slug' => '', 'content' => 'ab'])
             ->assertSessionHasErrors([
                 'name' => 'Tiêu đề đã tồn tại!',
                 'slug' => 'Vui lòng nhập đường dẫn!',
@@ -154,32 +155,32 @@ class PolicyPagesTest extends TestCase
     {
         $page = $this->policy('Chính sách giao hàng', 'Cũ.');
 
-        $this->actingAs($this->admin())->get(route('faqs.edit', encrypt($page->faq_id)))
+        $this->actingAs($this->admin())->get(route('policy.edit', encrypt($page->page_id)))
             ->assertOk()
             ->assertSee('Chính sách giao hàng');
 
-        $this->actingAs($this->admin())->put(route('faq.update', $page->faq_id), [
-            'id' => $page->faq_id,
+        $this->actingAs($this->admin())->put(route('policy.update', $page->page_id), [
+            'id' => $page->page_id,
             'name' => 'Chính sách vận chuyển',
             'slug' => 'chinh-sach-van-chuyen',
             'editor' => 'Biên tập viên',
-            'faq-des' => 'Mô tả mới',
+            'description' => 'Mô tả mới',
             'content' => 'Nội dung mới.',
             'status' => '0',
-        ])->assertRedirect('/admin/faq')->assertSessionHas('message', 'Chỉnh sửa thành công');
+        ])->assertRedirect(route('policy.index'))->assertSessionHas('message', 'Chỉnh sửa thành công');
 
         $page->refresh();
-        $this->assertSame('Chính sách vận chuyển', $page->faq_name);
-        $this->assertSame('chinh-sach-van-chuyen.html', $page->faq_slug);
-        $this->assertSame('Nội dung mới.', $page->faq_content);
-        $this->assertSame('Biên tập viên', $page->faq_updated_by);
-        $this->assertSame(0, (int) $page->faq_hidden);
+        $this->assertSame('Chính sách vận chuyển', $page->page_name);
+        $this->assertSame('chinh-sach-van-chuyen.html', $page->page_slug);
+        $this->assertSame('Nội dung mới.', $page->page_content);
+        $this->assertSame('Biên tập viên', $page->page_updated_by);
+        $this->assertSame(0, (int) $page->page_hidden);
     }
 
     public function test_ma_sai_khi_mo_trang_sua_thi_ve_danh_sach(): void
     {
-        $this->actingAs($this->admin())->get(route('faqs.edit', 'khong-giai-ma-duoc'))
-            ->assertRedirect('admin/faq')
+        $this->actingAs($this->admin())->get(route('policy.edit', 'khong-giai-ma-duoc'))
+            ->assertRedirect(route('policy.index'))
             ->assertSessionHas('message', 'Không tồn tại nội dung!');
     }
 
@@ -187,12 +188,12 @@ class PolicyPagesTest extends TestCase
     {
         $page = $this->policy('Chính sách giao hàng', 'Nội dung.');
 
-        $this->actingAs($this->admin())->post(route('faq.status', $page->faq_id), ['faq-status' => 0])
+        $this->actingAs($this->admin())->post(route('policy.status', $page->page_id), ['policy-status' => 0])
             ->assertOk()
             ->assertJson(['message' => 'Cập nhật thành công']);
-        $this->assertSame(0, (int) $page->refresh()->faq_hidden);
+        $this->assertSame(0, (int) $page->refresh()->page_hidden);
 
-        $this->actingAs($this->admin())->post(route('faq.status', 999), ['faq-status' => 1])->assertNotFound();
+        $this->actingAs($this->admin())->post(route('policy.status', 999), ['policy-status' => 1])->assertNotFound();
     }
 
     public function test_thung_rac_xoa_tam_khoi_phuc_va_xoa_han(): void
@@ -201,16 +202,16 @@ class PolicyPagesTest extends TestCase
         $kept = $this->policy('Chính sách giao hàng', 'Nội dung.');
         $gone = $this->policy('Chính sách bảo mật', 'Nội dung.');
 
-        $this->actingAs($admin)->delete(route('faq.softDelete', encrypt($kept->faq_id)))->assertSessionHas('message', 'Xóa thành công');
-        $this->actingAs($admin)->delete(route('faq.softDelete', encrypt($gone->faq_id)));
-        $this->assertSoftDeleted('faq', ['faq_id' => $kept->faq_id]);
-        $this->actingAs($admin)->get(route('faq.trashed'))->assertOk()->assertSee('Chính sách giao hàng');
+        $this->actingAs($admin)->delete(route('policy.softDelete', encrypt($kept->page_id)))->assertSessionHas('message', 'Xóa thành công');
+        $this->actingAs($admin)->delete(route('policy.softDelete', encrypt($gone->page_id)));
+        $this->assertSoftDeleted('pages', ['page_id' => $kept->page_id]);
+        $this->actingAs($admin)->get(route('policy.trashed'))->assertOk()->assertSee('Chính sách giao hàng');
 
-        $this->actingAs($admin)->get(route('faq.restore', encrypt($kept->faq_id)))->assertSessionHas('message', 'Khôi phục thành công');
-        $this->assertNotSoftDeleted('faq', ['faq_id' => $kept->faq_id]);
+        $this->actingAs($admin)->get(route('policy.restore', encrypt($kept->page_id)))->assertSessionHas('message', 'Khôi phục thành công');
+        $this->assertNotSoftDeleted('pages', ['page_id' => $kept->page_id]);
 
-        $this->actingAs($admin)->get(route('faq.delete', encrypt($gone->faq_id)))->assertSessionHas('message', 'Xóa thành công');
-        $this->assertDatabaseMissing('faq', ['faq_id' => $gone->faq_id]);
+        $this->actingAs($admin)->get(route('policy.delete', encrypt($gone->page_id)))->assertSessionHas('message', 'Xóa thành công');
+        $this->assertDatabaseMissing('pages', ['page_id' => $gone->page_id]);
     }
 
     public function test_khoi_phuc_va_xoa_het_thung_rac(): void
@@ -218,14 +219,14 @@ class PolicyPagesTest extends TestCase
         $admin = $this->admin();
         $this->policy('Chính sách giao hàng', 'Nội dung.')->delete();
 
-        $this->actingAs($admin)->get(route('faq.restoreAll'))->assertSessionHas('message', 'Hoàn tác thành công');
-        $this->assertSame(0, FaqModel::onlyTrashed()->count());
+        $this->actingAs($admin)->get(route('policy.restoreAll'))->assertSessionHas('message', 'Hoàn tác thành công');
+        $this->assertSame(0, PageModel::onlyTrashed()->count());
 
-        $this->actingAs($admin)->get(route('faq.restoreAll'))->assertSessionHas('message', 'Không có dữ liệu trong thùng rác!');
+        $this->actingAs($admin)->get(route('policy.restoreAll'))->assertSessionHas('message', 'Không có dữ liệu trong thùng rác!');
 
-        FaqModel::query()->first()?->delete();
-        $this->actingAs($admin)->get(route('faq.delete.all'))->assertSessionHas('message', 'Xóa dữ liệu thành công!');
-        $this->assertSame(0, FaqModel::withTrashed()->count());
+        PageModel::query()->first()?->delete();
+        $this->actingAs($admin)->get(route('policy.delete.all'))->assertSessionHas('message', 'Xóa dữ liệu thành công!');
+        $this->assertSame(0, PageModel::withTrashed()->count());
     }
 
     public function test_admin_gioi_thieu_chi_liet_ke_va_sua_trang_gioi_thieu(): void
@@ -240,21 +241,21 @@ class PolicyPagesTest extends TestCase
             ->assertSee('Giới thiệu về Sneaker Square')
             ->assertDontSee('Chính sách giao hàng');
 
-        $this->actingAs($admin)->get(route('abouts.edit', encrypt($about->faq_id)))->assertOk();
+        $this->actingAs($admin)->get(route('abouts.edit', encrypt($about->page_id)))->assertOk();
 
-        $this->actingAs($admin)->put(route('about.update', $about->faq_id), [
-            'id' => $about->faq_id,
+        $this->actingAs($admin)->put(route('about.update', $about->page_id), [
+            'id' => $about->page_id,
             'name' => 'Về Sneaker Square',
             'slug' => 've-sneaker-square',
             'editor' => 'Biên tập viên',
             'content' => 'Shop giày chính hãng.',
-        ])->assertRedirect('/admin/about')->assertSessionHas('message', 'Chỉnh sửa thành công');
+        ])->assertRedirect(route('about.index'))->assertSessionHas('message', 'Chỉnh sửa thành công');
 
         $about->refresh();
-        $this->assertSame('Về Sneaker Square', $about->faq_name);
-        $this->assertSame('Shop giày chính hãng.', $about->faq_content);
-        $this->assertSame(1, (int) $about->faq_hidden);
-        $this->assertSame(1, (int) $about->faq_about);
+        $this->assertSame('Về Sneaker Square', $about->page_name);
+        $this->assertSame('Shop giày chính hãng.', $about->page_content);
+        $this->assertSame(1, (int) $about->page_hidden);
+        $this->assertSame(PageType::About, $about->page_type);
     }
 
     private function admin(bool $withPermission = true, string $permission = self::PERMISSION): UserModel
@@ -271,27 +272,27 @@ class PolicyPagesTest extends TestCase
         return $admin;
     }
 
-    private function policy(string $name, string $content, bool $visible = true): FaqModel
+    private function policy(string $name, string $content, bool $visible = true): PageModel
     {
-        return FaqModel::create([
-            'faq_name' => $name,
-            'faq_slug' => str($name)->slug().'.html',
-            'faq_description' => 'Tóm tắt '.$name,
-            'faq_content' => $content,
-            'faq_hidden' => $visible ? 1 : 0,
-            'faq_about' => 0,
+        return PageModel::create([
+            'page_name' => $name,
+            'page_slug' => str($name)->slug().'.html',
+            'page_description' => 'Tóm tắt '.$name,
+            'page_content' => $content,
+            'page_hidden' => $visible ? 1 : 0,
+            'page_type' => 'policy',
         ]);
     }
 
-    private function aboutPage(string $name, string $content): FaqModel
+    private function aboutPage(string $name, string $content): PageModel
     {
-        return FaqModel::create([
-            'faq_name' => $name,
-            'faq_slug' => str($name)->slug().'.html',
-            'faq_description' => '',
-            'faq_content' => $content,
-            'faq_hidden' => 1,
-            'faq_about' => 1,
+        return PageModel::create([
+            'page_name' => $name,
+            'page_slug' => str($name)->slug().'.html',
+            'page_description' => '',
+            'page_content' => $content,
+            'page_hidden' => 1,
+            'page_type' => PageType::About,
         ]);
     }
 }

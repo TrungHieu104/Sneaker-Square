@@ -13,8 +13,8 @@
             <div class="col-lg-3 col-md-6 mb-3">
                 <h6>Chính sách & điều khoản</h6>
                 <ul class="footer-link">
-                    @foreach ($faq as $data)
-                        <li class="mb-2"><a href="{{ route('faq.detail', $data->faq_slug) }}">{{$data->faq_name}}</a></li>
+                    @foreach ($policies as $data)
+                        <li class="mb-2"><a href="{{ route('policy.detail', $data->page_slug) }}">{{$data->page_name}}</a></li>
                     @endforeach
                 </ul>
             </div>

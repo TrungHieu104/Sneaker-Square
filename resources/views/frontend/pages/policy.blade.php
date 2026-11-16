@@ -1,7 +1,7 @@
 @extends('frontend.index')
 
 @section('title')
-{{$detailFaq->faq_name}}
+{{$policy->page_name}}
 @endsection
 
 @section('banner')
@@ -13,7 +13,7 @@
                     <h1>Chính sách</h1>
                     <nav class="d-flex align-items-center">
                         <a title="Quay về trang chủ" href="{{route('home.page')}}">Trang chủ<span class="lnr lnr-arrow-right"></span></a>
-                        <li class="breadcumb-link">{{$detailFaq->faq_name}}</li>
+                        <li class="breadcumb-link">{{$policy->page_name}}</li>
                     </nav>
                 </div>
             </div>
@@ -29,7 +29,7 @@
             <div class="row justify-content-center">
                 <div class="col-lg-6 text-center"  data-aos="fade-up" data-aos-duration="2000">
                     <div class="section-title">
-                        <h1>{{$detailFaq->faq_name}}</h1>
+                        <h1>{{$policy->page_name}}</h1>
                         <p>
                             Bạn có thắc mắc, đọc dưới này nhé!
                         </p>
@@ -39,7 +39,7 @@
             <div class="row mb-4">
                 <div class="col">
                     <div class="w-100 box__shadow p-4">
-                        {!!$detailFaq->faq_content!!}
+                        {!!$policy->page_content!!}
                     </div>
                 </div>
             </div>

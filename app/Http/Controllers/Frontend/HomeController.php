@@ -9,8 +9,8 @@ use App\Mail\ContactMail;
 use App\Models\CategoryModel as Category;
 use App\Models\CateSlideModel as CateSlide;
 use App\Models\ContactFormModel;
-use App\Models\FaqModel as Faq;
 use App\Models\NewsModel as News;
+use App\Models\PageModel;
 use App\Models\ProductModel as Product;
 use App\Services\ShopSettings;
 use Illuminate\Http\Request;
@@ -79,7 +79,7 @@ class HomeController extends Controller
 
     public function about()
     {
-        $about = Faq::where('faq_hidden', 1)->where('faq_about', 1)->limit(1)->get();
+        $about = PageModel::about()->visible()->limit(1)->get();
 
         return view('frontend.pages.about', compact('about'));
     }
@@ -105,20 +105,18 @@ class HomeController extends Controller
         ]);
     }
 
-    public function faqDetail(string $faqSlug = '')
+    public function policyDetail(string $pageSlug = '')
     {
-        $faqId = Faq::where('faq_slug', $faqSlug)->value('faq_id');
-        if ($faqId == null) {
+        $pageId = PageModel::policies()->where('page_slug', $pageSlug)->value('page_id');
+        if ($pageId == null) {
             Session::flash('iconMessage', 'info');
 
             return redirect()->back()->with('message', 'Chính sách không tồn tại');
         }
 
-        $detailFaq = Faq::where('faq_id', $faqId)
-            ->where('faq_hidden', 1)
-            ->first();
+        $policy = PageModel::visible()->find($pageId);
 
-        return view('frontend.pages.faq', compact('detailFaq'));
+        return view('frontend.pages.policy', compact('policy'));
     }
 
     public function store(ContactFormRequest $request)

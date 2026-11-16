@@ -4,8 +4,9 @@ namespace App\Http\Requests\Backend;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class FaqRequest extends FormRequest
+class PageUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,8 +24,7 @@ class FaqRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'min:3', 'unique:faq,faq_name'],
-            'slug' => ['required'],
+            'name' => ['required', 'min:3', Rule::unique('pages', 'page_name')->ignore(request()->id, 'page_id')],
             'content' => ['required', 'min:3'],
         ];
     }
@@ -35,7 +35,6 @@ class FaqRequest extends FormRequest
             'name.required' => 'Vui lòng nhập tiêu đề!',
             'name.min' => 'Tiêu đề quá ngắn!',
             'name.unique' => 'Tiêu đề đã tồn tại!',
-            'slug.required' => 'Vui lòng nhập đường dẫn!',
             'content.required' => 'Vui lòng nhập nội dung!',
             'content.min' => 'Nội dung quá ngắn!',
         ];
