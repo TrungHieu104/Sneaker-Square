@@ -115,6 +115,7 @@ class HomeController extends Controller
         }
 
         $policy = PageModel::visible()->find($pageId);
+        abort_if($policy === null, 404);
 
         return view('frontend.pages.policy', compact('policy'));
     }

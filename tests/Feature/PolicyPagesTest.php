@@ -50,11 +50,11 @@ class PolicyPagesTest extends TestCase
             ->assertSessionHas('message', 'Chính sách không tồn tại');
     }
 
-    public function test_chinh_sach_dang_an_khong_mo_duoc(): void
+    public function test_chinh_sach_dang_an_tra_404(): void
     {
         $this->policy('Chính sách nháp', 'Chưa đăng.', visible: false);
 
-        $this->get(route('policy.detail', 'chinh-sach-nhap.html'))->assertServerError();
+        $this->get(route('policy.detail', 'chinh-sach-nhap.html'))->assertNotFound();
     }
 
     public function test_footer_va_trang_san_pham_chi_liet_ke_chinh_sach_dang_hien(): void
