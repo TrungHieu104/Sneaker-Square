@@ -190,6 +190,17 @@ class PolicyPagesTest extends TestCase
         $this->assertSame(0, (int) $page->page_hidden);
     }
 
+    public function test_trang_sua_chinh_sach_hien_seo_da_luu(): void
+    {
+        $page = $this->policy('Chính sách giao hàng', 'Nội dung.');
+        $page->update(['page_meta_keywords' => 'giao hang nhanh', 'page_meta_description' => 'Giao toàn quốc']);
+
+        $this->actingAs($this->admin())->get(route('policy.edit', encrypt($page->page_id)))
+            ->assertOk()
+            ->assertSee('value="giao hang nhanh"', false)
+            ->assertSee('Giao toàn quốc');
+    }
+
     public function test_ma_sai_khi_mo_trang_sua_thi_ve_danh_sach(): void
     {
         $this->actingAs($this->admin())->get(route('policy.edit', 'khong-giai-ma-duoc'))
