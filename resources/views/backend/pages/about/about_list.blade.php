@@ -45,7 +45,7 @@
                                     </td>
                                     <td class="text-center">
                                         <div>
-                                            <button type="button" class="p-2 btn btn-success btn-sm m-1" title="Xem" data-bs-toggle="modal" data-bs-target="#pageModal{{$data->page_id}}" data-page-id="{{$data->page_id}}">
+                                            <button type="button" class="p-2 btn btn-success btn-sm m-1" title="Xem" data-bs-toggle="modal" data-bs-target="#pageModal{{$data->page_id}}">
                                                 <i class="fas fa-eye"></i>
                                             </button>                                        
                                             <a class="btn btn-primary btn-sm m-1 p-2" href="{{route('abouts.edit', ['encryptedAboutId' => encrypt($data->page_id)])}}" title="Chỉnh sửa">
@@ -64,7 +64,7 @@
                                             <h1 class="modal-title fs-5 text-center" id="exampleModalLabel">#{{$stt}}</h1>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
-                                            <div class="modal-body view_page_data">
+                                            <div class="modal-body">
                                                 <h3 class="text-center">{{$data->page_name}}</h3>
                                                 <div class="row">
                                                     <div class="col-lg-6 mb-3">

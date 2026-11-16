@@ -145,7 +145,7 @@
                                                 </div>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
-                                            <div class="modal-body view_faq_data">
+                                            <div class="modal-body">
                                                 <h4 class="text-center">{{$data->coupon_name}}</h4>
                                                 <div class="row">
                                                     <div class="col-lg-6 mb-3">
@@ -201,7 +201,7 @@
                                                 </div>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
-                                            <div class="modal-body view_faq_data">
+                                            <div class="modal-body">
                                                 <div class="row">
                                                     <h4 class="text-center pro-name w-100">{{$data->coupon_name}} - {{$data->coupon_code}}</h4>
                                                 </div>

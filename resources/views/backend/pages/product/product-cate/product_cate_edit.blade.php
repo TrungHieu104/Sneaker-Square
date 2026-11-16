@@ -5,7 +5,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <div class="modal-body view_faq_data">
+            <div class="modal-body">
                 <h3 class="text-center"> {{ $cates->cate_name }} </h3>
                 <form action="{{ route('product-category.update', $cates->cate_id) }}" id="modal-form-{{ $cates->cate_id }}" method="POST" enctype="multipart/form-data">
                     @csrf {{ method_field('PUT') }}
