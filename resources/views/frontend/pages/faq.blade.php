@@ -128,10 +128,14 @@ Câu hỏi thường gặp
             const links = Array.from(document.querySelectorAll('.faq-groups a'));
 
             if ('IntersectionObserver' in window) {
+                const inView = new Set();
                 const watcher = new IntersectionObserver(function (entries) {
-                    entries.filter((entry) => entry.isIntersecting).forEach(function (entry) {
-                        links.forEach((link) => link.classList.toggle('is-current', link.hash === '#' + entry.target.id));
-                    });
+                    entries.forEach((entry) => entry.isIntersecting ? inView.add(entry.target) : inView.delete(entry.target));
+                    const current = groups.find((group) => inView.has(group));
+
+                    if (current) {
+                        links.forEach((link) => link.classList.toggle('is-current', link.hash === '#' + current.id));
+                    }
                 }, { rootMargin: '-120px 0px -60% 0px' });
 
                 groups.forEach((group) => watcher.observe(group));
