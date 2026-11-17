@@ -27,17 +27,6 @@
                             @enderror
                         </div>
                         <div class="mb-3">
-                            <label for="group-position" class="form-label">Thứ tự</label>
-                            <input type="number" class="form-control w-50" id="group-position" name="position" min="0" max="999"
-                                value="{{ old('position', $editing?->group_position ?? $nextPosition) }}" />
-                            @unless ($editing)
-                                <small class="text-muted">Mặc định đứng cuối danh sách.</small>
-                            @endunless
-                            @error('position')
-                                <small class="text-danger fst-italic d-block">{{ $message }}</small>
-                            @enderror
-                        </div>
-                        <div class="mb-3">
                             <span class="form-label d-block">Hiển thị</span>
                             <div class="d-flex gap-3">
                                 <div class="form-check">
@@ -68,37 +57,36 @@
                         <table class="table table-bordered w-100">
                             <thead>
                                 <tr>
+                                    <th class="text-center" style="width: 44px;"><span class="visually-hidden">Kéo</span></th>
                                     <th class="text-center">STT</th>
                                     <th>Tên nhóm</th>
-                                    <th class="text-center">Thứ tự</th>
                                     <th class="text-center">Số câu hỏi</th>
                                     <th class="text-center">Hiển thị</th>
                                     <th class="text-center">Thao tác</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody data-sortable-url="{{ route('faq_group.reorder') }}">
                                 @forelse ($groups as $group)
-                                    <tr @class(['table-active' => $editing?->group_id === $group->group_id])>
-                                        <td class="text-center">{{ $loop->iteration }}</td>
+                                    <tr data-id="{{ $group->group_id }}" @class(['table-active' => $editing?->group_id === $group->group_id])>
+                                        <td class="text-center"><span class="drag-handle" title="Kéo để đổi chỗ"><i class="bx bx-grid-vertical"></i></span></td>
+                                        <td class="text-center" data-row-number>{{ $loop->iteration }}</td>
                                         <td><b>{{ $group->group_name }}</b></td>
-                                        <td class="text-center">{{ $group->group_position }}</td>
                                         <td class="text-center">
                                             <a href="{{ route('faq.index', ['group' => $group->group_id]) }}">{{ $group->faqs_count }}</a>
                                         </td>
                                         <td class="text-center">{{ $group->group_hidden ? 'Hiện' : 'Ẩn' }}</td>
-                                        <td class="text-center text-nowrap">
-                                            <a class="btn btn-primary btn-sm m-1 p-2" href="{{ route('faq_group.edit', $group->group_id) }}" title="Chỉnh sửa"><i class="fas fa-edit"></i></a>
-                                            <form class="d-inline" action="{{ route('faq_group.destroy', $group->group_id) }}" method="post">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-sm m-1 p-2" title="Xoá"
-                                                    @disabled($group->faqs_count > 0) onclick="return confirm('Xoá nhóm này?')">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
-                                            @if ($group->faqs_count > 0)
-                                                <small class="d-block text-muted">Còn {{ $group->faqs_count }} câu hỏi</small>
-                                            @endif
+                                        <td class="text-center">
+                                            <div class="row-actions">
+                                                <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{ route('faq_group.edit', $group->group_id) }}" />
+                                                {{-- A disabled button shows no tooltip, so the form keeps a box and carries it. --}}
+                                                <form class="d-inline-flex" action="{{ route('faq_group.destroy', $group->group_id) }}" method="post"
+                                                    @if ($group->faqs_count > 0) title="Nhóm còn câu hỏi, hãy chuyển hoặc xoá các câu hỏi trước" @endif>
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <x-admin.row-action action="delete" title="Xóa" type="submit" :disabled="$group->faqs_count > 0"
+                                                        onclick="return confirm('Xoá nhóm này?')" />
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
@@ -114,3 +102,5 @@
         </div>
     </div>
 @endsection
+
+@include('backend.layouts.partials.sortable-rows')

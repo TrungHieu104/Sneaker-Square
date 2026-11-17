@@ -42,16 +42,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-lg-3 mb-3">
-                        <label for="faq-position" class="form-label">Thứ tự trong nhóm</label>
-                        <input type="number" class="form-control" id="faq-position" name="position" min="0" max="999"
-                            value="{{ old('position', $faq->exists ? $faq->faq_position : '') }}" />
-                        <small class="text-muted">Để trống thì đứng cuối nhóm.</small>
-                        @error('position')
-                            <small class="text-danger fst-italic d-block">{{ $message }}</small>
-                        @enderror
-                    </div>
-                    <div class="col-lg-5 mb-3">
+                    <div class="col-lg-8 mb-3">
                         <label class="form-label" for="faq-author">{{ $faq->exists ? 'Người chỉnh sửa' : 'Người tạo' }}</label>
                         <input type="text" class="form-control" id="faq-author" value="{{ Auth::user()->name }}" readonly />
                     </div>

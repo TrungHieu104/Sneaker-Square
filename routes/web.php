@@ -414,6 +414,8 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     // Câu hỏi thường gặp
     Route::resource('faq', FaqAdminController::class)->except(['show'])->middleware($can['pages']);
     Route::post('/faq-status/{faq}', [FaqAdminController::class, 'status'])->name('faq.status')->middleware($can['pages']);
+    Route::post('/faq/reorder/{group}', [FaqAdminController::class, 'reorder'])->name('faq.reorder')->middleware($can['pages']);
+    Route::post('/faq-group/reorder', [FaqGroupAdminController::class, 'reorder'])->name('faq_group.reorder')->middleware($can['pages']);
     Route::resource('faq-group', FaqGroupAdminController::class)->only(['index', 'store', 'edit', 'update', 'destroy'])
         ->names('faq_group')->parameters(['faq-group' => 'group'])->middleware($can['pages']);
 

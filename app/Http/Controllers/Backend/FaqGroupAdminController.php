@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Actions\ReorderFaqAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Backend\FaqGroupRequest;
+use App\Http\Requests\Backend\FaqReorderRequest;
 use App\Models\FaqGroupModel;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -12,7 +15,8 @@ use Illuminate\Support\Facades\View;
 
 /**
  * The admin "Nhóm câu hỏi" screen: the headings of the storefront FAQ page,
- * listed beside the form that adds or edits one.
+ * listed beside the form that adds or edits one. New groups go last; the
+ * order is changed by dragging rows in the list.
  */
 class FaqGroupAdminController extends Controller
 {
@@ -30,7 +34,7 @@ class FaqGroupAdminController extends Controller
     {
         FaqGroupModel::create([
             'group_name' => trim((string) $request->validated('name')),
-            'group_position' => $request->validated('position') ?? FaqGroupModel::nextPosition(),
+            'group_position' => FaqGroupModel::nextPosition(),
             'group_hidden' => (int) $request->validated('status'),
         ]);
 
@@ -46,11 +50,17 @@ class FaqGroupAdminController extends Controller
     {
         $group->update([
             'group_name' => trim((string) $request->validated('name')),
-            'group_position' => $request->validated('position') ?? $group->group_position,
             'group_hidden' => (int) $request->validated('status'),
         ]);
 
         return $this->toList('success', 'Chỉnh sửa thành công');
+    }
+
+    public function reorder(FaqReorderRequest $request, ReorderFaqAction $reorder): JsonResponse
+    {
+        return $reorder->groups($request->ids())
+            ? response()->json(['message' => 'Đã lưu thứ tự nhóm'])
+            : response()->json(['message' => ReorderFaqAction::STALE], 409);
     }
 
     public function destroy(FaqGroupModel $group): RedirectResponse
@@ -70,7 +80,6 @@ class FaqGroupAdminController extends Controller
         return view('backend.pages.faq.faq_groups', [
             'groups' => FaqGroupModel::withCount('faqs')->orderBy('group_position')->orderBy('group_id')->get(),
             'editing' => $editing,
-            'nextPosition' => FaqGroupModel::nextPosition(),
         ]);
     }
 
