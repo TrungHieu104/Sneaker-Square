@@ -75,19 +75,12 @@
                                     <td>{{$n->news_created_by}}</td>
                                     <td>{{ date('d/m/Y', strtotime($n->post_date)) }}</td>
                                     <td class="text-center">
-                                        <div>
-                                            <a href="{{route('news.detail', $n->news_slug)}}" target="_blank" class="btn btn-success btn-sm m-1" title="Xem">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a class="btn btn-primary btn-sm mx-1"
-                                                href="{{route('blog.edit', ['blog' => $n->news_id])}}" title="Chỉnh sửa"><i class="fas fa-edit"></i>
-                                            </a>
-                                            <form class="d-inline" action="{{route('blog.destroy', ['blog' => $n->news_id])}}" method="POST">
+                                        <div class="row-actions">
+                                            <x-admin.row-action action="view" title="Xem" href="{{route('news.detail', $n->news_slug)}}" target="_blank" />
+                                            <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{route('blog.edit', ['blog' => $n->news_id])}}" />
+                                            <form action="{{route('blog.destroy', ['blog' => $n->news_id])}}" method="POST">
                                                 @csrf @method('delete')
-                                                <button onclick="return confirm('Bạn muốn xóa bài viết này?')"
-                                                    class="btn btn-danger btn-sm mx-1"> 
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <x-admin.row-action action="delete" title="Xóa" onclick="return confirm('Bạn muốn xóa bài viết này?')" type="submit" />
                                             </form>
                                         </div>
                                     </td>

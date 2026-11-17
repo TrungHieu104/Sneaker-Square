@@ -73,15 +73,13 @@
                                data-id="{{ $menu->menu_id }}" />
                     </div>
                     @can('Quản trị Menu')
-                    <a class="btn btn-primary btn-sm" href="/admin/menus/{{ $menu->menu_id }}/edit" title="Chỉnh sửa">
-                        <i class="fas fa-edit"></i>
-                    </a>
-                    <form class="d-inline" action="{{ route('menu.softDelete', ['id' => $menu->menu_id]) }}" method="post">
-                        @csrf @method('DELETE')
-                        <button type="submit" onclick="return confirm('Xóa menu này?')" class="btn btn-danger btn-sm" title="Xóa">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </form>
+                    <div class="row-actions">
+                        <x-admin.row-action action="edit" title="Chỉnh sửa" href="/admin/menus/{{ $menu->menu_id }}/edit" />
+                        <form action="{{ route('menu.softDelete', ['id' => $menu->menu_id]) }}" method="post">
+                            @csrf @method('DELETE')
+                            <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Xóa menu này?')" />
+                        </form>
+                    </div>
                     @endcan
                 </div>
 
@@ -108,15 +106,13 @@
                                        data-id="{{ $child->menu_id }}" />
                             </div>
                             @can('Quản trị Menu')
-                            <a class="btn btn-primary btn-sm" href="/admin/menus/{{ $child->menu_id }}/edit" title="Chỉnh sửa">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <form class="d-inline" action="{{ route('menu.softDelete', ['id' => $child->menu_id]) }}" method="post">
-                                @csrf @method('DELETE')
-                                <button type="submit" onclick="return confirm('Xóa menu này?')" class="btn btn-danger btn-sm" title="Xóa">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
+                            <div class="row-actions">
+                                <x-admin.row-action action="edit" title="Chỉnh sửa" href="/admin/menus/{{ $child->menu_id }}/edit" />
+                                <form action="{{ route('menu.softDelete', ['id' => $child->menu_id]) }}" method="post">
+                                    @csrf @method('DELETE')
+                                    <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Xóa menu này?')" />
+                                </form>
+                            </div>
                             @endcan
                         </div>
                     </div>

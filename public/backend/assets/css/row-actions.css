@@ -1,0 +1,53 @@
+/* Icon buttons in admin list rows: a light tint at rest, the full colour on hover. */
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* Delete buttons sit in their own form; let the button join the row's flex line. */
+.row-actions form {
+  display: contents;
+}
+
+.row-action {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1;
+  text-decoration: none;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.row-action:focus-visible {
+  outline: 2px solid #fd7e14;
+  outline-offset: 2px;
+}
+
+.row-action-view { background: #e8fadf; color: #4fae1f; }
+.row-action-view:hover, .row-action-view:focus-visible { background: #71dd37; color: #fff; }
+
+.row-action-edit { background: #fff0e3; color: #e8710f; }
+.row-action-edit:hover, .row-action-edit:focus-visible { background: #fd7e14; color: #fff; }
+
+.row-action-delete { background: #ffe5e0; color: #e6381a; }
+.row-action-delete:hover, .row-action-delete:focus-visible { background: #ff3e1d; color: #fff; }
+
+.row-action-more { background: #eef0f3; color: #6d7a8b; }
+.row-action-more:hover, .row-action-more:focus-visible { background: #8592a3; color: #fff; }
+
+/* No pointer events, so a title on the wrapping form still explains why. */
+.row-action:disabled {
+  background: #f5f6f8;
+  color: #c8cfd6;
+  pointer-events: none;
+}

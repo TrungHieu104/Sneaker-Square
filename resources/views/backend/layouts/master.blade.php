@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="{{ asset('backend/assets/vendor/css/theme-default.css') }}"
         class="template-customizer-theme-css" />
     <link rel="stylesheet" href="{{ asset('backend/assets/css/demo.css') }}" />
+    <link rel="stylesheet" href="{{ asset_v('backend/assets/css/row-actions.css') }}" />
     <link rel="stylesheet" href="{{asset('frontend/css/animate.css')}}">
 	<link rel="stylesheet" href="{{asset('frontend/css/noty.css')}}">
     <!-- Vendors CSS -->

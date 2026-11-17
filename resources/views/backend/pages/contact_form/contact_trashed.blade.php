@@ -72,7 +72,7 @@
                             </td>
                             <td>{{date('d/m/Y', strtotime($ct->created_at))}}</td>
                             <td>
-                                <a class="btn btn-success  btn-sm mx-1" href="" title="Xem" data-bs-toggle="modal" data-bs-target="#ContactModal{{$ct->id}}"><i class="far fa-eye"></i></a>
+                                <x-admin.row-action action="view" title="Xem" href="" data-bs-toggle="modal" data-bs-target="#ContactModal{{$ct->id}}" />
                                 <!-- Modal -->
                                 <div class="modal fade" id="ContactModal{{$ct->id}}" tabindex="-1" aria-labelledby="ContactModal{{$ct->id}}Label" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
@@ -95,12 +95,12 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="d-flex">
+                                <div class="row-actions">
                                     <form action="{{route('contact-form.restore',$ct->id)}}">
-                                        <button class="btn btn-success  btn-sm mx-1" href="" title="Khôi phục"><i class="fas fa-trash-restore"></i></i></button>
+                                        <x-admin.row-action action="restore" title="Khôi phục" type="submit" />
                                     </form>
                                     <form action="{{route('contact-form.forceDelete',$ct->id)}}">
-                                        <button class="btn btn-danger  btn-sm mx-1" href="" title="xóa" onclick="return confirm('Bạn có chắc muốn xóa liên hệ này vĩnh viễn?')"><i class="fas fa-trash"></i></button>
+                                        <x-admin.row-action action="delete" title="Xóa vĩnh viễn" onclick="return confirm('Bạn có chắc muốn xóa liên hệ này vĩnh viễn?')" type="submit" />
                                     </form>
                                 </div>
                             </td>

@@ -61,14 +61,10 @@ Bài viết
                                     <td>{{$bT->news_title}}</td>
                                     <td>{{ date('d/m/Y', strtotime($bT->post_date)) }}</td>
                                     <td class="text-center">
-                                        <div>
-                                            <a class="p-2 btn btn-success btn-sm m-1"
-                                                href="{{route('blog.restore',['id'=>$bT->news_id])}}" title="Hoàn tác"><i class="fas fa-trash-restore"></i>
-                                            </a>
-                                            <form class="d-inline" action="{{route('blog.delete',['id'=>$bT->news_id])}}" method="post"> @csrf @method('DELETE')
-                                                <button onclick="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')" class="p-2 btn btn-danger btn-sm m-1" title="Xóa">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                        <div class="row-actions">
+                                            <x-admin.row-action action="restore" title="Khôi phục" href="{{route('blog.restore',['id'=>$bT->news_id])}}" />
+                                            <form action="{{route('blog.delete',['id'=>$bT->news_id])}}" method="post"> @csrf @method('DELETE')
+                                                <x-admin.row-action action="delete" title="Xóa vĩnh viễn" onclick="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')" type="submit" />
                                             </form>  
                                         </div>
                                     </td>

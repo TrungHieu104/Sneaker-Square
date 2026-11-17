@@ -180,23 +180,14 @@
                                 </td>
 
                                 <td class="text-center">
-                                    <div>
-                                        <button type="button" class="btn btn-success btn-sm m-1" title="Điều chỉnh tồn kho"
-                                                data-bs-toggle="modal" data-bs-target="#adjust-modal-{{ $quantity->quantity_id }}">
-                                            <i class="fas fa-sliders-h"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-primary btn-sm m-1" title="Sửa giá"
-                                                data-bs-toggle="modal" data-bs-target="#price-modal-{{ $quantity->quantity_id }}">
-                                            <i class="fas fa-tag"></i>
-                                        </button>
-                                        <form class="d-inline" action="{{ route('stock.destroy', $quantity->quantity_id) }}" method="POST">
+                                    <div class="row-actions">
+                                        <x-admin.row-action action="more" title="Điều chỉnh tồn kho" icon="fas fa-sliders-h" data-bs-toggle="modal" data-bs-target="#adjust-modal-{{ $quantity->quantity_id }}" />
+                                        <x-admin.row-action action="edit" title="Sửa giá" icon="fas fa-tag" data-bs-toggle="modal" data-bs-target="#price-modal-{{ $quantity->quantity_id }}" />
+                                        <form action="{{ route('stock.destroy', $quantity->quantity_id) }}" method="POST">
                                             @csrf 
                                             @method('DELETE')
-                                            <button type='submit' onclick="return confirm('Bạn muốn xóa mục này trong kho?')"
-                                                    class="btn btn-danger btn-sm ms-1"
-                                                    {{ $quantity->quantity != 0 ? 'disabled':'' }}>
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            <x-admin.row-action action="delete" title="Xóa" type="submit" :disabled="$quantity->quantity != 0"
+                                                onclick="return confirm('Bạn muốn xóa mục này trong kho?')" />
                                         </form>
                                     </div>
                                 </td>

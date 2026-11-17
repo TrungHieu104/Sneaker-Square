@@ -61,17 +61,9 @@
                                         {{($data->coupon_condition == 0) ? $data->coupon_value.'%' : number_format($data->coupon_value,0,",",".").'đ' }}
                                     </td>
                                     <td class="text-center dx-res">
-                                        <div>
-                                            <a class="btn btn-success btn-sm mx-1"
-                                                href="{{route('coupon.restore',['id'=>$data->coupon_id])}}" title="Sao lưu">
-                                                <i class="fas fa-trash-restore"></i>
-                                            </a>
-                                            <a href="{{route('coupon.delete',['id'=>$data->coupon_id])}}"
-                                                onclick="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')"
-                                                class="btn btn-danger btn-sm ms-1"
-                                                title="Xóa">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
+                                        <div class="row-actions">
+                                            <x-admin.row-action action="restore" title="Khôi phục" href="{{route('coupon.restore',['id'=>$data->coupon_id])}}" />
+                                            <x-admin.row-action action="delete" title="Xóa vĩnh viễn" href="{{route('coupon.delete',['id'=>$data->coupon_id])}}" onclick="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')" />
                                         </div>
                                     </td>
                                     

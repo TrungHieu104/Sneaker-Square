@@ -58,17 +58,9 @@
                                 </td>
                                 
                                 <td class="text-center">
-                                    <div>
-                                        <a class="btn btn-success btn-sm mx-1"
-                                            href="{{route('cate_slide.restore',['id'=>$data->cate_slide_id])}}" title="Sao lưu">
-                                            <i class="fas fa-trash-restore"></i>
-                                        </a>
-                                        <a href="{{route('cate_slide.delete',['id'=>$data->cate_slide_id])}}"
-                                            onclick="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')"
-                                            class="btn btn-danger btn-sm ms-1"
-                                            title="Xóa">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
+                                    <div class="row-actions">
+                                        <x-admin.row-action action="restore" title="Khôi phục" href="{{route('cate_slide.restore',['id'=>$data->cate_slide_id])}}" />
+                                        <x-admin.row-action action="delete" title="Xóa vĩnh viễn" href="{{route('cate_slide.delete',['id'=>$data->cate_slide_id])}}" onclick="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')" />
                                     </div>
                                 </td>
                             </tr>

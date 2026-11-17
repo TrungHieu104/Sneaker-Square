@@ -63,20 +63,16 @@
                                 </td>
                                 
                                 <td class="text-center">
-                                    <div>
-                                        <form class="d-inline" action="{{ route('promotion.restore', ['id' => $data->promotion_id]) }}" method="get">
+                                    <div class="row-actions">
+                                        <form action="{{ route('promotion.restore', ['id' => $data->promotion_id]) }}" method="get">
                                             @csrf
                                             {{-- @method('PATCH') --}}
-                                            <button type="submit" class="p-2 btn btn-success btn-sm m-1" title="Sao lưu">
-                                                <i class="fas fa-trash-restore"></i>
-                                            </button>
+                                            <x-admin.row-action action="restore" title="Khôi phục" type="submit" />
                                         </form>
-                                        <form class="d-inline" action="{{route('promotion.delete',['id'=>$data->promotion_id])}}" method="get" onsubmit="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')">
+                                        <form action="{{route('promotion.delete',['id'=>$data->promotion_id])}}" method="get" onsubmit="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')">
                                             @csrf
                                             {{-- @method('DELETE') --}}
-                                            <button type="submit" class="p-2 btn btn-danger btn-sm m-1" title="Xóa">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            <x-admin.row-action action="delete" title="Xóa vĩnh viễn" type="submit" />
                                         </form>
                                     </div>
                                 </td>

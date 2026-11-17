@@ -57,14 +57,10 @@
                                     {{$tgT->tag_slug}}
                                 </td>
                                 <td class="text-center">
-                                    <div>
-                                        <a class="p-2 btn btn-success btn-sm m-1"
-                                            href="{{route('tag.restore',['id'=>$tgT->tag_id])}}" title="Hoàn tác"><i class="fas fa-trash-restore"></i>
-                                        </a>
-                                        <form class="d-inline" action="{{route('tag.delete',['id'=>$tgT->tag_id])}}" method="post"> @csrf @method('DELETE')
-                                            <button onclick="return confirm('Bạn có chắc muốn xóa thẻ tag vĩnh viễn?')" class="p-2 btn btn-danger btn-sm m-1" title="Xóa">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                    <div class="row-actions">
+                                        <x-admin.row-action action="restore" title="Khôi phục" href="{{route('tag.restore',['id'=>$tgT->tag_id])}}" />
+                                        <form action="{{route('tag.delete',['id'=>$tgT->tag_id])}}" method="post"> @csrf @method('DELETE')
+                                            <x-admin.row-action action="delete" title="Xóa vĩnh viễn" onclick="return confirm('Bạn có chắc muốn xóa thẻ tag vĩnh viễn?')" type="submit" />
                                         </form>   
                                     </div>
                                 </td>

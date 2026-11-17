@@ -90,19 +90,13 @@
                                         @endif
                                     </td>
                                     <td class="text-center">
-                                        <div>
-                                            <button type="button" class="btn btn-success btn-sm ms-1 p-2" title="Chi tiết" data-bs-toggle="modal" data-bs-target="#promotionModal{{ $data->promotion_id }}">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <a class="btn btn-primary btn-sm ms-1 p-2" href="{{ route('promotion.edit', $data->promotion_id) }}" title="Chỉnh sửa">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <form class="d-inline" action="{{ route('promotion.softDelete', $data->promotion_id) }}" method="post">
+                                        <div class="row-actions">
+                                            <x-admin.row-action action="view" title="Chi tiết" data-bs-toggle="modal" data-bs-target="#promotionModal{{ $data->promotion_id }}" />
+                                            <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{ route('promotion.edit', $data->promotion_id) }}" />
+                                            <form action="{{ route('promotion.softDelete', $data->promotion_id) }}" method="post">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-sm ms-1 p-2" onclick="return confirm('Bạn có chắc muốn xóa?')" title="Xóa">
-                                                    <i class="fas fa-trash"></i> 
-                                                </button>
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn có chắc muốn xóa?')" />
                                             </form>
                                                 
                                         </div>

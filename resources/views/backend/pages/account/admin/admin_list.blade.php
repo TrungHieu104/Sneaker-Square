@@ -93,18 +93,11 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            <a class="p-2 btn btn-primary btn-sm m-1"
-                                                href="{{route('account.edits',['encryptedUserId' => encrypt($data->user_id)])}}" title="Chỉnh sửa">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a class="p-2 btn btn-warning btn-sm m-1"
-                                                href="{{route('assign_role',['encryptedUserId' => encrypt($data->user_id)])}}" title="Phân vai trò">
-                                                <i class="fas fa-user-alt"></i>
-                                            </a>
-                                            <a class="p-2 btn btn-info btn-sm m-1"
-                                                href="{{route('assign_permission',['encryptedUserId' => encrypt($data->user_id)])}}" title="Phân quyền">
-                                                <i class="fas fa-users"></i>
-                                            </a>
+                                            <div class="row-actions">
+                                                <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{route('account.edits',['encryptedUserId' => encrypt($data->user_id)])}}" />
+                                                <x-admin.row-action action="more" title="Phân vai trò" icon="fas fa-user-alt" href="{{route('assign_role',['encryptedUserId' => encrypt($data->user_id)])}}" />
+                                                <x-admin.row-action action="more" title="Phân quyền" icon="fas fa-users" href="{{route('assign_permission',['encryptedUserId' => encrypt($data->user_id)])}}" />
+                                            </div>
                                         </td>
                                     </tr>
                                     @php
