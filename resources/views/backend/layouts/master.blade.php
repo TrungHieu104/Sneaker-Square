@@ -112,6 +112,10 @@
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
     <script src="{{ asset_v('backend/assets/vendor/js/datepicker.js') }}"></script>
     <script>
+        // 4.22.1 is the last free CKEditor 4; newer ones need a paid LTS key, so
+        // the upgrade notice is switched off for every editor (technical-debt #9).
+        CKEDITOR.config.versionCheck = false;
+
         CKEDITOR.replace('content', {
             filebrowserBrowseUrl: "{{ route('ckfinder_browser') }}",
             language: 'vi',

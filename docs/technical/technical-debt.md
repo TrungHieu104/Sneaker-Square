@@ -30,6 +30,7 @@ The SonarQube scope, and the reason each part is excluded, is in `sonar-project.
 | 6 | Remaining Major code smells: methods with many `return`s, snake_case variable names, unused parameters required by route signatures | Low | Fix gradually when touching the file | Planned |
 | 7 | `database/sneaker_square.sql` is out of sync with the migrations (missing `facebook_id`, `shoe_size` and the `user_events`, `faq_groups` and `faqs` tables; still has the dropped `visitors` table, and the old `faq` table where the migrations now create `pages`) | Installing with option 1 in the README leaves those out | Re-export the dump from a database built with `migrate --seed` | Planned |
 | 8 | Older Git history was committed straight to `main`, without pull requests | No review trail | Since 2026-10-05, follow `CONTRIBUTING.md`: own branch, pull request, review, merge only when CI is green | In effect |
+| 9 | The admin editor is CKEditor 4.22.1, the last free CKEditor 4. Security fixes after it ship only in the paid 4.23+ LTS (needs a license key) | Admins type into an editor that no longer gets security fixes; only staff with admin permissions can reach it | The upgrade notice is switched off with `CKEDITOR.config.versionCheck = false` in `backend/layouts/master.blade.php`. The real fix is moving to CKEditor 5 (free): replace the editor, wire CKFinder again, replace the line-height plugin and check the stored HTML of products and posts | Notice off; move to CKEditor 5 planned |
 
 ## Done in the 2026-10-05 round
 
