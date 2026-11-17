@@ -1,95 +1,112 @@
 @extends('backend.index')
 
 @section('title')
-    Chính sách
+    Chính sách & Giới thiệu
 @endsection
 
 @section('content')
-    <h4 class="fw-bold py-3 mb-3"><span class="text-muted fw-light">Cấu hình chung /</span> <a href="{{ route('policy.index') }}"
-            class="tab-sort">Chính sách</a></h4>
+    @php
+        $sortLink = fn (string $column) => request()->fullUrlWithQuery(['sort-by' => $column, 'sort-type' => $orderBy === $column ? $orderType : 'desc']);
+        $tabs = ['' => 'Tất cả', 'policy' => 'Chính sách', 'about' => 'Giới thiệu'];
+    @endphp
+    <h4 class="fw-bold py-3 mb-3"><span class="text-muted fw-light">Cấu hình chung /</span> <a href="{{ route('page.index') }}"
+            class="tab-sort">Chính sách &amp; Giới thiệu</a></h4>
     <div class="card mb-4 card-border-top">
         <div class="d-flex justify-content-between align-items-center">
-            <h5 class="card-header">Quản lý chính sách</h5>
+            <h5 class="card-header">Trang chính sách và giới thiệu</h5>
             <div class="px-4 d-flex gap-3">
-                <a href="{{ route('policy.create') }}" class="btn btn-success mt-1">Thêm mới &nbsp;<i
+                <a href="{{ route('page.create') }}" class="btn btn-success mt-1">Thêm chính sách &nbsp;<i
                         class="bi bi-plus-circle"></i></a>
-                <a href="{{ route('policy.trashed') }}" class="btn btn-danger mt-1">Thùng rác &nbsp;<i
+                <a href="{{ route('page.trashed') }}" class="btn btn-danger mt-1">Thùng rác &nbsp;<i
                         class='bx bxs-trash'></i></a>
             </div>
         </div>
         <div class="card-body">
-            <div class="table-responsive text-nowrap">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                <div class="btn-group" role="group" aria-label="Lọc theo loại trang">
+                    @foreach ($tabs as $value => $label)
+                        <a href="{{ route('page.index', array_filter(['type' => $value, 'keyword' => $keyword])) }}"
+                            @class(['btn', 'btn-primary' => ($type?->value ?? '') === $value, 'btn-outline-primary' => ($type?->value ?? '') !== $value])>
+                            {{ $label }}
+                            <small class="ms-1 opacity-75">{{ $value === '' ? $counts->sum() : ($counts[$value] ?? 0) }}</small>
+                        </a>
+                    @endforeach
+                </div>
+                <form method="GET" data-list-filter action="{{ route('page.index') }}" class="d-flex gap-2">
+                    @if ($type)
+                        <input type="hidden" name="type" value="{{ $type->value }}">
+                    @endif
+                    <input type="search" name="keyword" class="form-control" style="width: 280px;" placeholder="Tìm theo tên trang…"
+                        value="{{ $keyword }}" aria-label="Tìm theo tên trang">
+                    <button class="btn btn-primary">Lọc</button>
+                </form>
+            </div>
+            <div class="table-responsive">
                 <table class="table table-bordered w-100">
                     <thead>
                         <tr>
                             <th class="text-center">STT</th>
-                            <th class="text-center">
-                                <a class="tab-sort"
-                                    href="?sort-by=page_name&sort-type={{ $orderBy === 'page_name' ? $orderType : 'desc' }}">
-                                    Thông tin
-                                </a>
-                            </th>
-                            <th class="text-center">
-                                <a class="tab-sort"
-                                    href="?sort-by=page_hidden&sort-type={{ $orderBy === 'page_hidden' ? $orderType : 'desc' }}">
-                                    Hiển thị
-                                </a>
-                            </th>
+                            <th><a class="tab-sort" href="{{ $sortLink('page_name') }}">Trang</a></th>
+                            <th class="text-center">Loại</th>
+                            <th>Cập nhật</th>
+                            <th class="text-center"><a class="tab-sort" href="{{ $sortLink('page_hidden') }}">Hiển thị</a></th>
                             <th class="text-center">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         @php
-                            $stt = $policies->firstItem();
+                            $stt = $pages->firstItem();
                         @endphp
-                        @if ($policies->isEmpty())
+                        @if ($pages->isEmpty())
                             <tr>
                                 <td colspan="6" class="text-center">
                                     Không có dữ liệu để hiển thị.
                                 </td>
                             </tr>
                         @else
-                            @foreach ($policies as $data)
-                                <tr>
+                            @foreach ($pages as $data)
+                                @php
+                                    $isAbout = $data->page_type === \App\Enums\PageType::About;
+                                    $path = $isAbout ? route('about.page', [], false) : ($data->page_slug ? route('policy.detail', $data->page_slug, false) : '—');
+                                @endphp
+                                <tr @class(['table-light' => $isAbout])>
+                                    <td class="text-center">{{ $stt }}</td>
+                                    <td>
+                                        <b>{{ $data->page_name }}</b>
+                                        <small class="d-block text-muted font-monospace">{{ $path }}</small>
+                                    </td>
                                     <td class="text-center">
-                                        {{ $stt }}
+                                        <span @class(['badge', 'bg-label-warning' => $isAbout, 'bg-label-primary' => ! $isAbout])>{{ $isAbout ? 'Giới thiệu' : 'Chính sách' }}</span>
                                     </td>
                                     <td>
-                                        - Tên: <b>{{ $data->page_name }} </b><br>
-                                        - Đường dẫn: {{ $data->page_slug }} <br>
-                                        - Hiển thị:
-                                        <span id="status_{{ $data->id }}"
-                                            style="color: {{ $data->page_hidden == 0 ? 'red' : 'green' }}">
-                                            {{ $data->page_hidden == 0 ? 'Ẩn' : 'Hiện' }}
-                                        </span> <br>
-                                        - Tác giả: {{ $data->page_created_by }}<br>
-                                        - Chỉnh sửa bởi: {{ $data->page_updated_by }}<br>
+                                        {{ $data->page_updated_by ?: $data->page_created_by }}
+                                        <small class="d-block text-muted">tạo bởi {{ $data->page_created_by }}</small>
                                     </td>
                                     <td class="text-center">
-                                        <input name="policy-status" class="form-check-input" type="checkbox" value="1"
-                                            id="checkbox_{{ $data->page_id }}"
-                                            {{ $data->page_hidden == 1 ? 'checked' : '' }} data-id="{{ $data->page_id }}" />
+                                        @if ($isAbout)
+                                            <input class="form-check-input" type="checkbox" checked disabled title="Trang giới thiệu luôn hiện" aria-label="Trang giới thiệu luôn hiện" />
+                                        @else
+                                            <input name="page-status" class="form-check-input" type="checkbox" value="1"
+                                                id="checkbox_{{ $data->page_id }}" aria-label="Hiển thị chính sách"
+                                                {{ $data->page_hidden == 1 ? 'checked' : '' }} data-id="{{ $data->page_id }}" />
+                                        @endif
                                     </td>
-
                                     <td class="text-center">
-                                        <div>
-                                            <button type="button" class="p-2 btn btn-success btn-sm m-1" title="Xem"
-                                                data-bs-toggle="modal" data-bs-target="#pageModal{{ $data->page_id }}">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <a class="btn btn-primary btn-sm m-1 p-2"
-                                                href="{{ route('policy.edit', ['encryptedPageId' => encrypt($data->page_id)]) }}"
-                                                title="Chỉnh sửa"><i class="fas fa-edit"></i>
-                                            </a>
-                                            <form class="d-inline" action="{{ route('policy.softDelete', ['encryptedPageId' => encrypt($data->page_id)]) }}"
-                                                method="post">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" onclick="return confirm('Bạn có chắc muốn xóa?')"
-                                                        class="btn btn-danger btn-sm m-1 p-2">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
+                                        <div class="row-actions">
+                                            <x-admin.row-action action="view" title="Xem" data-bs-toggle="modal" data-bs-target="#pageModal{{ $data->page_id }}" />
+                                            <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{ route('page.edit', ['encryptedPageId' => encrypt($data->page_id)]) }}" />
+                                            @if ($isAbout)
+                                                {{-- A disabled button shows no tooltip, so the span carries it. --}}
+                                                <span class="d-inline-flex" title="Trang giới thiệu không xoá được">
+                                                    <x-admin.row-action action="delete" title="Xóa" disabled />
+                                                </span>
+                                            @else
+                                                <form action="{{ route('page.softDelete', ['encryptedPageId' => encrypt($data->page_id)]) }}" method="post">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn có chắc muốn xóa?')" />
+                                                </form>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -160,7 +177,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $policies->onEachSide(1)->links('backend.layouts.partials.pagination') }}
+            {{ $pages->onEachSide(1)->links('backend.layouts.partials.pagination') }}
         </div>
     </div>
 @endsection

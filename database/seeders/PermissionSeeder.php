@@ -20,7 +20,6 @@ class PermissionSeeder extends Seeder
             'Quản trị Thông tin',
             'Quản trị Đơn hàng',
             'Thanh toán',
-            'Giới thiệu',
             'Khách hàng liên hệ',
             'Thống kê truy cập',
             'Quản trị Tài khoản (Khách hàng)',

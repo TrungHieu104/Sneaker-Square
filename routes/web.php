@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Backend\AboutAdminController;
 use App\Http\Controllers\Backend\AuthAdminController;
 use App\Http\Controllers\Backend\BehaviourController;
 use App\Http\Controllers\Backend\BlogAdminController;
@@ -19,7 +18,7 @@ use App\Http\Controllers\Backend\ImageController;
 use App\Http\Controllers\Backend\MenusAdminController;
 use App\Http\Controllers\Backend\OpenCartController;
 use App\Http\Controllers\Backend\OrderAdminController;
-use App\Http\Controllers\Backend\PolicyAdminController;
+use App\Http\Controllers\Backend\PageAdminController;
 use App\Http\Controllers\Backend\ProductAdminController;
 use App\Http\Controllers\Backend\ProductCateController;
 use App\Http\Controllers\Backend\ProductQuantityController;
@@ -234,7 +233,6 @@ Route::any('/ckfinder/browser', '\CKSource\CKFinderBridge\Controller\CKFinderCon
 // ======================================Backend================================================
 // The permission each admin area asks for, named once.
 $can = [
-    'about' => 'permission:Giới thiệu',
     'contactForms' => 'permission:Khách hàng liên hệ',
     'blog' => 'permission:Quản trị Bài viết',
     'pages' => 'permission:Quản trị Chính sách & FAQ',
@@ -402,16 +400,16 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     });
     Route::post('/send-coupon', [CouponAdminController::class, 'sendCoupon'])->name('sendCoupon');
 
-    // Chính sách
-    Route::resource('policy', PolicyAdminController::class)->only(['index', 'create', 'store', 'update'])->middleware($can['pages']);
-    Route::get('/policies/trashed', [PolicyAdminController::class, 'trashed'])->name('policy.trashed')->middleware($can['pages']);
-    Route::get('/policy/{encryptedPageId}/edit', [PolicyAdminController::class, 'edit'])->name('policy.edit')->middleware($can['pages']);
-    Route::delete('/policy/soft-delete/{encryptedPageId}', [PolicyAdminController::class, 'softDelete'])->name('policy.softDelete')->middleware($can['pages']);
-    Route::get('/policy/restore/{encryptedPageId}', [PolicyAdminController::class, 'restore'])->name('policy.restore')->middleware($can['pages']);
-    Route::get('/policies/restore-all', [PolicyAdminController::class, 'restoreAll'])->name('policy.restoreAll')->middleware($can['pages']);
-    Route::get('/policy/delete/{encryptedPageId}', [PolicyAdminController::class, 'forceDelete'])->name('policy.delete')->middleware($can['pages']);
-    Route::get('/policies/delete-all', [PolicyAdminController::class, 'deleteAll'])->name('policy.delete.all')->middleware($can['pages']);
-    Route::post('/policy-status/{id}', [PolicyAdminController::class, 'status'])->name('policy.status')->middleware($can['pages']);
+    // Chính sách & Giới thiệu
+    Route::resource('page', PageAdminController::class)->only(['index', 'create', 'store', 'update'])->middleware($can['pages']);
+    Route::get('/pages/trashed', [PageAdminController::class, 'trashed'])->name('page.trashed')->middleware($can['pages']);
+    Route::get('/page/{encryptedPageId}/edit', [PageAdminController::class, 'edit'])->name('page.edit')->middleware($can['pages']);
+    Route::delete('/page/soft-delete/{encryptedPageId}', [PageAdminController::class, 'softDelete'])->name('page.softDelete')->middleware($can['pages']);
+    Route::get('/page/restore/{encryptedPageId}', [PageAdminController::class, 'restore'])->name('page.restore')->middleware($can['pages']);
+    Route::get('/pages/restore-all', [PageAdminController::class, 'restoreAll'])->name('page.restoreAll')->middleware($can['pages']);
+    Route::get('/page/delete/{encryptedPageId}', [PageAdminController::class, 'forceDelete'])->name('page.delete')->middleware($can['pages']);
+    Route::get('/pages/delete-all', [PageAdminController::class, 'deleteAll'])->name('page.delete.all')->middleware($can['pages']);
+    Route::post('/page-status/{id}', [PageAdminController::class, 'status'])->name('page.status')->middleware($can['pages']);
 
     // Câu hỏi thường gặp
     Route::resource('faq', FaqAdminController::class)->except(['show'])->middleware($can['pages']);
@@ -419,9 +417,9 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     Route::resource('faq-group', FaqGroupAdminController::class)->only(['index', 'store', 'edit', 'update', 'destroy'])
         ->names('faq_group')->parameters(['faq-group' => 'group'])->middleware($can['pages']);
 
-    // Giới thiệu
-    Route::resource('about', AboutAdminController::class)->only(['index', 'update'])->middleware($can['about']);
-    Route::get('/about/{encryptedAboutId}/edit', [AboutAdminController::class, 'edit'])->name('abouts.edit')->middleware($can['about']);
+    // Old links to the policy and about screens land on the merged one.
+    Route::redirect('/policy', '/admin/page')->middleware($can['pages']);
+    Route::redirect('/about', '/admin/page?type=about')->middleware($can['pages']);
 
     // Đơn hàng
     Route::resource('order', (OrderAdminController::class))->middleware($can['orders']);

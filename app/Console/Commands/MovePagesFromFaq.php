@@ -3,17 +3,20 @@
 namespace App\Console\Commands;
 
 use App\Enums\PageType;
+use App\Models\UserModel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Spatie\ResponseCache\Facades\ResponseCache;
 
 /**
  * Moves the policy and about pages of a database built before `pages`
  * existed. The renamed migration creates `pages` on such a database; this
- * fills it from the old `faq` table and drops that table.
+ * fills it from the old `faq` table and drops that table, then folds the old
+ * about-page permission into the policy one.
  */
 class MovePagesFromFaq extends Command
 {
@@ -25,6 +28,8 @@ class MovePagesFromFaq extends Command
 
     private const NEW_PERMISSION = 'Quản trị Chính sách & FAQ';
 
+    private const ABOUT_PERMISSION = 'Giới thiệu';
+
     protected $signature = 'pages:move-from-faq';
 
     protected $description = 'Chuyển trang chính sách và trang giới thiệu từ bảng faq cũ sang bảng pages';
@@ -33,16 +38,21 @@ class MovePagesFromFaq extends Command
     {
         if (! Schema::hasTable(self::OLD_TABLE)) {
             $this->info('Không còn bảng faq, không có gì để chuyển.');
-
-            return self::SUCCESS;
-        }
-
-        if (DB::table('pages')->exists()) {
+        } elseif (DB::table('pages')->exists()) {
             $this->error('Bảng pages đã có dữ liệu. Kiểm tra lại trước khi chuyển để không ghi đè.');
 
             return self::FAILURE;
+        } else {
+            $this->movePages();
         }
 
+        $this->mergeAboutPermission();
+
+        return self::SUCCESS;
+    }
+
+    private function movePages(): void
+    {
         $moved = DB::transaction(function () {
             $rows = DB::table(self::OLD_TABLE)->orderBy('faq_id')->get()->map(fn (object $row) => [
                 'page_id' => $row->faq_id,
@@ -80,7 +90,31 @@ class MovePagesFromFaq extends Command
         ResponseCache::clear();
 
         $this->info("Đã chuyển {$moved} trang sang bảng pages và xoá bảng faq.");
+    }
 
-        return self::SUCCESS;
+    /**
+     * Policies and the about page share one admin screen, so whoever could edit
+     * the about page gets the policy permission before the old one is deleted.
+     */
+    private function mergeAboutPermission(): void
+    {
+        $about = Permission::where('name', self::ABOUT_PERMISSION)->first();
+
+        if ($about === null) {
+            return;
+        }
+
+        DB::transaction(function () use ($about) {
+            $pages = Permission::findOrCreate(self::NEW_PERMISSION, 'web');
+
+            $about->roles->each(fn (Role $role) => $role->givePermissionTo($pages));
+            UserModel::whereHas('permissions', fn ($query) => $query->whereKey($about->getKey()))
+                ->get()
+                ->each(fn (UserModel $user) => $user->givePermissionTo($pages));
+            $about->delete();
+        });
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->info('Đã gộp quyền "'.self::ABOUT_PERMISSION.'" vào quyền "'.self::NEW_PERMISSION.'".');
     }
 }

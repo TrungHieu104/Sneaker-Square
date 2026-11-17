@@ -12,15 +12,17 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 
 /**
- * The admin "Chính sách" screens: the policy pages, their bin and their
- * show/hide switch. The about page lives in the same table but has its own screen.
+ * The admin "Chính sách & Giới thiệu" screens: every row of `pages` in one list.
+ * The about page is only ever edited; showing, hiding and the bin are for
+ * policies alone, so those lookups stay limited to them.
  */
-class PolicyAdminController extends Controller
+class PageAdminController extends Controller
 {
     private const PER_PAGE = 10;
 
@@ -43,28 +45,37 @@ class PolicyAdminController extends Controller
     {
         [$orderBy, $orderType] = $this->listingSort($request, PageModel::class, 'page_id');
         $keyword = $request->input('keyword');
+        $type = PageType::tryFrom((string) $request->input('type'));
 
-        $policies = $this->performSearch(PageModel::policies()->orderBy($orderBy, $orderType), $keyword, self::SEARCHABLE)
+        $query = PageModel::query()
+            ->when($type, fn ($q) => $q->where('page_type', $type?->value))
+            // The about page is the only one of its kind, so it leads the list.
+            ->orderByRaw('page_type = ? desc', [PageType::About->value])
+            ->orderBy($orderBy, $orderType);
+
+        $pages = $this->performSearch($query, $keyword, self::SEARCHABLE)
             ->paginate(self::PER_PAGE)
             ->withQueryString();
 
-        return view('backend.pages.policy.policy_list', compact('policies', 'keyword', 'orderBy', 'orderType'));
+        $counts = PageModel::query()->toBase()->selectRaw('page_type, count(*) as total')->groupBy('page_type')->pluck('total', 'page_type');
+
+        return view('backend.pages.page.page_list', compact('pages', 'counts', 'type', 'keyword', 'orderBy', 'orderType'));
     }
 
     public function create()
     {
-        return view('backend.pages.policy.policy_create');
+        return view('backend.pages.page.page_create');
     }
 
     public function status(Request $request, int $id): JsonResponse
     {
-        $policy = PageModel::find($id);
+        $policy = PageModel::policies()->find($id);
 
         if (! $policy) {
             return response()->json(['message' => 'Không tìm thấy dữ liệu'], 404);
         }
 
-        $policy->page_hidden = (int) $request->input('policy-status');
+        $policy->page_hidden = (int) $request->input('page-status');
         $policy->save();
 
         return response()->json(['message' => 'Cập nhật thành công']);
@@ -79,33 +90,39 @@ class PolicyAdminController extends Controller
 
     public function edit(Request $request, string $encryptedPageId)
     {
-        $policy = $this->decrypted($encryptedPageId, fn (int $id) => PageModel::find($id));
+        $page = $this->decrypted($encryptedPageId, fn (int $id) => PageModel::find($id));
 
-        if ($policy instanceof RedirectResponse) {
-            return $policy;
+        if ($page instanceof RedirectResponse) {
+            return $page;
         }
 
-        return $policy === null
+        return $page === null
             ? $this->toList('info', self::NO_POLICY)
-            : view('backend.pages.policy.policy_edit', compact('policy'));
+            : view('backend.pages.page.page_edit', compact('page'));
     }
 
     public function update(PageUpdateRequest $request, int $id): RedirectResponse
     {
-        $policy = PageModel::find($id);
+        $page = PageModel::find($id);
 
-        if ($policy === null) {
+        if ($page === null) {
             return $this->toList('info', self::NO_POLICY);
         }
 
-        $this->save->execute($policy, $request->post(), visibleByDefault: false);
+        // The about page is always shown and its address is fixed: a form
+        // value for either is ignored.
+        $form = $page->page_type === PageType::About
+            ? Arr::except($request->post(), ['status', 'slug'])
+            : $request->post();
+
+        $this->save->execute($page, $form, visibleByDefault: $page->page_type === PageType::About);
 
         return $this->toList('success', 'Chỉnh sửa thành công');
     }
 
     public function softDelete(Request $request, string $encryptedPageId): RedirectResponse
     {
-        $policy = $this->decrypted($encryptedPageId, fn (int $id) => PageModel::find($id));
+        $policy = $this->decrypted($encryptedPageId, fn (int $id) => PageModel::policies()->find($id));
 
         if ($policy instanceof RedirectResponse) {
             return $policy;
@@ -128,16 +145,16 @@ class PolicyAdminController extends Controller
         [$orderBy, $orderType] = $this->listingSort($request, PageModel::class, 'page_id');
         $keyword = $request->input('keyword');
 
-        $trashed = $this->performSearch(PageModel::onlyTrashed()->orderBy($orderBy, $orderType), $keyword, self::SEARCHABLE)
+        $trashed = $this->performSearch(PageModel::policies()->onlyTrashed()->orderBy($orderBy, $orderType), $keyword, self::SEARCHABLE)
             ->paginate(self::PER_PAGE)
             ->withQueryString();
 
-        return view('backend.pages.policy.policy_trash', compact('trashed', 'keyword', 'orderBy', 'orderType'));
+        return view('backend.pages.page.page_trash', compact('trashed', 'keyword', 'orderBy', 'orderType'));
     }
 
     public function restore(Request $request, string $encryptedPageId): RedirectResponse
     {
-        $policy = $this->decrypted($encryptedPageId, fn (int $id) => PageModel::withTrashed()->find($id));
+        $policy = $this->decrypted($encryptedPageId, fn (int $id) => PageModel::policies()->withTrashed()->find($id));
 
         if ($policy instanceof RedirectResponse) {
             return $policy;
@@ -152,13 +169,17 @@ class PolicyAdminController extends Controller
 
     public function restoreAll(): RedirectResponse
     {
-        if (PageModel::onlyTrashed()->count() === 0) {
+        $binned = PageModel::policies()->onlyTrashed()->get();
+
+        if ($binned->isEmpty()) {
             Session::flash('iconMessage', 'info');
 
             return back()->with('message', self::BIN_EMPTY);
         }
 
-        PageModel::onlyTrashed()->restore();
+        // One by one, not one bulk update: each restore must fire the model
+        // events that refresh the storefront cache.
+        $binned->each(fn (PageModel $policy) => $policy->restore());
         Session::flash('iconMessage', 'success');
 
         return back()->with('message', 'Hoàn tác thành công');
@@ -166,7 +187,7 @@ class PolicyAdminController extends Controller
 
     public function forceDelete(Request $request, string $encryptedPageId): RedirectResponse
     {
-        $policy = $this->decrypted($encryptedPageId, fn (int $id) => PageModel::withTrashed()->find($id));
+        $policy = $this->decrypted($encryptedPageId, fn (int $id) => PageModel::policies()->withTrashed()->find($id));
 
         if ($policy instanceof RedirectResponse) {
             return $policy;
@@ -181,13 +202,13 @@ class PolicyAdminController extends Controller
 
     public function deleteAll(): RedirectResponse
     {
-        if (PageModel::onlyTrashed()->count() === 0) {
+        if (PageModel::policies()->onlyTrashed()->doesntExist()) {
             Session::flash('iconMessage', 'info');
 
             return back()->with('message', self::BIN_EMPTY);
         }
 
-        PageModel::onlyTrashed()->forceDelete();
+        PageModel::policies()->onlyTrashed()->forceDelete();
         Session::flash('iconMessage', 'success');
 
         return back()->with('message', 'Xóa dữ liệu thành công!');
@@ -212,6 +233,6 @@ class PolicyAdminController extends Controller
     {
         Session::flash('iconMessage', $icon);
 
-        return redirect()->route('policy.index')->with('message', $message);
+        return redirect()->route('page.index')->with('message', $message);
     }
 }

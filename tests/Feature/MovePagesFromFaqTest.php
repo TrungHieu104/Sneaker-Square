@@ -9,12 +9,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
 
 /**
  * A database from before `pages` still has its pages in `faq`; the command
- * moves them over once and leaves nothing of the old table behind.
+ * moves them over once and leaves nothing of the old table behind. It also
+ * folds the old about-page permission into the one for policies.
  */
 class MovePagesFromFaqTest extends TestCase
 {
@@ -26,6 +28,8 @@ class MovePagesFromFaqTest extends TestCase
     private const OLD_PERMISSION = 'Quản trị FAQ';
 
     private const NEW_PERMISSION = 'Quản trị Chính sách & FAQ';
+
+    private const ABOUT_PERMISSION = 'Giới thiệu';
 
     public function test_chuyen_chinh_sach_va_trang_gioi_thieu_giu_nguyen_id_va_ban_da_xoa_tam(): void
     {
@@ -57,7 +61,7 @@ class MovePagesFromFaqTest extends TestCase
 
         $this->assertDatabaseMissing('permissions', ['name' => self::OLD_PERMISSION]);
         $this->assertTrue($admin->fresh()?->hasPermissionTo(self::NEW_PERMISSION));
-        $this->actingAs($admin)->get(route('policy.index'))->assertOk()->assertSee('Chính sách giao hàng');
+        $this->actingAs($admin)->get(route('page.index'))->assertOk()->assertSee('Chính sách giao hàng');
     }
 
     public function test_quyen_moi_da_co_thi_khong_doi_ten_de_len(): void
@@ -75,6 +79,37 @@ class MovePagesFromFaqTest extends TestCase
     public function test_chay_lai_khi_da_chuyen_xong_thi_khong_lam_gi(): void
     {
         $this->artisan(self::COMMAND)->expectsOutput('Không còn bảng faq, không có gì để chuyển.')->assertSuccessful();
+    }
+
+    public function test_quyen_gioi_thieu_gop_vao_quyen_chinh_sach_ke_ca_khi_da_chuyen_trang(): void
+    {
+        $editor = Role::findOrCreate('Biên tập', 'web');
+        $editor->givePermissionTo(Permission::findOrCreate(self::ABOUT_PERMISSION, 'web'));
+        $direct = $this->makeUser(email: 'gioithieu@example.test', username: 'gioithieu', role: 1);
+        $direct->givePermissionTo(self::ABOUT_PERMISSION);
+        Permission::findOrCreate(self::NEW_PERMISSION, 'web');
+
+        $this->artisan(self::COMMAND)->expectsOutputToContain('Đã gộp quyền "Giới thiệu"')->assertSuccessful();
+
+        $this->assertDatabaseMissing('permissions', ['name' => self::ABOUT_PERMISSION]);
+        $this->assertTrue($editor->fresh()?->hasPermissionTo(self::NEW_PERMISSION));
+        $this->assertTrue($direct->fresh()?->hasPermissionTo(self::NEW_PERMISSION));
+
+        $this->artisan(self::COMMAND)->doesntExpectOutputToContain('Đã gộp')->assertSuccessful();
+    }
+
+    public function test_chuyen_trang_va_gop_quyen_gioi_thieu_trong_mot_lan_chay(): void
+    {
+        $this->oldTable([$this->oldRow(1, 'Giới thiệu về Sneaker Square', about: true)]);
+        Permission::findOrCreate(self::OLD_PERMISSION, 'web');
+        $admin = $this->makeUser(email: 'admin@example.test', username: 'quantri', role: 1);
+        $admin->givePermissionTo(Permission::findOrCreate(self::ABOUT_PERMISSION, 'web'));
+
+        $this->artisan(self::COMMAND)->assertSuccessful();
+
+        $this->assertDatabaseMissing('permissions', ['name' => self::OLD_PERMISSION]);
+        $this->assertDatabaseMissing('permissions', ['name' => self::ABOUT_PERMISSION]);
+        $this->actingAs($admin->fresh())->get(route('page.edit', encrypt(1)))->assertOk()->assertSee('Giới thiệu về Sneaker Square');
     }
 
     public function test_bang_pages_da_co_du_lieu_thi_dung_lai_va_giu_bang_faq(): void

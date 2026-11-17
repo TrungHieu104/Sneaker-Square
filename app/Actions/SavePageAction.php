@@ -19,13 +19,17 @@ class SavePageAction
         $creating = ! $page->exists;
 
         $page->page_name = (string) ($form['name'] ?? '');
-        $page->page_slug = $this->slug((string) ($form['slug'] ?? ''));
         $page->page_content = (string) ($form['content'] ?? '');
         $page->page_meta_keywords = (string) ($form['key'] ?? '');
         $page->page_meta_description = (string) ($form['des'] ?? '');
         $page->page_hidden = (int) ($form['status'] ?? ($visibleByDefault ? 1 : 0));
 
-        // The about form has no summary field, so an edit there keeps the one stored.
+        // A field the form leaves out keeps what is stored: the about page has no
+        // slug field, its address being fixed.
+        if ($creating || array_key_exists('slug', $form)) {
+            $page->page_slug = $this->slug((string) ($form['slug'] ?? ''));
+        }
+
         if ($creating || array_key_exists('description', $form)) {
             $page->page_description = (string) ($form['description'] ?? '');
         }

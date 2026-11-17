@@ -137,15 +137,15 @@ $(document).ready(function() {
         });
     });
 
-    $('input[name="policy-status"]').on('change', function() {
+    $('input[name="page-status"]').on('change', function() {
         var id = $(this).data('id');
         var value = $(this).is(':checked') ? 1 : 0;
 
         $.ajax({
             type: "POST",
-            url: "/admin/policy-status/" + id,
+            url: "/admin/page-status/" + id,
             data: {
-                'policy-status': value
+                'page-status': value
             },
             success: function(response) {
                 var statusElement = $('#status_' + id);
@@ -203,19 +203,6 @@ $(document).ready(function() {
     $('.nav-link').click(function () {
         var tabId = $(this).attr('id');
         sessionStorage.setItem('currentTab', tabId);
-    });
-
-    $('input[name="faq-status"]').on('change', function() {
-        var box = $(this);
-
-        $.ajax({
-            type: 'POST',
-            url: box.data('url'),
-            data: { 'faq-status': box.is(':checked') ? 1 : 0 },
-            error: function() {
-                box.prop('checked', !box.is(':checked'));
-            }
-        });
     });
 
     $('input[name="info-status"]').on('change', function() {
