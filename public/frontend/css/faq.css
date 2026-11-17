@@ -100,38 +100,75 @@
     text-decoration: underline;
 }
 
+/* The help box reuses the contact page pieces: .border-contact, .icon-c, .btn-custom-pr. */
 .faq-help {
     margin-top: 12px;
-    padding: 20px 22px;
-    border: 1px solid #FBD9AE;
-    border-radius: 10px;
-    background: #FFF6EC;
+    padding: 18px 22px;
+}
+
+.faq-help-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.faq-help-text {
+    flex: 1;
+    min-width: 0;
 }
 
 .faq-help h3 {
-    font-size: 18px;
-    margin-bottom: 4px;
+    font-size: 17px;
+    margin: 0 0 2px;
+    color: #222;
 }
 
-.faq-help-links {
+.faq-help-text p {
+    margin: 0;
+}
+
+.faq-help-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.faq-help-actions .btn {
+    padding: 6px 18px;
+    white-space: nowrap;
+}
+
+.faq-help-contact {
+    border: 1px solid #ddd;
+    color: #222;
+    background: #fff;
+}
+
+.faq-help-contact:hover {
+    border-color: var(--color-orange);
+    color: var(--color-orange);
+}
+
+.faq-help-policies {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
+    gap: 4px 18px;
+    margin: 14px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
 }
 
-.faq-help-links a {
-    padding: 4px 12px;
-    border: 1px solid var(--color-primary);
-    border-radius: 999px;
-    color: var(--color-primary);
-    background: #fff;
-    font-size: 14px;
+.faq-help-policies a {
+    color: #222;
+    white-space: nowrap;
 }
 
-.faq-help-links a.is-call {
-    background: #FD7E14;
-    border-color: #FD7E14;
-    color: #fff;
-    font-weight: 600;
+.faq-help-policies a:hover {
+    color: var(--color-orange);
+}
+
+@media (max-width: 767px) {
+    .faq-help-main {
+        flex-wrap: wrap;
+    }
 }

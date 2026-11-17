@@ -68,18 +68,28 @@ Câu hỏi thường gặp
                         @endforeach
                         <p class="text-muted faq-empty" id="faq-empty" hidden>Không có câu hỏi nào khớp. Thử từ khác, hoặc hỏi shop ở dưới.</p>
 
-                        <div class="faq-help">
-                            <h3>Chưa thấy câu trả lời?</h3>
-                            <p>Xem các chính sách của shop, gửi tin ở trang Liên hệ hoặc gọi hotline.</p>
-                            <div class="faq-help-links">
-                                @foreach ($policies as $policy)
-                                    <a href="{{ route('policy.detail', $policy->page_slug) }}">{{ $policy->page_name }}</a>
-                                @endforeach
-                                <a href="{{ route('contact.page') }}">Liên hệ</a>
-                                @if ($hotline['tel'] !== '')
-                                    <a href="tel:{{ $hotline['tel'] }}" class="is-call">Gọi {{ $hotline['display'] }}</a>
-                                @endif
+                        <div class="faq-help bg-white rounded border-contact">
+                            <div class="faq-help-main">
+                                <div class="icon-c"><i class="bi bi-telephone-fill"></i></div>
+                                <div class="faq-help-text">
+                                    <h3>Chưa thấy câu trả lời?</h3>
+                                    <p>Gọi hotline hoặc gửi tin ở trang Liên hệ, shop sẽ trả lời bạn.</p>
+                                </div>
+                                <div class="faq-help-actions">
+                                    @if ($hotline['tel'] !== '')
+                                        <a href="tel:{{ $hotline['tel'] }}" class="btn btn-custom-pr text-white">Gọi {{ $hotline['display'] }}</a>
+                                    @endif
+                                    <a href="{{ route('contact.page') }}" class="btn faq-help-contact">Gửi tin liên hệ</a>
+                                </div>
                             </div>
+                            @if ($policies->isNotEmpty())
+                                <p class="faq-help-policies">
+                                    Xem thêm:
+                                    @foreach ($policies as $policy)
+                                        <a href="{{ route('policy.detail', $policy->page_slug) }}">{{ $policy->page_name }}</a>
+                                    @endforeach
+                                </p>
+                            @endif
                         </div>
                     </div>
                 </div>
