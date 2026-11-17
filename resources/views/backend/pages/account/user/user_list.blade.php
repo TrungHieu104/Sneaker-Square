@@ -129,8 +129,8 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            <div>
-                                                <a class="btn btn-primary btn-sm m-1 p-2" href="{{route('account.edituser', ['encryptedUserId' => encrypt($data->user_id)])}}" title="Chỉnh sửa"><i class="fas fa-edit"></i></a>
+                                            <div class="row-actions">
+                                                <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{route('account.edituser', ['encryptedUserId' => encrypt($data->user_id)])}}" />
                                             </div>
                                         </td>
                                         @php

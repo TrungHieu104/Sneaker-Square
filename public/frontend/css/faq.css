@@ -1,0 +1,174 @@
+/* The storefront FAQ page: group list on the left, questions on the right. */
+
+.faq-page .faq-search {
+    max-width: 480px;
+    margin: 0 auto;
+    border-radius: 999px;
+    padding: 10px 18px;
+}
+
+.faq-groups {
+    position: sticky;
+    top: 110px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #E6E8EB;
+    border-radius: 8px;
+    padding: 8px 0;
+    background: #fff;
+}
+
+.faq-groups a {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 16px;
+    color: #423F3E;
+    border-left: 3px solid transparent;
+}
+
+.faq-groups a:hover,
+.faq-groups a.is-current {
+    color: var(--color-primary);
+    border-left-color: var(--color-primary);
+}
+
+.faq-groups small {
+    color: #999;
+}
+
+.faq-group {
+    margin-bottom: 28px;
+    scroll-margin-top: 110px;
+}
+
+.faq-group h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.faq-item {
+    border: 1px solid #E6E8EB;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: #fff;
+    scroll-margin-top: 140px;
+}
+
+.faq-item summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    font-weight: 600;
+    color: #222;
+}
+
+.faq-item summary::-webkit-details-marker {
+    display: none;
+}
+
+.faq-item summary::after {
+    content: "+";
+    font-size: 20px;
+    font-weight: 400;
+    color: #999;
+}
+
+.faq-item[open] summary {
+    color: var(--color-primary);
+    background: #EEF7FF;
+    border-radius: 8px 8px 0 0;
+}
+
+.faq-item[open] summary::after {
+    content: "−";
+}
+
+.faq-answer {
+    padding: 14px 18px 4px;
+    color: #423F3E;
+    line-height: 1.6;
+}
+
+.faq-answer a {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
+/* The help box reuses the contact page pieces: .border-contact, .icon-c, .btn-custom-pr. */
+.faq-help {
+    margin-top: 12px;
+    padding: 18px 22px;
+}
+
+.faq-help-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.faq-help-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.faq-help h3 {
+    font-size: 17px;
+    margin: 0 0 2px;
+    color: #222;
+}
+
+.faq-help-text p {
+    margin: 0;
+}
+
+.faq-help-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.faq-help-actions .btn {
+    padding: 6px 18px;
+    white-space: nowrap;
+}
+
+.faq-help-contact {
+    border: 1px solid #ddd;
+    color: #222;
+    background: #fff;
+}
+
+.faq-help-contact:hover {
+    border-color: var(--color-orange);
+    color: var(--color-orange);
+}
+
+.faq-help-policies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin: 14px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.faq-help-policies a {
+    color: #222;
+    white-space: nowrap;
+}
+
+.faq-help-policies a:hover {
+    color: var(--color-orange);
+}
+
+@media (max-width: 767px) {
+    .faq-help-main {
+        flex-wrap: wrap;
+    }
+}

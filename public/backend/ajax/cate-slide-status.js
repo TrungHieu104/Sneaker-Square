@@ -137,15 +137,15 @@ $(document).ready(function() {
         });
     });
 
-    $('input[name="faq-status"]').on('change', function() {
+    $('input[name="page-status"]').on('change', function() {
         var id = $(this).data('id');
         var value = $(this).is(':checked') ? 1 : 0;
 
         $.ajax({
             type: "POST",
-            url: "/admin/faq-status/" + id,
+            url: "/admin/page-status/" + id,
             data: {
-                'faq-status': value
+                'page-status': value
             },
             success: function(response) {
                 var statusElement = $('#status_' + id);
@@ -156,6 +156,19 @@ $(document).ready(function() {
             error: function(xhr, status, error) {
                 // Xử lý lỗi
                 // console.log(xhr.responseJSON.message);
+            }
+        });
+    });
+
+    $('input[name="faq-status"]').on('change', function() {
+        var box = $(this);
+
+        $.ajax({
+            type: 'POST',
+            url: box.data('url'),
+            data: { 'faq-status': box.is(':checked') ? 1 : 0 },
+            error: function() {
+                box.prop('checked', !box.is(':checked'));
             }
         });
     });

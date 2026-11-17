@@ -53,15 +53,11 @@
                                         <input name="tag-status" class="form-check-input" type="checkbox" value="1" id="checkbox_{{ $t->tag_id }}" {{ $t->tag_hidden == 1 ? 'checked' : '' }} data-id="{{ $t->tag_id }}" />
                                     </td>
                                     <td class="text-center">
-                                        <div>
-                                            <a class="btn btn-primary btn-sm mx-1"
-                                                href="{{route('tags.edit', ['tag' => $t->tag_id])}}" title="Chỉnh sửa"><i class="fas fa-edit"></i></a>
-                                            <form class="d-inline" action="{{route('tags.destroy', ['tag' => $t->tag_id])}}" method="POST">
+                                        <div class="row-actions">
+                                            <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{route('tags.edit', ['tag' => $t->tag_id])}}" />
+                                            <form action="{{route('tags.destroy', ['tag' => $t->tag_id])}}" method="POST">
                                                 @csrf @method('delete')
-                                                <button onclick="return confirm('Bạn muốn xóa tag này?')"
-                                                    class="btn btn-danger btn-sm mx-1"> 
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <x-admin.row-action action="delete" title="Xóa" onclick="return confirm('Bạn muốn xóa tag này?')" type="submit" />
                                             </form>
                                         </div>
                                     </td>

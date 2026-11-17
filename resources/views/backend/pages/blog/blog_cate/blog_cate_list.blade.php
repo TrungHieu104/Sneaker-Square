@@ -67,13 +67,11 @@
                                         <input name="cate-new-status" class="form-check-input" type="checkbox" value="1" id="checkbox_{{ $cN->cate_news_id }}" {{ $cN->cate_news_hidden == 1 ? 'checked' : '' }} data-id="{{ $cN->cate_news_id }}" />
                                     </td>
                                     <td class="text-center">
-                                        <div>
-                                            <a class="btn btn-primary btn-sm mx-1" href="{{route('blog-category.edit', ['blog_category' => $cN->cate_news_id])}}" title="Chỉnh sửa"><i class="fas fa-edit"></i></a>
-                                            <form class="d-inline" action="{{route('blog-category.destroy', ['blog_category' => $cN->cate_news_id])}}" method="POST">
+                                        <div class="row-actions">
+                                            <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{route('blog-category.edit', ['blog_category' => $cN->cate_news_id])}}" />
+                                            <form action="{{route('blog-category.destroy', ['blog_category' => $cN->cate_news_id])}}" method="POST">
                                                 @csrf @method('delete')
-                                                <button onclick="return confirm('Bạn muốn xóa mục này?')" class="btn btn-danger btn-sm mx-1"> 
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <x-admin.row-action action="delete" title="Xóa" onclick="return confirm('Bạn muốn xóa mục này?')" type="submit" />
                                             </form>
                                         </div>
                                     </td>

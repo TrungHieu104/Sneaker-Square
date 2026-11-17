@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="{{ asset('backend/assets/vendor/css/theme-default.css') }}"
         class="template-customizer-theme-css" />
     <link rel="stylesheet" href="{{ asset('backend/assets/css/demo.css') }}" />
+    <link rel="stylesheet" href="{{ asset_v('backend/assets/css/row-actions.css') }}" />
     <link rel="stylesheet" href="{{asset('frontend/css/animate.css')}}">
 	<link rel="stylesheet" href="{{asset('frontend/css/noty.css')}}">
     <!-- Vendors CSS -->
@@ -40,8 +41,8 @@
     <script src="{{ asset('backend/assets/js/config.js') }}"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ asset('backend/assets/js/revenue.js')}}"></script>
-    <script src="{{ asset('backend/assets/js/getlink.js')}}"></script>
-    <script src="{{ asset('backend/ajax/cate-slide-status.js')}}"></script>
+    <script src="{{ asset_v('backend/assets/js/getlink.js') }}"></script>
+    <script src="{{ asset_v('backend/ajax/cate-slide-status.js') }}"></script>
     <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 </head>
 
@@ -111,6 +112,10 @@
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
     <script src="{{ asset_v('backend/assets/vendor/js/datepicker.js') }}"></script>
     <script>
+        // 4.22.1 is the last free CKEditor 4; newer ones need a paid LTS key, so
+        // the upgrade notice is switched off for every editor (technical-debt #9).
+        CKEDITOR.config.versionCheck = false;
+
         CKEDITOR.replace('content', {
             filebrowserBrowseUrl: "{{ route('ckfinder_browser') }}",
             language: 'vi',

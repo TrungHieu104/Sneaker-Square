@@ -256,12 +256,8 @@
                                                         </td>
                                                         
                                                         <td class="text-center">
-                                                            <div>
-                                                                <a class="btn btn-success btn-sm mx-1"
-                                                                    href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}"
-                                                                    title="Xem chi tiết">
-                                                                    <i class="fas fa-eye"></i>
-                                                                </a>
+                                                            <div class="row-actions">
+                                                                <x-admin.row-action action="view" title="Xem chi tiết" href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}" />
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -334,12 +330,8 @@
                                                         </td>
                                                         
                                                         <td class="text-center">
-                                                            <div>
-                                                                <a class="btn btn-success btn-sm mx-1"
-                                                                    href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}"
-                                                                    title="Xem chi tiết">
-                                                                    <i class="fas fa-eye"></i>
-                                                                </a>
+                                                            <div class="row-actions">
+                                                                <x-admin.row-action action="view" title="Xem chi tiết" href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}" />
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -412,12 +404,8 @@
                                                         </td>
                                                         
                                                         <td class="text-center">
-                                                            <div>
-                                                                <a class="btn btn-success btn-sm mx-1"
-                                                                    href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}"
-                                                                    title="Xem chi tiết">
-                                                                    <i class="fas fa-eye"></i>
-                                                                </a>
+                                                            <div class="row-actions">
+                                                                <x-admin.row-action action="view" title="Xem chi tiết" href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}" />
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -490,12 +478,8 @@
                                                         </td>
                                                         
                                                         <td class="text-center">
-                                                            <div>
-                                                                <a class="btn btn-success btn-sm mx-1"
-                                                                    href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}"
-                                                                    title="Xem chi tiết">
-                                                                    <i class="fas fa-eye"></i>
-                                                                </a>
+                                                            <div class="row-actions">
+                                                                <x-admin.row-action action="view" title="Xem chi tiết" href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}" />
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -568,12 +552,8 @@
                                                         </td>
                                                         
                                                         <td class="text-center">
-                                                            <div>
-                                                                <a class="btn btn-success btn-sm mx-1"
-                                                                    href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}"
-                                                                    title="Xem chi tiết">
-                                                                    <i class="fas fa-eye"></i>
-                                                                </a>
+                                                            <div class="row-actions">
+                                                                <x-admin.row-action action="view" title="Xem chi tiết" href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}" />
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -646,12 +626,8 @@
                                                         </td>
                                                         
                                                         <td class="text-center">
-                                                            <div>
-                                                                <a class="btn btn-success btn-sm mx-1"
-                                                                    href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}"
-                                                                    title="Xem chi tiết">
-                                                                    <i class="fas fa-eye"></i>
-                                                                </a>
+                                                            <div class="row-actions">
+                                                                <x-admin.row-action action="view" title="Xem chi tiết" href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}" />
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -724,12 +700,8 @@
                                                         </td>
                                                         
                                                         <td class="text-center">
-                                                            <div>
-                                                                <a class="btn btn-success btn-sm mx-1"
-                                                                    href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}"
-                                                                    title="Xem chi tiết">
-                                                                    <i class="fas fa-eye"></i>
-                                                                </a>
+                                                            <div class="row-actions">
+                                                                <x-admin.row-action action="view" title="Xem chi tiết" href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}" />
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -802,12 +774,8 @@
                                                         </td>
                                                         
                                                         <td class="text-center">
-                                                            <div>
-                                                                <a class="btn btn-success btn-sm mx-1"
-                                                                    href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}"
-                                                                    title="Xem chi tiết">
-                                                                    <i class="fas fa-eye"></i>
-                                                                </a>
+                                                            <div class="row-actions">
+                                                                <x-admin.row-action action="view" title="Xem chi tiết" href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}" />
                                                             </div>
                                                         </td>
                                                     </tr>

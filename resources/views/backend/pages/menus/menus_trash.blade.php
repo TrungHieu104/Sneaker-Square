@@ -61,17 +61,9 @@
                                 </td>
                                 
                                 <td class="text-center">
-                                    <div>
-                                        <a class="btn btn-success btn-sm mx-1"
-                                            href="/admin/menus/restore/{{$data->menu_id}}" title="Sao lưu">
-                                            <i class="fas fa-trash-restore"></i>
-                                        </a>
-                                        <a href="/admin/menus/delete/{{$data->menu_id}}"
-                                            onclick="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')"
-                                            class="btn btn-danger btn-sm ms-1"
-                                            title="Xóa">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
+                                    <div class="row-actions">
+                                        <x-admin.row-action action="restore" title="Khôi phục" href="/admin/menus/restore/{{$data->menu_id}}" />
+                                        <x-admin.row-action action="delete" title="Xóa vĩnh viễn" href="/admin/menus/delete/{{$data->menu_id}}" onclick="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')" />
                                     </div>
                                 </td>
                             </tr>

@@ -114,18 +114,10 @@
 
                                     <td class="text-center">
                                         <div>
-                                            <div>
-                                                <a class="btn btn-success btn-sm mx-1" title="Khôi phục"
-                                                    href="{{route('product.restore', $product->pro_id)}}">
-                                                    <i class="fas fa-trash-restore"></i>
-                                                </a>
+                                            <div class="row-actions">
+                                                <x-admin.row-action action="restore" title="Khôi phục" href="{{route('product.restore', $product->pro_id)}}" />
     
-                                                <a href="{{route('product.delete', $product->pro_id)}}"
-                                                    onclick="return confirm('Bạn có chắc muốn xóa sản phẩm này vĩnh viễn?')"
-                                                    class="btn btn-danger btn-sm ms-1"
-                                                    title="Xóa">
-                                                    <i class="fas fa-trash"></i>
-                                                </a>                                        
+                                                <x-admin.row-action action="delete" title="Xóa vĩnh viễn" href="{{route('product.delete', $product->pro_id)}}" onclick="return confirm('Bạn có chắc muốn xóa sản phẩm này vĩnh viễn?')" />                                        
                                             </div>
                                         </div>
                                     </td>

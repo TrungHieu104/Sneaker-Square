@@ -115,14 +115,10 @@
                                         </td>
                                         
                                         <td class="text-center">
-                                            <div>
-                                                <form class="d-inline" action="" method="POST">
+                                            <div class="row-actions">
+                                                <form action="" method="POST">
                                                     @csrf 
-                                                    <a class="btn btn-success btn-sm mx-1"
-                                                        href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}"
-                                                        title="Xem chi tiết">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
+                                                    <x-admin.row-action action="view" title="Xem chi tiết" href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($data->order_id)]) }}" />
                                                 </form>
                                             </div>
                                         </td>

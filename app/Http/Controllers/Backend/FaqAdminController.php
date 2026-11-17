@@ -2,285 +2,159 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Actions\ReorderFaqAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Backend\FaqReorderRequest;
 use App\Http\Requests\Backend\FaqRequest;
-use App\Http\Requests\Backend\FaqUpRequest;
+use App\Models\FaqGroupModel;
 use App\Models\FaqModel;
-use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 
+/**
+ * The admin "Câu hỏi thường gặp" screens: the questions of the storefront FAQ page.
+ * A new or moved question goes last in its group; the order inside a group is
+ * changed by dragging rows while the list shows that one group.
+ */
 class FaqAdminController extends Controller
 {
-    private const SLUG_SUFFIX = '.html';
+    private const PER_PAGE = 10;
 
-    private const FAQ_LIST_URL = 'admin/faq';
-
-    private const FAQ_NOT_FOUND = 'Không tồn tại nội dung!';
-
-    /**
-     * Display a listing of the resource.
-     */
     public function __construct(Request $request)
     {
-        $keyword = $request->input('keyword');
-        View::share(compact('keyword'));
+        View::share('keyword', $request->input('keyword'));
     }
 
     public function index(Request $request)
     {
-        $perpage = 10;
-        [$orderBy, $orderType] = $this->listingSort($request, FaqModel::class, 'faq_id');
-        $keyword = $request->input('keyword');
-        $searchableFields = ['faq_name'];
+        [$orderBy, $orderType] = $this->listingSort($request, FaqModel::class, 'faq_position');
+        $keyword = trim((string) $request->input('keyword'));
+        $groupId = $request->integer('group');
 
-        $faq = $this->performSearch(FaqModel::orderBy($orderBy, $orderType)->where('faq_about', 0), $keyword, $searchableFields)
-            ->paginate($perpage)
+        // Dragging needs the whole group on one page, in storefront order.
+        $sortable = $groupId > 0 && $keyword === '' && ! $request->filled('sort-by');
+
+        $query = FaqModel::with('group')
+            ->when($keyword !== '', fn ($q) => $q->where('faq_question', 'like', '%'.$keyword.'%'))
+            ->when($groupId > 0, fn ($q) => $q->where('group_id', $groupId));
+
+        $faqs = $this->sorted($query, $request->filled('sort-by') ? [$orderBy, $orderType] : null)
+            ->paginate($sortable ? max(self::PER_PAGE, (clone $query)->count()) : self::PER_PAGE)
             ->withQueryString();
 
-        return view('backend.pages.faq.faq_list', compact('faq', 'keyword', 'orderBy', 'orderType'));
+        return view('backend.pages.faq.faq_list', [
+            'faqs' => $faqs,
+            'groups' => $this->groups(),
+            'groupId' => $groupId,
+            'sortable' => $sortable,
+            'orderBy' => $orderBy,
+            'orderType' => $orderType,
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        return view('backend.pages.faq.faq_create');
+        return view('backend.pages.faq.faq_form', ['faq' => new FaqModel(['faq_hidden' => 1]), 'groups' => $this->groups()]);
     }
 
-    public function status(Request $request, $id)
+    public function store(FaqRequest $request): RedirectResponse
     {
-        $arr = $request->post();
-        $status = ($request->has('faq-status')) ? $arr['faq-status'] : '';
-        $data = FaqModel::find($id);
+        $groupId = (int) $request->validated('group_id');
 
-        if (! $data) {
-            return response()->json(['message' => 'Không tìm thấy dữ liệu'], 404);
-        }
+        FaqModel::create($this->fields($request) + [
+            'faq_position' => FaqModel::nextPosition($groupId),
+            'faq_created_by' => $request->user()?->name,
+        ]);
 
-        $data->faq_hidden = $status;
-        $data->save();
+        return $this->toList('Thêm câu hỏi thành công');
+    }
+
+    public function edit(FaqModel $faq)
+    {
+        return view('backend.pages.faq.faq_form', ['faq' => $faq, 'groups' => $this->groups()]);
+    }
+
+    public function update(FaqRequest $request, FaqModel $faq): RedirectResponse
+    {
+        $fields = $this->fields($request);
+        $moved = $fields['group_id'] !== (int) $faq->group_id;
+
+        $faq->update($fields + [
+            'faq_position' => $moved ? FaqModel::nextPosition($fields['group_id']) : $faq->faq_position,
+            'faq_updated_by' => $request->user()?->name,
+        ]);
+
+        return $this->toList('Chỉnh sửa thành công');
+    }
+
+    public function destroy(FaqModel $faq): RedirectResponse
+    {
+        $faq->delete();
+        Session::flash('iconMessage', 'success');
+
+        return back()->with('message', 'Đã xoá câu hỏi');
+    }
+
+    public function reorder(FaqReorderRequest $request, FaqGroupModel $group, ReorderFaqAction $reorder): JsonResponse
+    {
+        return $reorder->questions($group, $request->ids())
+            ? response()->json(['message' => 'Đã lưu thứ tự câu hỏi'])
+            : response()->json(['message' => ReorderFaqAction::STALE], 409);
+    }
+
+    public function status(Request $request, FaqModel $faq): JsonResponse
+    {
+        $faq->update(['faq_hidden' => $request->boolean('faq-status') ? 1 : 0]);
 
         return response()->json(['message' => 'Cập nhật thành công']);
-
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Unsorted, the list reads like the storefront page: by group, then within it.
+     *
+     * @param  Builder<FaqModel>  $query
+     * @param  array{0: string, 1: string}|null  $sort  a column header the admin clicked
+     * @return Builder<FaqModel>
      */
-    public function store(FaqRequest $request)
+    private function sorted(Builder $query, ?array $sort): Builder
     {
-        $arr = $request->post();
-        $name = ($request->has('name')) ? $arr['name'] : '';
-        $author = ($request->has('author')) ? $arr['author'] : '';
-        $slug = ($request->has('slug')) ? $arr['slug'] : '';
-        if (! empty($slug) && substr($slug, -5) !== self::SLUG_SUFFIX) {
-            $slug .= self::SLUG_SUFFIX;
-        }
-        $key = ($request->has('key')) ? $arr['key'] : '';
-        $faq_des = ($request->has('faq-des')) ? $arr['faq-des'] : '';
-        $content = ($request->has('content')) ? $arr['content'] : '';
-        $des = ($request->has('des')) ? $arr['des'] : '';
-        $status = ($request->has('status')) ? (int) $arr['status'] : '0';
-        $faq = new FaqModel;
-        $faq->faq_name = $name;
-        $faq->faq_slug = $slug;
-        $faq->faq_description = $faq_des;
-        $faq->faq_content = $content;
-        $faq->faq_meta_keywords = $key;
-        $faq->faq_meta_description = $des;
-        $faq->faq_created_by = $author;
-        $faq->faq_hidden = $status;
-        $faq->save();
+        $sorted = $sort !== null
+            ? $query->orderBy($sort[0], $sort[1])
+            : $query->orderBy(FaqGroupModel::select('group_position')->whereColumn('faq_groups.group_id', 'faqs.group_id'))->orderBy('faq_position');
+
+        return $sorted->orderBy('faq_id');
+    }
+
+    /**
+     * @return array{group_id: int, faq_question: string, faq_answer: string, faq_hidden: int}
+     */
+    private function fields(FaqRequest $request): array
+    {
+        return [
+            'group_id' => (int) $request->validated('group_id'),
+            'faq_question' => trim((string) $request->validated('question')),
+            'faq_answer' => (string) $request->validated('answer'),
+            'faq_hidden' => (int) $request->validated('status'),
+        ];
+    }
+
+    /**
+     * @return Collection<int, FaqGroupModel>
+     */
+    private function groups()
+    {
+        return FaqGroupModel::orderBy('group_position')->orderBy('group_id')->get();
+    }
+
+    private function toList(string $message): RedirectResponse
+    {
         Session::flash('iconMessage', 'success');
 
-        return redirect(self::FAQ_LIST_URL)->with('message', 'Thêm thành công');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Request $request, string $encryptedFaqId)
-    {
-        try {
-            $faq_id = Crypt::decrypt($encryptedFaqId);
-            $faq = FaqModel::find($faq_id);
-            if ($faq == null) {
-                $request->session();
-                Session::flash('iconMessage', 'info');
-
-                return redirect(self::FAQ_LIST_URL)->with('message', 'Không tồn tại chính sách');
-            }
-
-            return view('backend.pages.faq.faq_edit', compact('faq'));
-        } catch (DecryptException $e) {
-            // The identifier could not be decrypted.
-            $request->session();
-            Session::flash('iconMessage', 'info');
-
-            return redirect(self::FAQ_LIST_URL)->with('message', self::FAQ_NOT_FOUND);
-        }
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(FaqUpRequest $request, string $faq_id)
-    {
-        $arr = $request->post();
-        $name = ($request->has('name')) ? $arr['name'] : '';
-        $editor = ($request->has('editor')) ? $arr['editor'] : '';
-        $slug = ($request->has('slug')) ? $arr['slug'] : '';
-        if (! empty($slug) && substr($slug, -5) !== self::SLUG_SUFFIX) {
-            $slug .= self::SLUG_SUFFIX;
-        }
-        $key = ($request->has('key')) ? $arr['key'] : '';
-        $faq_des = ($request->has('faq-des')) ? $arr['faq-des'] : '';
-        $content = ($request->has('content')) ? $arr['content'] : '';
-        $des = ($request->has('des')) ? $arr['des'] : '';
-        $status = ($request->has('status')) ? (int) $arr['status'] : '0';
-        $faq = FaqModel::find($faq_id);
-        if ($faq == null) {
-            $request->session();
-            Session::flash('iconMessage', 'info');
-
-            return redirect('/admin/faq')->with('message', 'Không tồn tại chính sách');
-        }
-        $faq->faq_name = $name;
-        $faq->faq_slug = $slug;
-        $faq->faq_description = $faq_des;
-        $faq->faq_content = $content;
-        $faq->faq_meta_keywords = $key;
-        $faq->faq_meta_description = $des;
-        $faq->faq_updated_by = $editor;
-        $faq->faq_hidden = $status;
-        $faq->save();
-        Session::flash('iconMessage', 'success');
-
-        return redirect('/admin/faq')->with('message', 'Chỉnh sửa thành công');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function softDelete(Request $request, string $encryptedFaqId)
-    {
-        try {
-            $id = Crypt::decrypt($encryptedFaqId);
-            $faq = FaqModel::find($id);
-            if ($faq == null) {
-                $request->session();
-                Session::flash('iconMessage', 'info');
-                redirect()->back()->with('message', 'Không tồn tại mã khuyến mãi');
-            }
-            $faq->delete();
-            Session::flash('iconMessage', 'success');
-
-            return back()->with('message', 'Xóa thành công');
-        } catch (DecryptException $e) {
-            $request->session();
-            Session::flash('iconMessage', 'info');
-
-            return redirect(self::FAQ_LIST_URL)->with('message', self::FAQ_NOT_FOUND);
-        }
-    }
-
-    public function trashed(Request $request)
-    {
-        $perpages = 10;
-        [$orderBy, $orderType] = $this->listingSort($request, FaqModel::class, 'faq_id');
-        $keyword = $request->input('keyword');
-        $searchableFields = ['faq_name'];
-
-        $faqTrash = $this->performSearch(FaqModel::onlyTrashed()->orderBy($orderBy, $orderType), $keyword, $searchableFields)
-            ->paginate($perpages)
-            ->withQueryString();
-
-        return view('backend.pages.faq.faq_trash', compact('faqTrash', 'keyword', 'orderBy', 'orderType'));
-    }
-
-    public function restore(Request $request, string $encryptedFaqId)
-    {
-        try {
-            $faq_id = Crypt::decrypt($encryptedFaqId);
-            $faqRe = FaqModel::withTrashed()->where('faq_id', $faq_id)->first();
-            if ($faqRe) {
-                $faqRe->restore();
-                Session::flash('iconMessage', 'success');
-
-                return back()->with('message', 'Khôi phục thành công');
-            } else {
-                return abort(404);
-            }
-        } catch (DecryptException $e) {
-            // The identifier could not be decrypted.
-            $request->session();
-            Session::flash('iconMessage', 'info');
-
-            return redirect(self::FAQ_LIST_URL)->with('message', self::FAQ_NOT_FOUND);
-        }
-    }
-
-    public function restoreAll()
-    {
-        $trashed = FaqModel::onlyTrashed();
-        if ($trashed->count() > 0) {
-            $trashed->restore();
-            Session::flash('iconMessage', 'success');
-
-            return back()->with('message', 'Hoàn tác thành công');
-        } else {
-            Session::flash('iconMessage', 'info');
-
-            return back()->with('message', 'Không có dữ liệu trong thùng rác!');
-        }
-    }
-
-    public function forceDelete(Request $request, string $encryptedFaqId)
-    {
-        try {
-            $id = Crypt::decrypt($encryptedFaqId);
-            $faqDe = FaqModel::withTrashed()->find($id);
-            if ($faqDe) {
-                $faqDe->forceDelete();
-                Session::flash('iconMessage', 'success');
-
-                return redirect()->back()->with('message', 'Xóa thành công');
-            } else {
-                return abort(404);
-            }
-        } catch (DecryptException $e) {
-            // The identifier could not be decrypted.
-            $request->session();
-            Session::flash('iconMessage', 'info');
-
-            return redirect(self::FAQ_LIST_URL)->with('message', self::FAQ_NOT_FOUND);
-        }
-    }
-
-    public function deleteAll()
-    {
-        $trashAll = FaqModel::onlyTrashed()->get();
-        if ($trashAll->count() > 0) {
-            FaqModel::onlyTrashed()->forceDelete();
-            Session::flash('iconMessage', 'success');
-
-            return redirect()->back()->with('message', 'Xóa dữ liệu thành công!');
-        } else {
-            Session::flash('iconMessage', 'info');
-
-            return back()->with('message', 'Không có dữ liệu trong thùng rác!');
-        }
+        return redirect()->route('faq.index')->with('message', $message);
     }
 }

@@ -331,8 +331,7 @@
             $canAccessSet = auth()->user()->can('Quản trị Menu') ||
                             auth()->user()->can('Quản trị Slide') ||
                             auth()->user()->can('Quản trị Thông tin') ||
-                            auth()->user()->can('Giới thiệu') ||
-                            auth()->user()->can('Quản trị FAQ') ||
+                            auth()->user()->can('Quản trị Chính sách & FAQ') ||
                             auth()->user()->can('Quản trị Đơn hàng');
         @endphp
         @if($canAccessSet)
@@ -369,20 +368,30 @@
             </ul>
         </li>
         @endcan
-        @can('Quản trị FAQ')
-        <li class="menu-item {{(url()->current() == route('faq.index') || url()->current() == route('faq.create') || url()->current() == route('faq.trashed')) ? 'active' : ''}}">
-            <a href="{{route('faq.index')}}" class="menu-link">
-                <i class='bx bx-question-mark menu-icon'></i>
-                <div data-i18n="Extended UI">Chính sách</div>
+        @can('Quản trị Chính sách & FAQ')
+        <li class="menu-item {{ request()->routeIs('page.index', 'page.create', 'page.edit', 'page.trashed') ? 'active' : '' }}">
+            <a href="{{route('page.index')}}" class="menu-link">
+                <i class='bx bx-file menu-icon'></i>
+                <div data-i18n="Extended UI">Chính sách &amp; Giới thiệu</div>
             </a>
         </li>
-        @endcan
-        @can('Giới thiệu')
-        <li class="menu-item {{(url()->current() == route('about.index')) ? 'active' : ''}}">
-            <a href="{{route('about.index')}}" class="menu-link">
-                <i class='bx bx-book-alt menu-icon'></i>
-                <div data-i18n="Extended UI">Giới thiệu</div>
+        <li class="menu-item {{ request()->routeIs('faq.*', 'faq_group.*') ? 'active open' : '' }}">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class='bx bx-help-circle menu-icon'></i>
+                <div data-i18n="Extended UI">Câu hỏi thường gặp</div>
             </a>
+            <ul class="menu-sub">
+                <li class="menu-item {{ request()->routeIs('faq.*') ? 'active' : '' }}">
+                    <a href="{{ route('faq.index') }}" class="menu-link">
+                        <div data-i18n="Basic Inputs">Câu hỏi</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ request()->routeIs('faq_group.*') ? 'active' : '' }}">
+                    <a href="{{ route('faq_group.index') }}" class="menu-link">
+                        <div data-i18n="Basic Inputs">Nhóm câu hỏi</div>
+                    </a>
+                </li>
+            </ul>
         </li>
         @endcan
         @canany(['Quản trị Đơn hàng', 'Quản trị Thông tin'])

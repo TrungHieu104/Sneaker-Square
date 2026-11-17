@@ -25,9 +25,9 @@ class DatabaseSeeder extends Seeder
         $this->call(NewsSeeder::class);
         $this->call(NewsByTagsSeeder::class);
         $this->call(CouponSeeder::class);
-        // $this->call(FaqSeeder::class);
         $this->call(MenuSeeder::class);
         $this->call(ShopInfoSeeder::class);
+        $this->call(PageSeeder::class);
         $this->call(FaqSeeder::class);
         $this->call(PermissionSeeder::class);
         $this->call(RoleSeeder::class);

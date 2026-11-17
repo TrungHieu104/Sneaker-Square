@@ -147,19 +147,12 @@
                                             @foreach ($allColor as $color)
                                                 <tr>
                                                     <td class="text-center">
-                                                        <div>
-                                                            <button type="button" class="btn btn-success btn-sm m-1" title="Xem"
-                                                                    data-bs-toggle="modal" data-bs-target="#color-modal-{{$color->color_id}}"
-                                                                    >
-                                                                <i class="fas fa-eye"></i>
-                                                            </button>
-                                                            <form id="delete-color" class="d-inline" action="{{ route('stock.delete.color', $color->color_id) }}" method="POST">
+                                                        <div class="row-actions">
+                                                            <x-admin.row-action action="view" title="Xem" data-bs-toggle="modal" data-bs-target="#color-modal-{{$color->color_id}}" />
+                                                            <form id="delete-color" action="{{ route('stock.delete.color', $color->color_id) }}" method="POST">
                                                                 @csrf 
                                                                 @method('DELETE')
-                                                                <button type='submit' onclick="return confirm('Bạn muốn xóa màu này?')"
-                                                                        class="btn btn-danger btn-sm ms-1">
-                                                                    <i class="fas fa-trash"></i>
-                                                                </button>
+                                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn muốn xóa màu này?')" />
                                                             </form>
                                                         </div>
                                                     </td>

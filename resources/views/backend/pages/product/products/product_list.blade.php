@@ -128,27 +128,17 @@
                                     </td>
 
                                     <td class="text-center">
-                                        <div>
-                                            <button type="button" class="btn btn-success btn-sm m-1" title="Xem" 
-                                                    data-bs-toggle="modal" data-bs-target="#product-modal-{{$product->pro_id}}">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
+                                        <div class="row-actions">
+                                            <x-admin.row-action action="view" title="Xem" data-bs-toggle="modal" data-bs-target="#product-modal-{{$product->pro_id}}" />
                                             @can('Quản trị Sản phẩm (Kho)')
-                                            <a href="{{ route('stock.show', $product->pro_slug) }}" class="btn btn-secondary btn-sm m-1" title="Kho hàng">
-                                                <i class="text-white fas fa-warehouse"></i>
-                                            </a>
+                                            <x-admin.row-action action="more" title="Kho hàng" icon="fas fa-warehouse" href="{{ route('stock.show', $product->pro_slug) }}" />
                                             @endcan
-                                            <a href="{{ route('image.show', $product->pro_slug) }}" class="btn btn-info btn-sm m-1" title="Hình ảnh">
-                                                <i class="text-white fas fa-image"></i>
-                                            </a>
+                                            <x-admin.row-action action="more" title="Hình ảnh" icon="fas fa-image" href="{{ route('image.show', $product->pro_slug) }}" />
 
-                                            <form class="d-inline" action="{{ route('product.destroy', $product->pro_id) }}" method="POST">
+                                            <form action="{{ route('product.destroy', $product->pro_id) }}" method="POST">
                                                 @csrf 
                                                 @method('DELETE')
-                                                <button type='submit' onclick="return confirm('Bạn muốn đưa sản phẩm này vào thùng rác?')"
-                                                        class="btn btn-danger btn-sm ms-1">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn muốn đưa sản phẩm này vào thùng rác?')" />
                                             </form>
                                         </div>
                                     </td>

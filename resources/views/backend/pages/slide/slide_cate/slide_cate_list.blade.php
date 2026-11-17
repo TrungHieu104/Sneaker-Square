@@ -60,15 +60,12 @@
                                     <input name="status" class="form-check-input" type="checkbox" value="1" id="checkbox_{{ $data->cate_slide_id }}" {{ $data->cate_slide_hidden == 1 ? 'checked' : '' }} data-id="{{ $data->cate_slide_id }}" />
                                 </td>
                                 <td class="text-center">
-                                    <div>
-                                        <a class="btn btn-primary btn-sm mx-2 p-2"
-                                        href="{{route('cate-slide.edit', ['cate_slide' => $data->cate_slide_id])}}" title="Chỉnh sửa"><i class="fas fa-edit"></i></a>
-                                        <form class="d-inline" action="{{ route('cate_slide.softDelete', ['id' => $data->cate_slide_id]) }}" method="post">
+                                    <div class="row-actions">
+                                        <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{route('cate-slide.edit', ['cate_slide' => $data->cate_slide_id])}}" />
+                                        <form action="{{ route('cate_slide.softDelete', ['id' => $data->cate_slide_id]) }}" method="post">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" onclick="return confirm('Bạn có chắc muốn xóa?')" class="btn btn-danger btn-sm mx-1 p-2">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn có chắc muốn xóa?')" />
                                         </form>
                                     </div>
                                 </td>

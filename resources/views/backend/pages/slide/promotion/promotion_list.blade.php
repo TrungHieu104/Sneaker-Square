@@ -90,26 +90,20 @@
                                         @endif
                                     </td>
                                     <td class="text-center">
-                                        <div>
-                                            <button type="button" class="btn btn-success btn-sm ms-1 p-2" title="Chi tiết" data-bs-toggle="modal" data-bs-target="#faqModal{{ $data->promotion_id }}" data-faq-id="{{ $data->faq_id }}">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <a class="btn btn-primary btn-sm ms-1 p-2" href="{{ route('promotion.edit', $data->promotion_id) }}" title="Chỉnh sửa">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <form class="d-inline" action="{{ route('promotion.softDelete', $data->promotion_id) }}" method="post">
+                                        <div class="row-actions">
+                                            <x-admin.row-action action="view" title="Chi tiết" data-bs-toggle="modal" data-bs-target="#promotionModal{{ $data->promotion_id }}" />
+                                            <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{ route('promotion.edit', $data->promotion_id) }}" />
+                                            <form action="{{ route('promotion.softDelete', $data->promotion_id) }}" method="post">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-sm ms-1 p-2" onclick="return confirm('Bạn có chắc muốn xóa?')" title="Xóa">
-                                                    <i class="fas fa-trash"></i> 
-                                                </button>
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn có chắc muốn xóa?')" />
                                             </form>
                                                 
                                         </div>
                                     </td>
                                 </tr>
                                 <!--Modal-->
-                                <div class="modal fade" id="faqModal{{ $data->promotion_id }}" tabindex="-1"
+                                <div class="modal fade" id="promotionModal{{ $data->promotion_id }}" tabindex="-1"
                                     aria-labelledby="exampleModalLabel" aria-hidden="true">
                                     <div class="modal-dialog modal-xl modal-dialog-scrollable">
                                         <div class="modal-content">
@@ -119,7 +113,7 @@
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                     aria-label="Close"></button>
                                             </div>
-                                            <div class="modal-body view_faq_data">
+                                            <div class="modal-body">
                                                 <div class="row">
                                                     <h4 class="text-center pro-name w-100">{{ $data->promotion_name }}</h4>
                                                 

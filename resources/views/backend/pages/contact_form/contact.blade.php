@@ -70,7 +70,7 @@
                             </td>
                             <td>{{date('d/m/Y', strtotime($ct->created_at))}}</td>
                             <td class="text-center">
-                                <button class="btn btn-success text-center btn-sm mx-1" title="Xem" data-bs-toggle="modal" data-bs-target="#ContactModal{{$ct->id}}"><i class="far fa-eye"></i></button>
+                                <x-admin.row-action action="view" title="Xem" data-bs-toggle="modal" data-bs-target="#ContactModal{{$ct->id}}" />
                             </td>
                             <!-- Modal -->
                             <div class="modal fade" id="ContactModal{{$ct->id}}" tabindex="-1" aria-labelledby="ContactModal{{$ct->id}}Label" aria-hidden="true">
@@ -110,22 +110,22 @@
                             </div>
                             <!-- Modal End -->
                             <td>
-                                <div class="d-flex">
+                                <div class="row-actions">
                                     <form action="{{route('contact.no_process',$ct->id)}}"  method="post">
                                         @method('PUT') @csrf
-                                        <button class="btn btn-danger  btn-sm mx-1" @if($ct->status ==0) disabled @endif href="" title="xử lý"><i class="fas fa-times"></i></i></button>
+                                        <x-admin.row-action action="more" title="Chưa xử lý" icon="fas fa-times" type="submit" :disabled="$ct->status == 0" />
                                     </form>
                                     <form action="{{route('contact.processing',$ct->id)}}" method="post">
                                         @method('PUT') @csrf
-                                        <button class="btn btn-warning  btn-sm mx-1"@if($ct->status ==1) disabled @endif href="" title="Đang xử lý"><i class="fab fa-telegram-plane"></i></button>
+                                        <x-admin.row-action action="more" title="Đang xử lý" icon="fab fa-telegram-plane" type="submit" :disabled="$ct->status == 1" />
                                     </form>
                                     <form action="{{route('contact.handle',$ct->id)}}" method="post">
                                         @method('PUT') @csrf
-                                        <button class="btn btn-success  btn-sm mx-1"@if($ct->status ==2) disabled @endif href="" title="xử lý"><i class="fas fa-check"></i></button>
+                                        <x-admin.row-action action="more" title="Đã xử lý" icon="fas fa-check" type="submit" :disabled="$ct->status == 2" />
                                     </form>
                                     <form action="{{route('contact-form.destroy',$ct->id)}}" method="post">
                                         @method('delete') @csrf
-                                        <button class="btn btn-danger  btn-sm mx-1" href="" title="xóa mềm" onclick="return confirm('Bạn có muốn đưa liên hệ này vào sọt rác ?')"><i class="fas fa-trash"></i></button>
+                                        <x-admin.row-action action="delete" title="Xóa" onclick="return confirm('Bạn có muốn đưa liên hệ này vào sọt rác ?')" type="submit" />
                                     </form>
                                 </div>
                             </td>

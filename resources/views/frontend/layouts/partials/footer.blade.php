@@ -8,13 +8,14 @@
                     <li class="mb-2"><a href="{{route('about.page')}}">Giới thiệu</a></li>
                     <li class="mb-2"><a href="{{route('contact.page')}}">Liên hệ</a></li>
                     <li class="mb-2"><a href="{{route('blog.page')}}">Bài viết</a></li>
+                    <li class="mb-2"><a href="{{ route('faq.page') }}">Câu hỏi thường gặp</a></li>
                 </ul>
             </div>
             <div class="col-lg-3 col-md-6 mb-3">
                 <h6>Chính sách & điều khoản</h6>
                 <ul class="footer-link">
-                    @foreach ($faq as $data)
-                        <li class="mb-2"><a href="{{ route('faq.detail', $data->faq_slug) }}">{{$data->faq_name}}</a></li>
+                    @foreach ($policies as $data)
+                        <li class="mb-2"><a href="{{ route('policy.detail', $data->page_slug) }}">{{$data->page_name}}</a></li>
                     @endforeach
                 </ul>
             </div>

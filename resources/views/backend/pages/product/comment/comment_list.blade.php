@@ -112,14 +112,11 @@
                                     </td>
                                     
                                     <td class="text-center">
-                                        <div>
-                                            <form class="d-inline" action="{{ route('comment.destroy', $comments->comment_id) }}" method="POST">
+                                        <div class="row-actions">
+                                            <form action="{{ route('comment.destroy', $comments->comment_id) }}" method="POST">
                                                 @csrf 
                                                 @method('DELETE')
-                                                <button type='submit' onclick="return confirm('Bạn muốn đưa đánh giá này vào thùng rác?')"
-                                                        class="btn btn-danger btn-sm ms-1">
-                                                <i class="fas fa-trash"></i>
-                                                </button>
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn muốn đưa đánh giá này vào thùng rác?')" />
                                             </form>
                                         </div>
                                     </td>

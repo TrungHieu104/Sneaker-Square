@@ -108,18 +108,12 @@
                                     </td>
                                     
                                     <td class="text-center">
-                                        <div>
-                                            <button type="button" class="btn btn-success btn-sm m-1" title="Xem"
-                                                    data-bs-toggle="modal" data-bs-target="#cate-modal-{{$cates->cate_id}}">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <form class="d-inline" action="{{ route('product-category.destroy', $cates->cate_id) }}" method="POST">
+                                        <div class="row-actions">
+                                            <x-admin.row-action action="view" title="Xem" data-bs-toggle="modal" data-bs-target="#cate-modal-{{$cates->cate_id}}" />
+                                            <form action="{{ route('product-category.destroy', $cates->cate_id) }}" method="POST">
                                                 @csrf 
                                                 @method('DELETE')
-                                                <button type='submit' onclick="return confirm('Bạn muốn đưa danh mục này vào thùng rác?')"
-                                                        class="btn btn-danger btn-sm ms-1">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn muốn đưa danh mục này vào thùng rác?')" />
                                             </form>
                                         </div>
                                     </td>

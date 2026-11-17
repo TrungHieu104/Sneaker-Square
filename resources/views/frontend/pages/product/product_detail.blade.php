@@ -205,20 +205,20 @@
                             </div>
                         </div>
                         <div class="accordion accordion-flush mt-3" id="accordionFlushExample">
-                            @foreach ($faq as $item)
+                            @foreach ($policies as $item)
                                 <div class="accordion-item">
                                     <h2 class="accordion-header">
                                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                            data-bs-target="#flush-{{$item->faq_id}}" aria-expanded="false"
-                                            aria-controls="flush-{{$item->faq_id}}">
-                                            {{$item->faq_name}}
+                                            data-bs-target="#flush-{{$item->page_id}}" aria-expanded="false"
+                                            aria-controls="flush-{{$item->page_id}}">
+                                            {{$item->page_name}}
                                             <i class="fas fa-chevron-down"></i>
                                         </button>
                                     </h2>
-                                    <div id="flush-{{$item->faq_id}}" class="accordion-collapse collapse"
+                                    <div id="flush-{{$item->page_id}}" class="accordion-collapse collapse"
                                         data-bs-parent="#accordionFlushExample">
                                         <div class="accordion-body">
-                                            {{$item->faq_description}}
+                                            {{$item->page_description}}
                                         </div>
                                     </div>
                                 </div>

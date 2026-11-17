@@ -5,7 +5,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <div class="modal-body view_faq_data">
+            <div class="modal-body">
                 <h3 class="text-center"> Màu {{ $color->color_vn }} </h3>
                 <form action="{{ route('stock.update.color', $color->color_id) }}" id="modal-form-{{ $color->color_id }}" method="POST" enctype="multipart/form-data">
                     @csrf {{ method_field('PUT') }}

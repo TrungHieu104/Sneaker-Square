@@ -5,9 +5,9 @@
 @endsection
 
 @section('content')
-    <h4 class="fw-bold py-3 mb-3"><span class="text-muted fw-light"><a href="{{route('faq.index')}}" class="tab-back">Chính sách / </a></span> Thêm mới</h4>
+    <h4 class="fw-bold py-3 mb-3"><span class="text-muted fw-light"><a href="{{route('page.index')}}" class="tab-back">Chính sách &amp; Giới thiệu / </a></span> Thêm mới</h4>
     <!-- Bordered Table -->
-    <form action="{{asset('admin/faq')}}" method="post">
+    <form action="{{ route('page.store') }}" method="post">
         @csrf
         <div class="card mb-4 card-border-top">
             <div class="card-body">
@@ -56,12 +56,12 @@
                 </div>
                 <div class="row">
                     <div class="mb-3">
-                        <label for="faq-des" class="form-label">Mô tả</label>
-                        <textarea name="faq-des" id="faq-des" cols="" rows="5" class="form-control"  value={{old('faq-des')}}></textarea>
+                        <label for="description" class="form-label">Mô tả</label>
+                        <textarea name="description" id="description" cols="" rows="5" class="form-control"  value={{old('description')}}></textarea>
                     </div>
                     <div class="mb-3">
                         <label for="content" class="form-label">Nội dung</label>
-                        <textarea class="form-control" id="content-faq" name="content" rows="10" cols="5" value={{old('content')}}></textarea>
+                        <textarea class="form-control" id="page-content" name="content" rows="10" cols="5" value={{old('content')}}></textarea>
                         @if ($errors->has("content")) 
                             @foreach ($errors->get("content") as $error) 
                                 <small class="text-danger fst-italic">

@@ -23,7 +23,7 @@
                 <div class="col-lg-6 text-center" data-aos="fade-up" data-aos-duration="2000">
                     <div class="container-fluid px-0">
                         <div class="section-title">
-                            <h1>{{$data->faq_name}}</h1>
+                            <h1>{{$data->page_name}}</h1>
                             <p>Nơi Trải Nghiệm Thế Giới Giày Thể Thao Chính Hãng</p>
                         </div>
                     </div>
@@ -33,7 +33,7 @@
                 <div class="col-lg-12">
                     <div class="w-100 box__shadow p-3 rounded">
                         <p>
-                            {!!$data->faq_content!!}
+                            {!!$data->page_content!!}
                         </p>
                     </div>
                 </div>

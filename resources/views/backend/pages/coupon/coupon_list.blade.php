@@ -106,32 +106,20 @@
                                         @endif
                                     </td>
                                     <td class="text-center dx-res">
-                                        <div>
-                                            <button type="button" class="p-2 btn btn-success btn-sm m-1" title="Xem" data-bs-toggle="modal" data-bs-target="#couponModal{{$data->coupon_id}}">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <a class="p-2 btn btn-warning btn-sm m-1" href="{{route('coupon.edit', ['coupon' => $data->coupon_id])}}" title="Chỉnh sửa">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
+                                        <div class="row-actions">
+                                            <x-admin.row-action action="view" title="Xem" data-bs-toggle="modal" data-bs-target="#couponModal{{$data->coupon_id}}" />
+                                            <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{route('coupon.edit', ['coupon' => $data->coupon_id])}}" />
                                             @if($data->coupon_quantity <= 0)
-                                                <button disabled type="button" class="p-2 btn btn-secondary btn-sm m-1" title="Gửi" data-bs-toggle="modal" data-bs-target="#coupon{{$data->coupon_id}}">
-                                                    <i class="fas fa-share"></i>
-                                                </button>
+                                                <x-admin.row-action action="more" title="Gửi" icon="fas fa-share" disabled data-bs-toggle="modal" data-bs-target="#coupon{{$data->coupon_id}}" />
                                             @elseif(date('Y-m-d', strtotime($data->coupon_end)) >= date('Y-m-d', strtotime($today)))
-                                                <button type="button" class="p-2 btn btn-secondary btn-sm m-1" title="Gửi" data-bs-toggle="modal" data-bs-target="#coupon{{$data->coupon_id}}">
-                                                    <i class="fas fa-share"></i>
-                                                </button>
+                                                <x-admin.row-action action="more" title="Gửi" icon="fas fa-share" data-bs-toggle="modal" data-bs-target="#coupon{{$data->coupon_id}}" />
                                             @else
-                                                <button disabled type="button" class="p-2 btn btn-secondary btn-sm m-1" title="Gửi" data-bs-toggle="modal" data-bs-target="#coupon{{$data->coupon_id}}">
-                                                    <i class="fas fa-share"></i>
-                                                </button>
+                                                <x-admin.row-action action="more" title="Gửi" icon="fas fa-share" disabled data-bs-toggle="modal" data-bs-target="#coupon{{$data->coupon_id}}" />
                                             @endif
-                                            <form class="d-inline" action="{{ route('coupon.softDelete', ['id' => $data->coupon_id]) }}" method="post">
+                                            <form action="{{ route('coupon.softDelete', ['id' => $data->coupon_id]) }}" method="post">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" onclick="return confirm('Bạn có chắc muốn xóa?')" class="btn btn-danger btn-sm m-1 p-2">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn có chắc muốn xóa?')" />
                                             </form>                                                                                
                                         </div>
                                     </td> 
@@ -145,7 +133,7 @@
                                                 </div>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
-                                            <div class="modal-body view_faq_data">
+                                            <div class="modal-body">
                                                 <h4 class="text-center">{{$data->coupon_name}}</h4>
                                                 <div class="row">
                                                     <div class="col-lg-6 mb-3">
@@ -201,7 +189,7 @@
                                                 </div>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
-                                            <div class="modal-body view_faq_data">
+                                            <div class="modal-body">
                                                 <div class="row">
                                                     <h4 class="text-center pro-name w-100">{{$data->coupon_name}} - {{$data->coupon_code}}</h4>
                                                 </div>
