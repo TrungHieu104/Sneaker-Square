@@ -76,13 +76,33 @@ php artisan queue:restart
 
 ### Once, on a database from before `pages`
 
-The policy pages and the about page used to live in a table called `faq`. On a database that
-still has it, run this straight after `migrate`, which has just created the empty `pages` table:
+The policy pages and the about page used to live in a table called `faq`. The move below drops
+that table and cannot be undone, so back it up first:
+
+```bash
+mysqldump <database> faq permissions role_has_permissions model_has_permissions migrations > before-pages.sql
+```
+
+Then run the move straight after `migrate`, which has just created the empty `pages` table, and
+add the starting FAQ questions:
 
 ```bash
 php artisan pages:move-from-faq
+php artisan db:seed --class=FaqSeeder --force
 ```
 
-It copies every row into `pages` with the same id, renames the permission `Quản trị FAQ` to
-`Quản trị Chính sách & FAQ` (roles keep it), drops `faq` and clears the page cache. Until it runs,
-the footer shows no policies. Running it again does nothing.
+The move copies every row into `pages` with the same id, renames the permission `Quản trị FAQ`
+to `Quản trị Chính sách & FAQ` (roles keep it), drops `faq` and clears the page cache. It then
+gives `Quản trị Chính sách & FAQ` to every role and admin that had `Giới thiệu` and deletes
+`Giới thiệu`, since the about page is now edited from the policy screen. Running it again after
+it succeeded does nothing. The seeder adds 6 groups and 33 questions and skips
+any that already exist.
+
+Between `migrate` and the move, the footer shows no policies, `/ve-chung-toi` is empty and the
+Chính sách and FAQ admin screens answer 403 because the new permission does not exist yet, so
+run the two commands back to back.
+
+After the move, do not `migrate:rollback` that release: it drops `pages`, and `faq` is already
+gone. Restore from `before-pages.sql` instead. If the move stops after copying the rows but
+before dropping `faq` (a lost connection, a lock), running it again refuses because `pages` is
+no longer empty; check that `pages` holds every row, then drop `faq` by hand.
