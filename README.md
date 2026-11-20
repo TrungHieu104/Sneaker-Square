@@ -84,6 +84,44 @@ php artisan queue:work
 - Storefront: <http://localhost:8000>
 - Admin: <http://localhost:8000/admin>
 
+### Public URL (tunnel)
+
+To open the local site from another device or to receive payment callbacks,
+put a tunnel in front of it. Both tools below are free and need no extra code.
+
+```bash
+# Cloudflare quick tunnel: no account, a new *.trycloudflare.com URL every run
+cloudflared tunnel --url http://127.0.0.1:8000
+
+# ngrok: needs `ngrok config add-authtoken <token>` once
+ngrok http 8000
+```
+
+Served by Laravel Herd instead of `php artisan serve`? Herd picks the site from
+the `Host` header, so point the tunnel at port 80 and rewrite it:
+
+```bash
+cloudflared tunnel --url http://127.0.0.1:80 --http-host-header sneaker-square.test
+ngrok http 80 --host-header=sneaker-square.test
+```
+
+Then update `.env` and clear what was built for the old URL:
+
+```bash
+# .env
+APP_URL=https://<the URL the tunnel prints>
+TRUSTED_PROXIES=*
+
+php artisan config:clear
+php artisan responsecache:clear
+```
+
+`TRUSTED_PROXIES=*` lets the app believe the tunnel when it says the visitor came
+over https. Without it every link on the page stays `http://`, the browser blocks
+the CSS and JS as mixed content, and the site loads unstyled. Pages cached
+before the change keep their old links, hence the `responsecache:clear`. Leave
+`TRUSTED_PROXIES` empty when no tunnel is in front of the app.
+
 ### Tests
 
 ```bash
