@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Listeners\ClaimAssistantConversations;
 use App\Listeners\ClaimVisitorEvents;
 use App\Listeners\LogFailedMail;
 use App\Listeners\LogSentMail;
@@ -26,6 +27,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         Login::class => [
             ClaimVisitorEvents::class,
+            ClaimAssistantConversations::class,
         ],
         MessageSent::class => [
             LogSentMail::class,

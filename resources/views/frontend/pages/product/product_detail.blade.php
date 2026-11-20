@@ -412,6 +412,8 @@
 @endsection
 
 @push('css-access')
+    {{-- The support assistant answers size and product questions about this page. --}}
+    <meta name="assistant-product" content="{{ $detailProduct->pro_id }}">
     <style>
         img {
             max-width: 100%;

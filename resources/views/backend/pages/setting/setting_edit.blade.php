@@ -30,6 +30,11 @@
                     <i class="bx bx-store me-1"></i> Thông tin cửa hàng
                 </button>
             </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tro-ly" role="tab">
+                    <i class="bx bx-bot me-1"></i> Trợ lý AI
+                </button>
+            </li>
         @endif
         @if ($quanLyDon)
             <li class="nav-item">
@@ -103,7 +108,7 @@
                             <h5 class="fs-4 text-primary mb-1">Mã nhúng</h5>
                             <div class="form-text mb-3 mt-0">
                                 Dán nguyên đoạn mã các dịch vụ cung cấp. Mã được chèn thẳng vào trang, nên chỉ dán mã
-                                lấy từ chính Google Maps, Facebook hoặc Tawk.to.
+                                lấy từ chính Google Maps hoặc Facebook.
                             </div>
                             <div class="row">
                                 <div class="col-lg-12 mb-3">
@@ -114,7 +119,7 @@
                                     @enderror
                                     <div class="form-text">Google Maps → Chia sẻ → Nhúng bản đồ → Sao chép HTML. Hiện ở trang Liên hệ.</div>
                                 </div>
-                                <div class="col-lg-6 mb-3">
+                                <div class="col-lg-12 mb-3">
                                     <label for="shop-fanpage" class="form-label">Fanpage Facebook</label>
                                     <textarea class="form-control font-monospace small" id="shop-fanpage" name="fanpage_embed" rows="5">{{ old('fanpage_embed', $shopInfo['fanpage_embed']) }}</textarea>
                                     @error('fanpage_embed')
@@ -122,13 +127,48 @@
                                     @enderror
                                     <div class="form-text">Hiện ở chân trang.</div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        @endif
+
+        @if ($quanLyThongTin)
+            <div class="tab-pane fade" id="tab-tro-ly" role="tabpanel">
+                <form action="{{ route('setting.update_assistant') }}" method="post">
+                    @csrf
+                    @method('PUT')
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-6 mb-3 d-flex align-items-center">
+                                    <h5 class="fs-4 text-primary my-0">Mô hình trả lời khách</h5>
+                                </div>
+                                <div class="col-lg-6 mb-3 d-flex justify-content-end gap-3">
+                                    <button type="submit" class="btn btn-success px-5">Lưu</button>
+                                </div>
+                            </div>
+                            @unless ($assistantReady)
+                                <div class="alert alert-warning">
+                                    Chưa có ANTHROPIC_API_KEY trong file .env nên trợ lý đang báo bận và mời khách gặp nhân viên.
+                                </div>
+                            @endunless
+                            <div class="row">
                                 <div class="col-lg-6 mb-3">
-                                    <label for="shop-chat" class="form-label">Khung chat Tawk.to</label>
-                                    <textarea class="form-control font-monospace small" id="shop-chat" name="chat_embed" rows="5">{{ old('chat_embed', $shopInfo['chat_embed']) }}</textarea>
-                                    @error('chat_embed')
+                                    <label for="assistant-model" class="form-label">
+                                        Model Claude
+                                        <i class="bx bx-help-circle text-muted" tabindex="0" role="button" aria-label="Chọn model nào" data-bs-toggle="tooltip"
+                                            title="Model lớn hơn hiểu câu hỏi khó, viết tắt hay sai chính tả tốt hơn và trả lời tự nhiên hơn, đổi lại chậm hơn và tốn phí hơn."></i>
+                                    </label>
+                                    <select class="form-select" id="assistant-model" name="assistant_model">
+                                        @foreach (ShopSettings::ASSISTANT_MODELS as $model => $moTa)
+                                            <option value="{{ $model }}" @selected(old('assistant_model', $assistantModel) === $model)>{{ $moTa }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('assistant_model')
                                         <small class="text-danger fst-italic">{{ $message }}</small>
                                     @enderror
-                                    <div class="form-text">Để trống thì không hiện khung chat.</div>
                                 </div>
                             </div>
                         </div>

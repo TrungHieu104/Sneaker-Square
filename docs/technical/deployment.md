@@ -26,6 +26,7 @@ flowchart LR
         OAUTH["Google · Facebook<br/>(social login)"]
         GA["Google Analytics<br/>Data API"]
         SMTP["SMTP<br/>(mail)"]
+        CLAUDE["Claude API<br/>(support assistant)"]
     end
 
     KH -->|HTTPS| WEB
@@ -35,6 +36,7 @@ flowchart LR
     APP --> R
     Q --> R
     Q --> SMTP
+    Q -->|answers chat questions| CLAUDE
     CRON --> APP
     APP --> FS
 
@@ -53,11 +55,12 @@ flowchart LR
 | Laravel 12 (PHP 8.2) | The whole storefront and admin dashboard | One application, rendered with Blade |
 | MySQL 8 | Primary data store | Schema lives in `database/migrations` |
 | Redis | Cache, session, queue, response cache | Required, see `CACHE_DRIVER`, `QUEUE_CONNECTION` |
-| Queue worker | Sends mail (order confirmation, registration, password reset, coupons) | Without a running worker no mail goes out |
-| Scheduler | Auto-completes orders, cancels unpaid orders, reconciles wallets, builds the sitemap | Cron calls `schedule:run` every minute |
+| Queue worker | Sends mail (order confirmation, registration, password reset, coupons) and answers support-chat questions | Without a running worker no mail goes out and the chat widget waits, then tells the customer the assistant is busy |
+| Scheduler | Auto-completes orders, cancels unpaid orders, reconciles wallets, builds the sitemap, closes support chats idle for a day | Cron calls `schedule:run` every minute |
 | VNPay, MoMo | Online payment | IPN calls the server directly, not through the browser |
 | GHN | Shipping | Webhook authenticated by a token in the URL |
 | Google Analytics | Traffic statistics on the dashboard | Key file lives in `storage/`, never in `public/` |
+| Claude API | Words the support assistant's answers from data Laravel looked up | `ANTHROPIC_API_KEY`; the model is chosen in admin settings. Without a key the assistant says it is busy and offers staff. Billed per use; the FAQ part of each request is prompt-cached |
 
 ## Environment variables
 

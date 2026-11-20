@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\OrderStatus;
 use App\Models\UserEventModel;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -40,10 +41,24 @@ class ShoeSizeMemory
      */
     public function remembered(): array
     {
+        $userId = Auth::id();
+
+        return $this->rememberedFor($this->measured(), $userId === null ? null : (int) $userId, $this->events->visitorId());
+    }
+
+    /**
+     * The same answer for a shopper named outright, for code that runs
+     * outside their request (a queued job has no login, session or cookie).
+     *
+     * @param  int|null  $measured  the size they measured or chose, as {@see measured()} reads it in their request
+     * @return array{size: ?int, source: ?string}
+     */
+    public function rememberedFor(?int $measured, ?int $userId, ?string $visitor): array
+    {
         foreach ([
-            self::MEASURED => fn () => $this->measured(),
-            self::PURCHASED => fn () => $this->lastPurchased(),
-            self::CARTED => fn () => $this->lastCarted(),
+            self::MEASURED => fn () => $measured,
+            self::PURCHASED => fn () => $userId === null ? null : $this->lastPurchasedBy($userId),
+            self::CARTED => fn () => $this->lastCarted($userId, $visitor),
         ] as $source => $find) {
             $size = $find();
 
@@ -55,32 +70,31 @@ class ShoeSizeMemory
         return ['size' => null, 'source' => null];
     }
 
-    private function lastPurchased(): ?int
+    /**
+     * The order lines a customer kept, newest order first.
+     */
+    public static function keptPurchases(int $userId): Builder
     {
-        $userId = Auth::id();
-
-        if ($userId === null) {
-            return null;
-        }
-
-        $sizes = DB::table('order_details')
+        return DB::table('order_details')
             ->join('order', 'order.order_id', '=', 'order_details.order_id')
             ->where('order.user_id', $userId)
             ->whereNotIn('order.order_status', array_map(fn (OrderStatus $status) => $status->value, self::NOT_KEPT))
             ->whereNotNull('order_details.size')
-            ->orderByDesc('order.order_id')
-            ->limit(10)
-            ->pluck('order_details.size');
-
-        return $this->firstShoeSize($sizes->all());
+            ->orderByDesc('order.order_id');
     }
 
-    private function lastCarted(): ?int
+    /**
+     * The shoe size of the customer's latest kept pair.
+     */
+    public function lastPurchasedBy(int $userId): ?int
     {
-        $userId = Auth::id();
+        return $this->firstShoeSize(self::keptPurchases($userId)->limit(10)->pluck('order_details.size')->all());
+    }
 
+    private function lastCarted(?int $userId, ?string $visitor): ?int
+    {
         $sizes = UserEventModel::query()
-            ->mine($this->events->visitorId(), $userId === null ? null : (int) $userId)
+            ->mine($visitor, $userId)
             ->whereIn('event_type', [UserEventModel::ADD_CART, UserEventModel::PURCHASE])
             ->whereNotNull('user_events.size_id')
             ->join('size', 'size.size_id', '=', 'user_events.size_id')
