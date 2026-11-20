@@ -64,30 +64,40 @@ Laravel 12 · PHP 8.2 · MySQL (dev) + SQLite (test) · Blade · template admin 
 
 14. Sửa lỗi mình gây ra thì sửa gọn rồi đi tiếp, không tự kiểm điểm dài dòng.
 
+15. **Không tạo Artifact** (trang claude.ai). Sơ đồ, báo cáo, bảng đánh giá xuất thành file
+    (`.xlsx`, `.drawio`, `.md`, `.docx`…) lưu trong `docs/`, đúng thư mục chủ đề
+    (vd. `docs/tro-ly-ai/`).
+
 ## F. Chất lượng mã nguồn
 
 Ngưỡng hiện tại và nợ kỹ thuật còn lại nằm ở `docs/technical/technical-debt.md`. Thay đổi
 không được làm tụt các số đó.
 
-15. **Không viết secret vào code.** Key, token, mật khẩu đọc từ `.env`. Biến mới thì thêm
+16. **Không viết secret vào code.** Key, token, mật khẩu đọc từ `.env`. Biến mới thì thêm
     vào `.env.example` với giá trị rỗng và một dòng giải thích. File khoá đặt trong
     `storage/`, **không bao giờ trong `public/`**: mọi thứ ở đó đều tải được qua web.
 
-16. **Dùng lại khối có sẵn, không chép lại:**
+17. **Dùng lại khối có sẵn, không chép lại:**
     - sắp xếp danh sách admin → `$this->listingSort()` trong `Controller`
     - header, menu, footer storefront → trait `SharesStorefrontLayout`
     - file Excel → kế thừa `App\Exports\Sheets\ListingSheet`
     - chuỗi lặp từ 3 lần trong một class → `private const`
+    - nút trong cột Thao tác của danh sách admin (xem, sửa, xoá, khôi phục, nút phụ) →
+      `<x-admin.row-action>` bọc trong `<div class="row-actions">`, không tự viết
+      `btn btn-sm btn-outline-*`
+    - hỏi xác nhận trước khi xoá, huỷ, thoát → gắn `data-confirm="câu hỏi"` (và
+      `data-confirm-ok="nhãn nút"` nếu cần) lên `<form>` hoặc `<a>`; modal chung
+      `admin-confirm` lo phần còn lại. **Không dùng `confirm()`, `alert()` của JS.**
 
-17. **Controller mỏng.** Nghiệp vụ đặt trong `app/Actions` hoặc `app/Services`. Một hàm
+18. **Controller mỏng.** Nghiệp vụ đặt trong `app/Actions` hoặc `app/Services`. Một hàm
     không vượt cognitive complexity 15 (ngưỡng của SonarQube). Dài hơn thì tách hàm.
 
-18. **Quan hệ Eloquent khai báo kiểu trả về và generic**:
+19. **Quan hệ Eloquent khai báo kiểu trả về và generic**:
     `/** @return BelongsTo<OrderModel, $this> */ public function order(): BelongsTo`.
 
-19. Không để lại code đã comment, biến hay method không dùng. Git giữ lịch sử rồi.
+20. Không để lại code đã comment, biến hay method không dùng. Git giữ lịch sử rồi.
 
-20. Commit message và tên nhánh **viết bằng tiếng Anh**. Commit theo Conventional Commits
+21. Commit message và tên nhánh **viết bằng tiếng Anh**. Commit theo Conventional Commits
     (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`, `style:`), một commit một
     việc. Nhánh dạng `<type>/<kebab-case>` (`refactor/code-quality`), không commit thẳng lên
     `main`. Chỉ commit khi được yêu cầu, không push khi chưa được yêu cầu.
