@@ -242,7 +242,7 @@
         </li>
         @endcan
         @can('Khách hàng liên hệ')
-        <li class="menu-item {{ request()->routeIs('assistant_admin.*') ? 'active' : '' }}">
+        <li class="menu-item {{ request()->routeIs('assistant_admin.*') ? 'active' : '' }}" id="assistant-menu">
             <a href="{{ route('assistant_admin.index') }}" class="menu-link">
                 <i class='bx bx-chat menu-icon'></i>
                 <div data-i18n="Form Layouts">Trợ lý AI</div>

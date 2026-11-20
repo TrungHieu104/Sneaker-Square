@@ -1,6 +1,7 @@
 // The support assistant widget. Every answer, button and order card comes
 // from the server; this file only draws them. Text is set with textContent,
-// never as HTML, so nothing a model or a customer writes can run here.
+// never as HTML, so nothing a model or a customer writes can run here. The
+// socket only says the chat changed; the chat itself is always fetched.
 (function () {
     const root = document.getElementById('assistant');
 
@@ -16,6 +17,8 @@
     const POLL_CLOSED_MS = 15000;
     // Answers are written by a queue worker; while one is due the widget asks more often.
     const THINK_POLL_MS = 1500;
+    // With the socket up the answer is announced; this only covers a lost signal.
+    const THINK_LIVE_MS = 10000;
     // Longer than the job's own 75s limit, after which it leaves a busy notice:
     // giving up only happens when no worker is running at all.
     const THINK_GIVE_UP_MS = 80000;
@@ -38,6 +41,8 @@
     const dot = root.querySelector('.assistant-dot');
     const token = document.querySelector('meta[name="csrf-token"]');
     const productMeta = document.querySelector('meta[name="assistant-product"]');
+    // Where the socket server is, when the shop runs one; without it the widget polls.
+    const live = root.dataset.live ? JSON.parse(root.dataset.live) : null;
 
     const hotline = (root.dataset.hotline || '').replace(/\D/g, '');
     // However the number is spaced in the text: 0369 469 525, 0369.469.525, 0369469525.
@@ -54,6 +59,9 @@
     let thinkingDots = null;
     let thinkingSince = 0;
     let thinkingTimer = null;
+    let echo = null;
+    let echoReady = null;
+    let listening = null;
 
     function el(tag, className, text) {
         const node = document.createElement(tag);
@@ -288,7 +296,7 @@
 
         let every = 0;
 
-        if (withStaff) {
+        if (withStaff && !connected()) {
             every = panel.hidden ? POLL_CLOSED_MS : POLL_MS;
         }
 
@@ -322,6 +330,65 @@
 
         setStatus(state.status);
         setThinking(Boolean(state.thinking));
+        listen(state.channel);
+    }
+
+    function connected() {
+        return Boolean(echo) && echo.connector.pusher.connection.state === 'connected';
+    }
+
+    function loadScript(src) {
+        return new Promise(function (resolve, reject) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    // The socket scripts are fetched the first time there is a chat to hear
+    // about, so a visitor who never chats never downloads them.
+    function startEcho() {
+        echoReady = echoReady || live.scripts.reduce(function (loaded, src) {
+            return loaded.then(function () { return loadScript(src); });
+        }, Promise.resolve()).then(function () {
+            echo = new window.Echo.default({
+                broadcaster: 'reverb',
+                key: live.key,
+                wsHost: live.host,
+                wsPort: live.port,
+                wssPort: live.port,
+                forceTLS: live.tls,
+                enabledTransports: ['ws', 'wss'],
+                authEndpoint: live.auth,
+            });
+            const connection = echo.connector.pusher.connection;
+            // Polling stops while the socket is up and comes back when it drops;
+            // on reconnecting, whatever was missed meanwhile is fetched once.
+            connection.bind('state_change', function () { setStatus(status); });
+            connection.bind('connected', refresh);
+        });
+
+        return echoReady;
+    }
+
+    function listen(channel) {
+        if (!live || !channel || channel === listening) {
+            return;
+        }
+
+        const previous = listening;
+        listening = channel;
+        startEcho().then(function () {
+            if (previous) {
+                echo.leave(previous);
+            }
+
+            echo.private(channel).listen('.changed', refresh);
+        }).catch(function () {
+            listening = null;
+        });
     }
 
     function stopThinking() {
@@ -364,7 +431,7 @@
             return;
         }
 
-        thinkingTimer = setTimeout(refresh, THINK_POLL_MS);
+        thinkingTimer = setTimeout(refresh, connected() ? THINK_LIVE_MS : THINK_POLL_MS);
     }
 
     function request(url, options) {

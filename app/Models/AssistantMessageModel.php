@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Assistant\ChatSignal;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -30,6 +31,11 @@ class AssistantMessageModel extends Model
         'meta' => 'array',
         'created_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(fn (self $message) => app(ChatSignal::class)->changed((int) $message->conversation_id));
+    }
 
     /** @return BelongsTo<AssistantConversationModel, $this> */
     public function conversation(): BelongsTo

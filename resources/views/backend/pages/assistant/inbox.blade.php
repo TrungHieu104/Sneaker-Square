@@ -21,15 +21,17 @@
         $xemDon = auth()->user()->can('Quản trị Đơn hàng');
     @endphp
 
-    @include('backend.pages.assistant.partials.tabs', ['current' => $tab])
+    <div id="assistant-tabs">
+        @include('backend.pages.assistant.partials.tabs', ['current' => $tab])
+    </div>
 
     @if ($errors->hasAny(['question', 'answer', 'scope', 'scope_id', 'message_id']))
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
-    <div class="row g-3 assistant-inbox">
+    <div class="row g-3 assistant-inbox" id="assistant-inbox" data-chat="{{ $selected?->id }}">
         <div class="col-xl-3 col-lg-4">
-            <div class="card h-100">
+            <div class="card h-100" id="assistant-chat-list">
                 @forelse ($conversations as $chat)
                     <a href="{{ route('assistant_admin.index', ['tab' => $tab, 'chat' => $chat->id]) }}"
                         class="d-block px-3 py-3 border-bottom text-body {{ $selected?->id === $chat->id ? 'bg-label-primary border-start border-3 border-primary' : '' }}">
@@ -50,9 +52,9 @@
         </div>
 
         <div class="col-xl-6 col-lg-8">
-            <div class="card h-100 d-flex flex-column">
+            <div class="card h-100 d-flex flex-column" id="assistant-chat">
                 @if ($selected)
-                    <div class="card-header d-flex justify-content-between align-items-center gap-2 border-bottom">
+                    <div class="card-header d-flex justify-content-between align-items-center gap-2 border-bottom" id="assistant-chat-head">
                         <h5 class="mb-0">{{ $selected->user->name ?? 'Khách vãng lai' }}</h5>
                         @if ($selected->product)
                             <span class="badge bg-label-primary text-truncate" style="max-width: 60%;">Đang xem: {{ $selected->product->pro_name }}</span>
@@ -77,7 +79,7 @@
                         @endforeach
                     </div>
                     @if ($selected->status !== Chat::CLOSED)
-                        <div class="card-footer border-top pt-3">
+                        <div class="card-footer border-top pt-3" id="assistant-reply">
                             <form method="POST" action="{{ route('assistant_admin.reply', $selected->id) }}" class="d-flex gap-2 align-items-start">
                                 @csrf
                                 <div class="flex-grow-1">
@@ -101,7 +103,7 @@
         </div>
 
         <div class="col-xl-3 col-lg-12">
-            <div class="card h-100">
+            <div class="card h-100" id="assistant-customer">
                 <div class="card-body">
                     @if ($customer === null)
                         <p class="text-muted mb-0">Chưa chọn cuộc chat.</p>
@@ -140,6 +142,7 @@
         </div>
     </div>
 
+    <div id="assistant-save-forms">
     @if ($duocLuuMau && $selected)
         @foreach ($selected->messages->where('sender', Msg::STAFF)->reject(fn ($tin) => $replies[$tin->id]['saved']) as $tin)
             <div class="offcanvas offcanvas-end" tabindex="-1" id="luu-mau-{{ $tin->id }}" style="width: 520px;" aria-labelledby="luu-mau-{{ $tin->id }}-tieu-de">
@@ -164,6 +167,7 @@
             </div>
         @endforeach
     @endif
+    </div>
 @endsection
 
 @push('script-backend')
@@ -175,4 +179,12 @@
             thread.scrollTop = thread.scrollHeight;
         }
     </script>
+    @inject('chatSignal', 'App\Services\Assistant\ChatSignal')
+    @if ($live = $chatSignal->forBrowser())
+        @foreach ($chatSignal::SCRIPTS as $script)
+            <script src="{{ asset_v($script) }}"></script>
+        @endforeach
+        <script id="assistant-live" type="application/json">{!! json_encode($live + ['auth' => url('/broadcasting/auth'), 'channel' => App\Models\AssistantConversationModel::INBOX_CHANNEL], JSON_HEX_TAG) !!}</script>
+        <script src="{{ asset_v('backend/assets/js/assistant-inbox.js') }}"></script>
+    @endif
 @endpush

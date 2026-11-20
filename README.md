@@ -79,6 +79,10 @@ php artisan serve
 # Required alongside the server: every mail (order confirmation, registration,
 # password reset, coupons) goes through the Redis queue. No worker, no mail.
 php artisan queue:work
+
+# Optional: the live support chat (BROADCAST_DRIVER=reverb and the REVERB_*
+# values in .env). Without it the chat widget and the staff inbox poll instead.
+php artisan reverb:start
 ```
 
 - Storefront: <http://localhost:8000>

@@ -15,12 +15,14 @@ use App\Services\Assistant\KnowledgeBase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Broadcast;
 
 /**
- * The storefront chat widget's three calls: read the chat, ask a question,
- * ask for a person. Answers come from the queue, so the widget polls while
- * `thinking` is true. The page itself may be served from the shared cache,
- * so everything personal arrives through here.
+ * The storefront chat widget's calls: read the chat, ask a question, ask
+ * for a person, and listen for changes. Answers come from the queue; the
+ * widget hears of them on its chat's channel, and polls while `thinking` is
+ * true in case the socket server is down. The page itself may be served from
+ * the shared cache, so everything personal arrives through here.
  */
 class AssistantController extends Controller
 {
@@ -64,6 +66,20 @@ class AssistantController extends Controller
         return $this->state($conversation->refresh(), $request->integer('sau'));
     }
 
+    /**
+     * Lets the widget listen on its own chat's channel, guest or not. The
+     * chat is the one the login or the visitor cookie finds, never one the
+     * request names, so nobody can listen in on another customer's chat.
+     */
+    public function channel(Request $request): JsonResponse
+    {
+        $request->validate(['socket_id' => ['required', 'string'], 'channel_name' => ['required', 'string']]);
+        $conversation = $this->conversations->current();
+        abort_unless($conversation !== null && $request->input('channel_name') === 'private-'.$conversation->channel(), 403);
+
+        return response()->json(Broadcast::driver()->validAuthenticationResponse($request, true));
+    }
+
     private function state(?Conversation $conversation, int $after): JsonResponse
     {
         $user = Auth::guard('web')->user();
@@ -78,6 +94,7 @@ class AssistantController extends Controller
             'greeting' => 'Chào '.($name !== '' ? last(explode(' ', $name)) : 'bạn').', mình có thể giúp gì cho bạn?',
             'loggedIn' => $user instanceof UserModel,
             'status' => $conversation->status ?? Conversation::BOT,
+            'channel' => $conversation?->channel(),
             'thinking' => $conversation !== null && $this->botOwesReply($conversation),
             'messages' => $messages->map(fn (AssistantMessageModel $message) => $message->toWidget($pages))->values(),
         ]);

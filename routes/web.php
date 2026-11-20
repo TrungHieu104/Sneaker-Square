@@ -110,6 +110,7 @@ Route::group(['middleware' => 'web'], function () {
     Route::get('/tro-ly', [AssistantController::class, 'show'])->name('assistant.show')->middleware('doNotCacheResponse');
     Route::post('/tro-ly/tin-nhan', [AssistantController::class, 'send'])->name('assistant.send')->middleware('throttle:20,1');
     Route::post('/tro-ly/chuyen-nhan-vien', [AssistantController::class, 'handOff'])->name('assistant.handoff')->middleware('throttle:10,1');
+    Route::post('/tro-ly/kenh', [AssistantController::class, 'channel'])->name('assistant.channel')->middleware('throttle:30,1');
     Route::get('/tim-kiem', [SearchController::class, 'search'])->name('search.frontend');
 
     // Route Product WishList

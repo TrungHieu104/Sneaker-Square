@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Assistant\ChatSignal;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,6 +22,9 @@ class AssistantConversationModel extends Model
     public const ANSWERED = 'answered';
 
     public const CLOSED = 'closed';
+
+    // Every chat's changes, for the staff inbox.
+    public const INBOX_CHANNEL = 'assistant.inbox';
 
     protected $table = 'assistant_conversations';
 
@@ -55,5 +59,26 @@ class AssistantConversationModel extends Model
     public function isWithStaff(): bool
     {
         return in_array($this->status, [self::WAITING_STAFF, self::ANSWERED], true);
+    }
+
+    public static function channelFor(int $conversationId): string
+    {
+        return 'assistant.chat.'.$conversationId;
+    }
+
+    public function channel(): string
+    {
+        return self::channelFor($this->id);
+    }
+
+    protected static function booted(): void
+    {
+        // Only a change of hands is news: the widget marks the chat seen on
+        // every fetch, and signalling that would set off another fetch.
+        static::updated(function (self $conversation) {
+            if ($conversation->wasChanged('status')) {
+                app(ChatSignal::class)->changed($conversation->id);
+            }
+        });
     }
 }

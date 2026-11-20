@@ -30,6 +30,27 @@ return [
 
     'connections' => [
 
+        // The support chat's socket server (php artisan reverb:start). host,
+        // port and scheme are where browsers reach it, and where Laravel posts
+        // each signal; the short timeouts keep a stopped server from holding
+        // up a staff reply, which still goes through without it.
+        'reverb' => [
+            'driver' => 'reverb',
+            'key' => env('REVERB_APP_KEY'),
+            'secret' => env('REVERB_APP_SECRET'),
+            'app_id' => env('REVERB_APP_ID'),
+            'options' => [
+                'host' => env('REVERB_HOST'),
+                'port' => env('REVERB_PORT', 443),
+                'scheme' => env('REVERB_SCHEME', 'https'),
+                'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
+            ],
+            'client_options' => [
+                'connect_timeout' => 1,
+                'timeout' => 2,
+            ],
+        ],
+
         'pusher' => [
             'driver' => 'pusher',
             'key' => env('PUSHER_APP_KEY'),
