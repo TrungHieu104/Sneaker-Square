@@ -48,6 +48,71 @@ class FootMeasureTest extends TestCase
         }
     }
 
+    public function test_khoang_chieu_dai_moi_size_noi_tiep_nhau_va_khop_bang_size(): void
+    {
+        $sizes = new FootSize;
+        $ranges = $sizes->ranges();
+
+        $this->assertSame(array_keys($sizes->chart()), array_keys($ranges));
+        $previous = null;
+        foreach ($ranges as $size => $range) {
+            $this->assertSame($sizes->chart()[$size], $range['to']);
+            $this->assertSame($size, $sizes->sizeFor($range['from']));
+            $this->assertSame($size - 1, $sizes->sizeFor($range['from'] - 1));
+            // The Japanese/Korean label is a 5 mm step this size fits.
+            $this->assertSame(0, $range['asian'] % 5);
+            $this->assertSame($size, $sizes->sizeFor($range['asian']));
+            $this->assertGreaterThan($range['to'] - 5, $range['asian']);
+            if ($previous !== null) {
+                $this->assertSame($previous + 1, $range['from']);
+            }
+            $previous = $range['to'];
+        }
+    }
+
+    public function test_trang_bang_quy_doi_size_lay_size_cua_shop_lam_chinh_kem_size_nhat_han(): void
+    {
+        $rows = [];
+        foreach ((new FootSize)->ranges() as $size => $range) {
+            $rows[] = '<th scope="row">'.$size.'</th>';
+            $rows[] = $range['from'].' – '.$range['to'].' mm';
+            $rows[] = '>'.number_format($range['asian'] / 10, 1, ',', '').' / '.$range['asian'].'<';
+        }
+
+        $this->get(route('size.chart'))
+            ->assertOk()
+            ->assertSee('Bảng quy đổi size giày')
+            ->assertSee('Size giày ở Việt Nam, kể cả trên Sneaker Square, đánh số theo chuẩn EU.')
+            ->assertSee('chừa sẵn '.FootSize::TOE_ROOM_MM.' mm cho ngón chân', false)
+            ->assertSeeInOrder(['Size<small>VN / EU</small>', 'Chiều dài bàn chân', 'Size Nhật / Hàn<small>cm / mm</small>'], false)
+            ->assertSee('<th scope="row">42</th>', false)
+            ->assertSee('259 – 265 mm')
+            ->assertSee('26,5 / 265')
+            ->assertSeeInOrder($rows, false)
+            ->assertDontSee('Size EU');
+    }
+
+    public function test_trang_bang_quy_doi_size_va_trang_do_co_chan_link_toi_nhau(): void
+    {
+        $this->get(route('size.chart'))
+            ->assertOk()
+            ->assertSee('href="'.route('foot.measure').'"', false)
+            ->assertSee('Đo cỡ chân bằng ảnh');
+
+        $this->get(route('foot.measure'))
+            ->assertOk()
+            ->assertSee('href="'.route('size.chart').'"', false)
+            ->assertSee('Xem bảng quy đổi size');
+    }
+
+    public function test_khach_vang_lai_mo_trang_do_co_chan_khong_bi_nhac_dang_nhap(): void
+    {
+        $this->get(route('foot.measure'))
+            ->assertOk()
+            ->assertDontSee('Bạn chưa đăng nhập')
+            ->assertDontSee('href="'.route('user.login').'">Đăng nhập</a> để lưu', false);
+    }
+
     public function test_khach_da_dang_nhap_luu_size_vao_tai_khoan(): void
     {
         $user = $this->makeUser();

@@ -46,6 +46,7 @@ use App\Http\Controllers\Frontend\RecommendationController;
 use App\Http\Controllers\Frontend\SearchController;
 use App\Http\Controllers\Frontend\ShippingController;
 use App\Http\Controllers\Frontend\ShippingWebhookController;
+use App\Http\Controllers\Frontend\SizeChartController;
 use App\Http\Controllers\Frontend\SocialLoginController;
 use App\Http\Controllers\Frontend\UserController;
 use App\Http\Controllers\Frontend\WalletController;
@@ -95,6 +96,7 @@ Route::group(['middleware' => 'web'], function () {
 
     // The suggestion is one person's own, so none of it may come from the shared cache.
     Route::get('/do-co-chan', [FootMeasureController::class, 'index'])->name('foot.measure')->middleware('doNotCacheResponse');
+    Route::get('/bang-quy-doi-size', [SizeChartController::class, 'index'])->name('size.chart');
     Route::get('/co-chan-cua-toi', [FootMeasureController::class, 'show'])->name('foot.show')->middleware('doNotCacheResponse');
     Route::get('/goi-y/{pro_slug}', [RecommendationController::class, 'show'])->name('product.recommendations')->middleware('doNotCacheResponse');
     Route::post('/co-chan-cua-toi', [FootMeasureController::class, 'store'])->name('foot.store');

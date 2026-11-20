@@ -36,6 +36,7 @@ class StorefrontPagesTest extends TestCase
             'quên mật khẩu' => ['user.forgot'],
             'yêu thích' => ['product.wishlist'],
             'đo cỡ chân' => ['foot.measure'],
+            'bảng quy đổi size' => ['size.chart'],
             'đặt hàng thất bại' => ['failed.checkout'],
         ];
     }
