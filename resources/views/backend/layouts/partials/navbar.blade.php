@@ -179,7 +179,7 @@
                     <li>
                         <div class="dropdown-divider"></div>
                     </li>
-                    <a onclick="return confirm('Bạn có chắc muốn thoát khỏi phiên đăng nhập này?')" href="{{route('admin.logout')}}" class="btn btn-secondary d-flex justify-content-center align-items-center m-2">
+                    <a data-confirm="Bạn có chắc muốn thoát khỏi phiên đăng nhập này?" data-confirm-ok="Thoát" href="{{route('admin.logout')}}" class="btn btn-secondary d-flex justify-content-center align-items-center m-2">
                         <i class="bx bx-power-off me-2"></i>
                         Đăng xuất
                     </a>
@@ -194,7 +194,6 @@
     function checkKeyword() {
         const keyword = document.getElementById('searchInput').value.trim();
         if (keyword === '') {
-            // alert('Vui lòng nhập từ khoá tìm kiếm!');
             return false; 
         }
         return true;

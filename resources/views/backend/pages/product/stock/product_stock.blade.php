@@ -183,11 +183,10 @@
                                     <div class="row-actions">
                                         <x-admin.row-action action="more" title="Điều chỉnh tồn kho" icon="fas fa-sliders-h" data-bs-toggle="modal" data-bs-target="#adjust-modal-{{ $quantity->quantity_id }}" />
                                         <x-admin.row-action action="edit" title="Sửa giá" icon="fas fa-tag" data-bs-toggle="modal" data-bs-target="#price-modal-{{ $quantity->quantity_id }}" />
-                                        <form action="{{ route('stock.destroy', $quantity->quantity_id) }}" method="POST">
+                                        <form action="{{ route('stock.destroy', $quantity->quantity_id) }}" method="POST" data-confirm="Bạn muốn xóa mục này trong kho?">
                                             @csrf 
                                             @method('DELETE')
-                                            <x-admin.row-action action="delete" title="Xóa" type="submit" :disabled="$quantity->quantity != 0"
-                                                onclick="return confirm('Bạn muốn xóa mục này trong kho?')" />
+                                            <x-admin.row-action action="delete" title="Xóa" type="submit" :disabled="$quantity->quantity != 0" />
                                         </form>
                                     </div>
                                 </td>

@@ -9,7 +9,7 @@
         <details @if ($errors->has('shop_cancel_reason')) open @endif>
             <summary class="fs-5 text-danger">Huỷ đơn hàng</summary>
             <form action="{{ route('order.cancel_by_shop', $order->order_id) }}" method="POST" class="mt-3"
-                onsubmit="return confirm('Huỷ đơn {{ $order->order_code }}? Việc này không hoàn tác được.')">
+                data-confirm="Huỷ đơn {{ $order->order_code }}? Việc này không hoàn tác được." data-confirm-ok="Huỷ đơn">
                 @csrf
                 <label for="shop-cancel-reason" class="form-label">Lý do huỷ (khách sẽ thấy trên trang đơn hàng)</label>
                 <textarea class="form-control mb-2" id="shop-cancel-reason" name="shop_cancel_reason" rows="2"

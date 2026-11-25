@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Session;
 
 class DeliveryInfoController extends Controller
 {
+    private const NOT_FOUND = 'Không tồn tại địa chỉ này!';
+
     public function __construct(private ShippingCarrier $carrier) {}
 
     /**
@@ -35,22 +37,6 @@ class DeliveryInfoController extends Controller
         } catch (ShippingUnavailable $e) {
             return 0;
         }
-    }
-
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
     }
 
     /**
@@ -87,18 +73,43 @@ class DeliveryInfoController extends Controller
         return redirect()->back()->with('message', 'Thêm mới thành công!');
     }
 
+    /**
+     * The signed-in customer's own address, or null for anyone else's.
+     */
+    private function ownAddress(mixed $id): ?Info
+    {
+        if (! is_scalar($id)) {
+            return null;
+        }
+
+        return Info::where('user_id', Auth::id())->find($id);
+    }
+
+    /**
+     * Drops the default flag from the customer's other addresses. Done as one
+     * query so the chosen address, already loaded, is never touched behind it.
+     */
+    private function clearOtherDefaults(Info $keep): void
+    {
+        Info::where('user_id', Auth::id())->whereKeyNot($keep->getKey())->update(['info_default' => 0]);
+    }
+
+    private function missingAddress()
+    {
+        Session::flash('iconMessage', 'error');
+
+        return redirect()->back()->with('message', self::NOT_FOUND);
+    }
+
     public function deliInfoSelected(Request $request)
     {
-        $selectInfoDefault = $request->selectInfoDefault;
-        $user_id = Auth::user()->user_id;
-        $PersonInfo = Info::where('user_id', $user_id)->get();
-        foreach ($PersonInfo as $PI) {
-            if ($PI->info_default == 1) {
-                $PI->info_default = 0;
-                $PI->save();
-            }
+        $dataInfoNew = $this->ownAddress($request->selectInfoDefault);
+
+        if ($dataInfoNew === null) {
+            return $this->missingAddress();
         }
-        $dataInfoNew = Info::find($selectInfoDefault);
+
+        $this->clearOtherDefaults($dataInfoNew);
         $dataInfoNew->info_default = 1;
         $dataInfoNew->save();
         Session::flash('iconMessage', 'success');
@@ -107,34 +118,13 @@ class DeliveryInfoController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        // // $user_id = Auth::user()->user_id;
-        // $InfoDeli = Info::find($id);
-        // Session::put('InfoDeli', $InfoDeli);
-        // return redirect()->route('product.checkout');
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
      * Update the specified resource in storage.
      */
     public function update(DeliveryRequest $request, string $id)
     {
-        $Info = Info::find($id);
-        if ($Info == null) {
-            Session::flash('iconMessage', 'error');
-
-            return redirect()->back()->with('message', 'Không tồn tại địa chỉ này!');
+        $Info = $this->ownAddress($id);
+        if ($Info === null) {
+            return $this->missingAddress();
         }
         $Info->info_name = $request->info_name;
         $Info->info_phone = $request->info_phone;
@@ -157,12 +147,10 @@ class DeliveryInfoController extends Controller
      */
     public function destroy(string $id)
     {
-        $info = Info::find($id);
+        $info = $this->ownAddress($id);
 
-        if ($info == null) {
-            Session::flash('iconMessage', 'error');
-
-            return redirect()->back()->with('message', 'Không tồn tại địa chỉ này!');
+        if ($info === null) {
+            return $this->missingAddress();
         }
 
         $info->delete();
@@ -174,19 +162,14 @@ class DeliveryInfoController extends Controller
 
     public function deliInfoDefault(Request $request)
     {
-        $idinfo = $request['info_id'];
-        $info = Info::find($idinfo);
+        $info = $this->ownAddress($request['info_id']);
 
-        $info->info_default = $request['info_default'];
-
-        $user_id = Auth::user()->user_id;
-        $PersonInfo = Info::where('user_id', $user_id)->get();
-        foreach ($PersonInfo as $PI) {
-            if ($PI->info_default == 1) {
-                $PI->info_default = 0;
-                $PI->save();
-            }
+        if ($info === null) {
+            return $this->missingAddress();
         }
+
+        $this->clearOtherDefaults($info);
+        $info->info_default = $request['info_default'];
         $info->save();
         Session::flash('iconMessage', 'success');
 

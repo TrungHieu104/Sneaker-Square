@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\UserModel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -9,19 +10,31 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\URL;
 
 class RegisterMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    /**
-     * Create a new message instance.
-     */
+    public const VERIFY_ROUTE = 'verifed_register';
+
+    // The mail may sit unread for a while; past this the customer asks for a new one.
+    public const LINK_DAYS = 7;
+
     public $user;
 
-    public function __construct($user)
+    public function __construct($user, public string $link)
     {
         $this->user = $user;
+    }
+
+    /**
+     * Signed while the request is still being served: a queue worker would
+     * sign it against APP_URL, which need not be the host the customer uses.
+     */
+    public static function verifyLink(UserModel $user): string
+    {
+        return URL::temporarySignedRoute(self::VERIFY_ROUTE, now()->addDays(self::LINK_DAYS), ['user' => $user->user_id]);
     }
 
     /**
@@ -41,6 +54,7 @@ class RegisterMail extends Mailable implements ShouldQueue
     {
         return new Content(
             view: 'mail.RegisterMail',
+            with: ['link' => $this->link],
         );
     }
 

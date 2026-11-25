@@ -184,23 +184,14 @@ class CouponAdminController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    // public function destroy(Request $request,string $coupon_id)
-    // {
-    //     $cou = CouponModel::find($coupon_id);
-    //     if ($cou==null) {
-    //         $request->session();
-    //         Session::flash('iconMessage', 'info');
-    //         redirect()->back()->with('message', self::COUPON_NOT_FOUND);
-    //     }
-    //     $isUsedInOrders = $cou->Coupon()->exists();
-
     public function softDelete(Request $request, string $coupon_id)
     {
         $cou = CouponModel::find($coupon_id);
         if ($cou == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            redirect()->back()->with('message', self::COUPON_NOT_FOUND);
+
+            return redirect()->back()->with('message', self::COUPON_NOT_FOUND);
         }
         $isUsedInOrders = $cou->Coupon()->exists();
 
@@ -260,22 +251,22 @@ class CouponAdminController extends Controller
 
     public function forceDelete($id)
     {
-        $couponDe = CouponModel::withTrashed()->find($id);
-        $isUsedInOrders = $couponDe->Coupon()->exists();
+        $couponDe = CouponModel::onlyTrashed()->find($id);
 
-        if ($isUsedInOrders) {
+        if (! $couponDe) {
+            abort(404);
+        }
+
+        if ($couponDe->Coupon()->exists()) {
             Session::flash('iconMessage', 'error');
 
             return back()->with('message', 'Không thể xóa, mã khuyến mãi đã được sử dụng trong các đơn hàng.');
         }
-        if ($couponDe) {
-            $couponDe->forceDelete();
-            Session::flash('iconMessage', 'success');
 
-            return redirect()->back()->with('message', 'Xóa thành công');
-        } else {
-            return abort(404);
-        }
+        $couponDe->forceDelete();
+        Session::flash('iconMessage', 'success');
+
+        return redirect()->back()->with('message', 'Xóa thành công');
     }
 
     public function exportcou_scv()

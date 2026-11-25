@@ -149,10 +149,10 @@
                                                     <td class="text-center">
                                                         <div class="row-actions">
                                                             <x-admin.row-action action="view" title="Xem" data-bs-toggle="modal" data-bs-target="#color-modal-{{$color->color_id}}" />
-                                                            <form id="delete-color" action="{{ route('stock.delete.color', $color->color_id) }}" method="POST">
+                                                            <form id="delete-color" action="{{ route('stock.delete.color', $color->color_id) }}" method="POST" data-confirm="Bạn muốn xóa màu này?">
                                                                 @csrf 
                                                                 @method('DELETE')
-                                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn muốn xóa màu này?')" />
+                                                                <x-admin.row-action action="delete" title="Xóa" type="submit" />
                                                             </form>
                                                         </div>
                                                     </td>

@@ -18,8 +18,12 @@
         <div class="card-body">
             @if ($tagTrash->isNotEmpty())
                 <div class="d-flex mb-3 gap-3">
-                    <a href="{{route('tag.restoreAll')}}" class="btn btn-success mt-1 mb-2">Khôi phục tất cả &nbsp;<i class="fas fa-recycle"></i></a>
-                    <a href="{{route('tag.deleteAll')}}" class="btn btn-danger mt-1 mb-2">Xóa tất cả</a>
+                    <form action="{{route('tag.restoreAll')}}" method="post"> @csrf @method('PATCH')
+                        <button type="submit" class="btn btn-success mt-1 mb-2">Khôi phục tất cả &nbsp;<i class="fas fa-recycle"></i></button>
+                    </form>
+                    <form action="{{route('tag.deleteAll')}}" method="post" data-confirm="Bạn có chắc muốn xóa tất cả thẻ tag vĩnh viễn?"> @csrf @method('DELETE')
+                        <button type="submit" class="btn btn-danger mt-1 mb-2">Xóa tất cả</button>
+                    </form>
                 </div>
             @endif
             <div class="table-responsive text-nowrap">
@@ -58,10 +62,12 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="row-actions">
-                                        <x-admin.row-action action="restore" title="Khôi phục" href="{{route('tag.restore',['id'=>$tgT->tag_id])}}" />
-                                        <form action="{{route('tag.delete',['id'=>$tgT->tag_id])}}" method="post"> @csrf @method('DELETE')
-                                            <x-admin.row-action action="delete" title="Xóa vĩnh viễn" onclick="return confirm('Bạn có chắc muốn xóa thẻ tag vĩnh viễn?')" type="submit" />
-                                        </form>   
+                                        <form action="{{route('tag.restore',['id'=>$tgT->tag_id])}}" method="post"> @csrf @method('PATCH')
+                                            <x-admin.row-action action="restore" title="Khôi phục" type="submit" />
+                                        </form>
+                                        <form action="{{route('tag.delete',['id'=>$tgT->tag_id])}}" method="post" data-confirm="Bạn có chắc muốn xóa thẻ tag vĩnh viễn?"> @csrf @method('DELETE')
+                                            <x-admin.row-action action="delete" title="Xóa vĩnh viễn" type="submit" />
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

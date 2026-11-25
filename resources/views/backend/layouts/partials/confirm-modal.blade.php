@@ -1,7 +1,7 @@
 {{--
     The admin's one confirmation dialog, in place of the browser's confirm().
-    A form or link asks it first by carrying data-confirm="<question>", and
-    may name its button with data-confirm-ok="<label>".
+    A form, link or radio asks it first by carrying data-confirm="<question>",
+    and may name its button with data-confirm-ok="<label>".
 --}}
 <div class="modal fade" id="admin-confirm" tabindex="-1" aria-labelledby="admin-confirm-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

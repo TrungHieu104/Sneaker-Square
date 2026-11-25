@@ -101,10 +101,10 @@
                                                     <x-admin.row-action action="delete" title="Xóa" disabled />
                                                 </span>
                                             @else
-                                                <form action="{{ route('page.softDelete', ['encryptedPageId' => encrypt($data->page_id)]) }}" method="post">
+                                                <form action="{{ route('page.softDelete', ['encryptedPageId' => encrypt($data->page_id)]) }}" method="post" data-confirm="Bạn có chắc muốn đưa chính sách này vào thùng rác?">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn có chắc muốn xóa?')" />
+                                                    <x-admin.row-action action="delete" title="Xóa" type="submit" />
                                                 </form>
                                             @endif
                                         </div>

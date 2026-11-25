@@ -110,10 +110,10 @@
                                     <td class="text-center">
                                         <div class="row-actions">
                                             <x-admin.row-action action="view" title="Xem" data-bs-toggle="modal" data-bs-target="#cate-modal-{{$cates->cate_id}}" />
-                                            <form action="{{ route('product-category.destroy', $cates->cate_id) }}" method="POST">
+                                            <form action="{{ route('product-category.destroy', $cates->cate_id) }}" method="POST" data-confirm="Bạn muốn đưa danh mục này vào thùng rác?">
                                                 @csrf 
                                                 @method('DELETE')
-                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn muốn đưa danh mục này vào thùng rác?')" />
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" />
                                             </form>
                                         </div>
                                     </td>

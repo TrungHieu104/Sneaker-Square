@@ -89,11 +89,6 @@ class UserModel extends Authenticatable
         return UserModel::where('email', '=', $email)->first();
     }
 
-    public static function getTokenSingle($remember_token)
-    {
-        return UserModel::where('remember_token', '=', $remember_token)->first();
-    }
-
     /** @return HasMany<OrderModel, $this> */
     public function Order(): HasMany
     {

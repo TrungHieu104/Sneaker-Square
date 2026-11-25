@@ -21,15 +21,7 @@ class CommentAdminController extends Controller
      */
     public function index(Request $request)
     {
-        $orderBy = $request->input('orderBy', 'comment_date');
-        $orderType = $request->input('orderType', 'asc');
-
-        if ($orderType === 'asc') {
-            $orderType = 'desc';
-        } else {
-            $orderType = 'asc';
-        }
-
+        [$orderBy, $orderType] = $this->listingSort($request, Comment::class, 'comment_date');
         $keyword = $request->input('keyword');
         $searchableFields = ['comment_content'];
         // Each row shows who wrote the review and which product it is on.
@@ -94,13 +86,8 @@ class CommentAdminController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, Comment $comment)
+    public function destroy(Comment $comment)
     {
-        if ($comment == null) {
-            $request->session();
-            Session::flash('iconMessage', 'info');
-            redirect()->back()->with('message', 'Không tồn tại bình luận.');
-        }
         $comment->delete();
         Session::flash('iconMessage', 'success');
 
@@ -150,7 +137,7 @@ class CommentAdminController extends Controller
      */
     public function delete(string $commentId)
     {
-        $comment = Comment::withTrashed()->find($commentId);
+        $comment = Comment::onlyTrashed()->find($commentId);
         if ($comment) {
             $comment->forceDelete();
             Session::flash('iconMessage', 'success');

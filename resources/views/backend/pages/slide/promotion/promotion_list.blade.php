@@ -93,10 +93,10 @@
                                         <div class="row-actions">
                                             <x-admin.row-action action="view" title="Chi tiết" data-bs-toggle="modal" data-bs-target="#promotionModal{{ $data->promotion_id }}" />
                                             <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{ route('promotion.edit', $data->promotion_id) }}" />
-                                            <form action="{{ route('promotion.softDelete', $data->promotion_id) }}" method="post">
+                                            <form action="{{ route('promotion.softDelete', $data->promotion_id) }}" method="post" data-confirm="Bạn có chắc muốn xóa?">
                                                 @csrf
                                                 @method('DELETE')
-                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn có chắc muốn xóa?')" />
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" />
                                             </form>
                                                 
                                         </div>

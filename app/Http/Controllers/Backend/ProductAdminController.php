@@ -334,7 +334,7 @@ class ProductAdminController extends Controller
      */
     public function delete(string $proId)
     {
-        $product = Product::withTrashed()->find($proId);
+        $product = Product::onlyTrashed()->find($proId);
         if ($product) {
             $product->forceDelete();
             Session::flash('iconMessage', 'success');

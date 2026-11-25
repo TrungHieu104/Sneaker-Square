@@ -16,14 +16,13 @@ use App\Models\DeliveryInfoModel as DeliInfo;
 use App\Models\OrderDetailModel as OrderDetail;
 use App\Models\OrderModel as Order;
 use App\Models\UserModel;
+use App\Services\PasswordResetLinks;
 use App\Services\Returns\OrderReturns;
 use App\Services\Returns\ReturnNotAllowed;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -54,16 +53,11 @@ class UserController extends Controller
         return view('frontend.pages.account.user_info.pages.update_pass');
     }
 
-    public function changepass($remember_token)
+    public function changepass(PasswordResetLinks $links, string $token)
     {
-        $user = UserModel::getTokenSingle($remember_token);
-        if (! empty($user)) {
-            $data['user'] = $user;
+        abort_unless($links->valid(Auth::user(), $token), 404);
 
-            return view('frontend.pages.account.user_info.pages.change_pass', $data);
-        } else {
-            abort(404);
-        }
+        return view('frontend.pages.account.user_info.pages.change_pass', ['token' => $token]);
     }
 
     public function delivery()
@@ -224,7 +218,6 @@ class UserController extends Controller
     {
         $user = UserModel::find(Auth::id());
         $user->name = $request['name'];
-        $user->password = $request['password'];
         $user->user_phone = $request['user_phone'];
         if ($request->hasFile('img__new')) {
             $file = $request->file('img__new');
@@ -247,23 +240,26 @@ class UserController extends Controller
         //
     }
 
-    public function sendMailPass()
+    public function sendMailPass(PasswordResetLinks $links)
     {
         $user = UserModel::find(Auth::id());
-        $user->remember_token = Str::random(30);
-        $user->save();
-        Mail::to($user->email)->send(new sendMailPass($user));
+        Mail::to($user->email)->send(new sendMailPass($user, route('user.change_pass', $links->issue($user))));
         Session::flash('iconMessage', 'success');
 
         return redirect()->back()->with('message', 'Đã gửi mail');
     }
 
-    public function updatePassPost(ResetpassRequets $request)
+    public function updatePassPost(ResetpassRequets $request, PasswordResetLinks $links)
     {
         $user = UserModel::find(Auth::id());
-        $user->password = $request['password'];
-        $user->remember_token = Str::random(30);
-        $user->save();
+
+        if (! $links->valid($user, (string) $request->input('token'))) {
+            Session::flash('iconMessage', 'error');
+
+            return redirect(route('user.update_pass'))->with('message', 'Link đổi mật khẩu đã hết hạn, vui lòng gửi lại mail.');
+        }
+
+        $links->setPassword($user, (string) $request['password']);
 
         Session::flash('iconMessage', 'success');
 
@@ -277,16 +273,6 @@ class UserController extends Controller
         Session::flash('iconMessage', 'success');
 
         return back()->with('message', 'Mail đã được gửi!');
-    }
-
-    public function removeToken(Request $request)
-    {
-        UserModel::whereNotNull('remember_token')
-            ->where('user_id', Auth::id())
-            ->where('remember_token', '<', Carbon::now()->subMinutes(1))
-            ->update(['remember_token' => null]);
-
-        return response()->json(['message' => 'Email verification removed successfully']);
     }
 
     public function changeEmail(ChangeEmailRequest $request, string $id)

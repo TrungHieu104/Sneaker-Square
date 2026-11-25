@@ -16,8 +16,12 @@ Danh mục bài viết
         <div class="card-body">
             @if ($cateBTrash->isNotEmpty())
                 <div class="d-flex mb-3 gap-3">
-                    <a href="{{route('cate_blog.restoreAll')}}" class="btn btn-success mt-1 mb-2">Khôi phục tất cả &nbsp;<i class="fas fa-recycle"></i></a>
-                    <a href="{{route('cate_blog.deleteAll')}}" class="btn btn-danger mt-1 mb-2">Xóa tất cả</a>
+                    <form action="{{route('cate_blog.restoreAll')}}" method="post"> @csrf @method('PATCH')
+                        <button type="submit" class="btn btn-success mt-1 mb-2">Khôi phục tất cả &nbsp;<i class="fas fa-recycle"></i></button>
+                    </form>
+                    <form action="{{route('cate_blog.deleteAll')}}" method="post" data-confirm="Bạn có chắc muốn xóa tất cả danh mục bài viết vĩnh viễn?"> @csrf @method('DELETE')
+                        <button type="submit" class="btn btn-danger mt-1 mb-2">Xóa tất cả</button>
+                    </form>
                 </div>
             @endif
             <div class="table-responsive text-nowrap">
@@ -55,10 +59,12 @@ Danh mục bài viết
                                 </td>
                                 <td class="text-center">
                                     <div class="row-actions">
-                                        <x-admin.row-action action="restore" title="Khôi phục" href="{{route('cate_blog.restore',['id'=>$cBT->cate_news_id])}}" />
-                                        <form action="{{route('cate_blog.delete',['id'=>$cBT->cate_news_id])}}" method="post"> @csrf @method('DELETE')
-                                            <x-admin.row-action action="delete" title="Xóa vĩnh viễn" onclick="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')" type="submit" />
-                                        </form>   
+                                        <form action="{{route('cate_blog.restore',['id'=>$cBT->cate_news_id])}}" method="post"> @csrf @method('PATCH')
+                                            <x-admin.row-action action="restore" title="Khôi phục" type="submit" />
+                                        </form>
+                                        <form action="{{route('cate_blog.delete',['id'=>$cBT->cate_news_id])}}" method="post" data-confirm="Bạn có chắc muốn xóa danh mục bài viết này vĩnh viễn?"> @csrf @method('DELETE')
+                                            <x-admin.row-action action="delete" title="Xóa vĩnh viễn" type="submit" />
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

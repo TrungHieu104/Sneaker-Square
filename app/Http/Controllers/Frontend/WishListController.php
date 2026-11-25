@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Frontend\Concerns\SharesStorefrontLayout;
+use App\Models\ProductModel;
 use App\Models\UserEventModel;
 use App\Models\WishListModel;
 use App\Services\UserEventLog;
@@ -44,6 +45,11 @@ class WishListController extends Controller
                 return response()->json([
                     'status' => 'Đã xóa khỏi mục yêu thích',
                     'icon' => 'success',
+                ]);
+            } elseif (! ProductModel::whereKey($pro_id)->exists()) {
+                return response()->json([
+                    'status' => 'Sản phẩm không tồn tại',
+                    'icon' => 'error',
                 ]);
             } else {
                 $wishList = new WishListModel;

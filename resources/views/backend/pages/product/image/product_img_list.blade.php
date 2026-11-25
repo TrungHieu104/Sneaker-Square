@@ -65,10 +65,10 @@
                                     
                                     <td class="text-center">
                                         <div class="row-actions">
-                                            <form action="{{ route('image.destroy', $images->img_id) }}" method="POST">
+                                            <form action="{{ route('image.destroy', $images->img_id) }}" method="POST" data-confirm="Bạn muốn đưa hình ảnh này vào thùng rác?">
                                                 @csrf 
                                                 @method('DELETE')
-                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn muốn đưa hình ảnh này vào thùng rác?')" />
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" />
                                             </form>
                                         </div>
                                     </td>

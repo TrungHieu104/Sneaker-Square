@@ -7,12 +7,15 @@ use App\Http\Requests\Backend\CateSlideRequest;
 use App\Http\Requests\Backend\CateSlideUpdate;
 use App\Models\CateSlideModel;
 use App\Models\PromotionModel;
+use App\Services\TrashPurge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 
 class CateSlideAdminController extends Controller
 {
+    private const REFERENCES = ['promotion' => 'cate_slide_id'];
+
     /**
      * Display a listing of the resource.
      */
@@ -118,7 +121,7 @@ class CateSlideAdminController extends Controller
             $request->session();
             Session::flash('iconMessage', 'info');
 
-            return redirect(route('coupon.index'))->with('message', 'Không tồn tại danh muc');
+            return redirect(route('cate-slide.index'))->with('message', 'Không tồn tại danh mục');
         }
         $cates->cate_slide_name = $name;
         $cates->cate_slide_slug = $slug;
@@ -144,7 +147,8 @@ class CateSlideAdminController extends Controller
         if ($cateS == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            redirect()->back()->with('message', 'Không tồn tại danh mục!');
+
+            return redirect()->back()->with('message', 'Không tồn tại danh mục!');
         }
         $cateS->delete();
         Session::flash('iconMessage', 'success');
@@ -194,31 +198,39 @@ class CateSlideAdminController extends Controller
         }
     }
 
-    public function forceDelete($id)
+    public function forceDelete(TrashPurge $purge, $id)
     {
-        $cateSlide = CateSlideModel::withTrashed()->find($id);
-        if ($cateSlide) {
-            $cateSlide->forceDelete();
-            Session::flash('iconMessage', 'success');
-
-            return redirect()->back()->with('message', 'Xóa thành công!');
-        } else {
+        $cateSlide = CateSlideModel::onlyTrashed()->find($id);
+        if (! $cateSlide) {
             return abort(404);
         }
+        if ($purge->isReferenced($cateSlide, self::REFERENCES)) {
+            Session::flash('iconMessage', 'info');
+
+            return redirect()->back()->with('message', 'Danh mục còn slide, kể cả trong thùng rác. Hãy xóa vĩnh viễn các slide đó trước!');
+        }
+        $cateSlide->forceDelete();
+        Session::flash('iconMessage', 'success');
+
+        return redirect()->back()->with('message', 'Xóa thành công!');
     }
 
-    public function deleteAll()
+    public function deleteAll(TrashPurge $purge)
     {
-        $trashAll = CateSlideModel::onlyTrashed()->get();
-        if ($trashAll->count() > 0) {
-            CateSlideModel::onlyTrashed()->forceDelete();
-            Session::flash('iconMessage', 'success');
-
-            return redirect()->back()->with('message', 'Xóa danh mục thành công!');
-        } else {
+        if (CateSlideModel::onlyTrashed()->doesntExist()) {
             Session::flash('iconMessage', 'info');
 
             return back()->with('message', 'Không có dữ liệu trong thùng rác!');
         }
+
+        $kept = $purge->purgeAll(fn () => CateSlideModel::onlyTrashed(), self::REFERENCES);
+        if ($kept > 0) {
+            Session::flash('iconMessage', 'info');
+
+            return redirect()->back()->with('message', "Còn {$kept} danh mục có slide nên được giữ lại trong thùng rác.");
+        }
+        Session::flash('iconMessage', 'success');
+
+        return redirect()->back()->with('message', 'Xóa danh mục thành công!');
     }
 }

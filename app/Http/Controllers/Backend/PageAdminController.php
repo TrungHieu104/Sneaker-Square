@@ -187,7 +187,7 @@ class PageAdminController extends Controller
 
     public function forceDelete(Request $request, string $encryptedPageId): RedirectResponse
     {
-        $policy = $this->decrypted($encryptedPageId, fn (int $id) => PageModel::policies()->withTrashed()->find($id));
+        $policy = $this->decrypted($encryptedPageId, fn (int $id) => PageModel::policies()->onlyTrashed()->find($id));
 
         if ($policy instanceof RedirectResponse) {
             return $policy;

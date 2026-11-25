@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('news', function (Blueprint $table) {
@@ -26,6 +23,8 @@ return new class extends Migration
             $table->boolean('news_hot')->default(0);
             $table->date('post_date');
             $table->string('news_created_by', 255)->nullable();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->foreign('user_id')->references('user_id')->on('users')->nullOnDelete()->cascadeOnUpdate();
             $table->unsignedInteger('cate_news_id');
             $table->foreign('cate_news_id')->references('cate_news_id')->on('cate_news')->onDelete('restrict')->onUpdate('cascade');
             $table->timestamps();
@@ -33,9 +32,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('news');

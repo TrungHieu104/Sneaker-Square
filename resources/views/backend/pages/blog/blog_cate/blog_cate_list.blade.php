@@ -69,9 +69,9 @@
                                     <td class="text-center">
                                         <div class="row-actions">
                                             <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{route('blog-category.edit', ['blog_category' => $cN->cate_news_id])}}" />
-                                            <form action="{{route('blog-category.destroy', ['blog_category' => $cN->cate_news_id])}}" method="POST">
+                                            <form action="{{route('blog-category.destroy', ['blog_category' => $cN->cate_news_id])}}" method="POST" data-confirm="Bạn muốn xóa mục này?">
                                                 @csrf @method('delete')
-                                                <x-admin.row-action action="delete" title="Xóa" onclick="return confirm('Bạn muốn xóa mục này?')" type="submit" />
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" />
                                             </form>
                                         </div>
                                     </td>

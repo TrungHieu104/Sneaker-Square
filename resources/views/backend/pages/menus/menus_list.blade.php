@@ -75,9 +75,9 @@
                     @can('Quản trị Menu')
                     <div class="row-actions">
                         <x-admin.row-action action="edit" title="Chỉnh sửa" href="/admin/menus/{{ $menu->menu_id }}/edit" />
-                        <form action="{{ route('menu.softDelete', ['id' => $menu->menu_id]) }}" method="post">
+                        <form action="{{ route('menu.softDelete', ['id' => $menu->menu_id]) }}" method="post" data-confirm="Đưa menu này vào thùng rác?">
                             @csrf @method('DELETE')
-                            <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Xóa menu này?')" />
+                            <x-admin.row-action action="delete" title="Xóa" type="submit" />
                         </form>
                     </div>
                     @endcan
@@ -108,9 +108,9 @@
                             @can('Quản trị Menu')
                             <div class="row-actions">
                                 <x-admin.row-action action="edit" title="Chỉnh sửa" href="/admin/menus/{{ $child->menu_id }}/edit" />
-                                <form action="{{ route('menu.softDelete', ['id' => $child->menu_id]) }}" method="post">
+                                <form action="{{ route('menu.softDelete', ['id' => $child->menu_id]) }}" method="post" data-confirm="Đưa menu này vào thùng rác?">
                                     @csrf @method('DELETE')
-                                    <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Xóa menu này?')" />
+                                    <x-admin.row-action action="delete" title="Xóa" type="submit" />
                                 </form>
                             </div>
                             @endcan

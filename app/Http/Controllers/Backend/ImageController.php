@@ -21,9 +21,13 @@ class ImageController extends Controller
     }
 
     /**
-     * Display a listing of the resource.
+     * A gallery belongs to one product, so there is no list of every image:
+     * the admin picks the product first.
      */
-    public function index(string $proId) {}
+    public function index()
+    {
+        return redirect()->route('product.index');
+    }
 
     /**
      * Show the form for creating a new resource.
@@ -112,7 +116,8 @@ class ImageController extends Controller
         if ($image == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            redirect()->back()->with('message', 'Không tồn tại hình ảnh.');
+
+            return redirect()->back()->with('message', 'Không tồn tại hình ảnh.');
         }
         $image->delete();
         Session::flash('iconMessage', 'success');
@@ -182,7 +187,7 @@ class ImageController extends Controller
      */
     public function delete(string $imgId)
     {
-        $image = Image::withTrashed()->find($imgId);
+        $image = Image::onlyTrashed()->find($imgId);
         if ($image) {
             $image->forceDelete();
             Session::flash('iconMessage', 'success');

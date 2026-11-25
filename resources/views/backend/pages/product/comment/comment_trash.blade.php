@@ -17,8 +17,12 @@
         <div class="card-body">
             @if($commentTrash->isNotEmpty())
                 <div class="d-flex mb-3 gap-3">
-                    <a href="{{ route('comment.restore.all') }}" class="btn btn-success mt-1 mb-2" title="Khôi phục">Khôi phục tất cả &nbsp;<i class="fas fa-trash-restore"></i></a>
-                    <a href="{{ route('comment.delete.all') }}" class="btn btn-danger mt-1 mb-2" title="Xóa" onclick="return confirm('Bạn có chắc muốn xóa tất cả đánh giá vĩnh viễn?')">Xóa tất cả &nbsp;<i class="fas fa-trash"></i></a>
+                    <form action="{{ route('comment.restore.all') }}" method="post"> @csrf @method('PATCH')
+                        <button type="submit" class="btn btn-success mt-1 mb-2" title="Khôi phục">Khôi phục tất cả &nbsp;<i class="fas fa-trash-restore"></i></button>
+                    </form>
+                    <form action="{{ route('comment.delete.all') }}" method="post" data-confirm="Bạn có chắc muốn xóa tất cả đánh giá vĩnh viễn?"> @csrf @method('DELETE')
+                        <button type="submit" class="btn btn-danger mt-1 mb-2" title="Xóa">Xóa tất cả &nbsp;<i class="fas fa-trash"></i></button>
+                    </form>
                 </div>
             @endif
             <div class="table-responsive text-nowrap">
@@ -86,10 +90,14 @@
                                     <td class="text-center dx-res">
                                         <div class="row-actions">
                                             @if($comments->getProducts) 
-                                                <x-admin.row-action action="restore" title="Khôi phục" href="{{route('comment.restore', $comments->comment_id)}}" />
+                                                <form action="{{route('comment.restore', $comments->comment_id)}}" method="post"> @csrf @method('PATCH')
+                                                    <x-admin.row-action action="restore" title="Khôi phục" type="submit" />
+                                                </form>
                                             @endif
 
-                                            <x-admin.row-action action="delete" title="Xóa vĩnh viễn" href="{{route('comment.delete', $comments->comment_id)}}" onclick="return confirm('Bạn có chắc muốn xóa đánh giá này vĩnh viễn?')" />                                     
+                                            <form action="{{route('comment.delete', $comments->comment_id)}}" method="post" data-confirm="Bạn có chắc muốn xóa đánh giá này vĩnh viễn?"> @csrf @method('DELETE')
+                                                <x-admin.row-action action="delete" title="Xóa vĩnh viễn" type="submit" />
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>

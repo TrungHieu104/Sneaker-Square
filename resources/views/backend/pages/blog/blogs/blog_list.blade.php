@@ -78,9 +78,9 @@
                                         <div class="row-actions">
                                             <x-admin.row-action action="view" title="Xem" href="{{route('news.detail', $n->news_slug)}}" target="_blank" />
                                             <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{route('blog.edit', ['blog' => $n->news_id])}}" />
-                                            <form action="{{route('blog.destroy', ['blog' => $n->news_id])}}" method="POST">
+                                            <form action="{{route('blog.destroy', ['blog' => $n->news_id])}}" method="POST" data-confirm="Bạn muốn xóa bài viết này?">
                                                 @csrf @method('delete')
-                                                <x-admin.row-action action="delete" title="Xóa" onclick="return confirm('Bạn muốn xóa bài viết này?')" type="submit" />
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" />
                                             </form>
                                         </div>
                                     </td>

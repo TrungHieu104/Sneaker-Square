@@ -45,7 +45,14 @@ $(document).ready(function() {
                 data: { from_date: from_date, to_date: to_date },
                 success: function (response) {
                     if (response.error) {
-                        alert(response.error); 
+                        new Noty({
+                            type: 'warning',
+                            layout: 'topRight',
+                            theme: 'mint',
+                            text: $('<div>').text(response.error).html(),
+                            timeout: 6000,
+                            progressBar: true,
+                        }).show();
                     } else {
                         initializeChart(response);
                         console.log(response);

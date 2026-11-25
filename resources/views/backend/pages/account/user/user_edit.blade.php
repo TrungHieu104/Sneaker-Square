@@ -44,7 +44,7 @@
                                 <label class="form-check-label" for="defaultCheck3"> Kích hoạt </label>
                             </div>
                             <div class="form-check">
-                                <input onclick="return confirm('Bạn có chắc muốn vô hiệu hóa user này?')" class="form-check-input" name="hid" type="radio" value="0" id="defaultCheck4" {{$accountUser->user_status == 0? "checked":""}}/>
+                                <input data-confirm="Bạn có chắc muốn vô hiệu hóa tài khoản này?" data-confirm-ok="Vô hiệu" class="form-check-input" name="hid" type="radio" value="0" id="defaultCheck4" {{$accountUser->user_status == 0? "checked":""}}/>
                                 <label class="form-check-label" for="defaultCheck4"> Vô hiệu </label>
                             </div>
                         </div>

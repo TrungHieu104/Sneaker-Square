@@ -135,10 +135,10 @@
                                             @endcan
                                             <x-admin.row-action action="more" title="Hình ảnh" icon="fas fa-image" href="{{ route('image.show', $product->pro_slug) }}" />
 
-                                            <form action="{{ route('product.destroy', $product->pro_id) }}" method="POST">
+                                            <form action="{{ route('product.destroy', $product->pro_id) }}" method="POST" data-confirm="Bạn muốn đưa sản phẩm này vào thùng rác?">
                                                 @csrf 
                                                 @method('DELETE')
-                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn muốn đưa sản phẩm này vào thùng rác?')" />
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" />
                                             </form>
                                         </div>
                                     </td>

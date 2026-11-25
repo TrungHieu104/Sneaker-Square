@@ -58,10 +58,9 @@
                     </thead>
                     <tbody>
                         @php
-                            // $userAdmin = $userAdmin->unique('user_id');
                             $stt = $userAdmin->firstItem();
                         @endphp
-                        @if($userAdmin->count() == 1)
+                        @if($userAdmin->getCollection()->every(fn ($data) => $data->user_id === Auth::user()->user_id))
                             <tr>
                                 <td colspan="6" class="text-center">
                                     Không có dữ liệu để hiển thị.

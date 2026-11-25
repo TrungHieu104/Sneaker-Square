@@ -25,6 +25,7 @@ class ContactFormRequest extends FormRequest
         return [
             'name' => ['required', 'min:5', 'max:30'],
             'email' => 'required|email|ends_with:@gmail.com',
+            'phone' => ['required', 'regex:/^0[0-9]{9}$/'],
             'title' => ['required', 'max:255'],
             'content' => ['required'],
         ];
@@ -39,6 +40,8 @@ class ContactFormRequest extends FormRequest
             'email.required' => 'Bạn chưa nhập email',
             'email.ends_with' => 'Bạn nhập email sai định dạng',
             'email.email' => 'Nhập email chưa đúng',
+            'phone.required' => 'Bạn chưa nhập số điện thoại',
+            'phone.regex' => 'Số điện thoại gồm 10 chữ số, bắt đầu bằng 0',
             'title.required' => 'Vui lòng nhập tiêu đề',
             'title.max' => 'Tiêu đề quá dài',
             'content.required' => 'Vui lòng nhập nội dung',

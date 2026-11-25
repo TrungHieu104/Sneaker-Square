@@ -91,7 +91,7 @@ class PolicyPagesTest extends TestCase
 
         $this->actingAs($this->admin())->post(route('page.status', $page->page_id), ['page-status' => 0]);
         $this->actingAs($this->admin())->delete(route('page.softDelete', encrypt($page->page_id)));
-        $this->actingAs($this->admin())->get(route('page.restore', encrypt($page->page_id)));
+        $this->actingAs($this->admin())->patch(route('page.restore', encrypt($page->page_id)));
 
         ResponseCache::shouldHaveReceived('clear')->times(3);
     }
@@ -254,10 +254,10 @@ class PolicyPagesTest extends TestCase
         $this->assertSoftDeleted('pages', ['page_id' => $kept->page_id]);
         $this->actingAs($admin)->get(route('page.trashed'))->assertOk()->assertSee('Chính sách giao hàng');
 
-        $this->actingAs($admin)->get(route('page.restore', encrypt($kept->page_id)))->assertSessionHas('message', 'Khôi phục thành công');
+        $this->actingAs($admin)->patch(route('page.restore', encrypt($kept->page_id)))->assertSessionHas('message', 'Khôi phục thành công');
         $this->assertNotSoftDeleted('pages', ['page_id' => $kept->page_id]);
 
-        $this->actingAs($admin)->get(route('page.delete', encrypt($gone->page_id)))->assertSessionHas('message', 'Xóa thành công');
+        $this->actingAs($admin)->delete(route('page.delete', encrypt($gone->page_id)))->assertSessionHas('message', 'Xóa thành công');
         $this->assertDatabaseMissing('pages', ['page_id' => $gone->page_id]);
     }
 
@@ -266,13 +266,13 @@ class PolicyPagesTest extends TestCase
         $admin = $this->admin();
         $this->policy('Chính sách giao hàng', 'Nội dung.')->delete();
 
-        $this->actingAs($admin)->get(route('page.restoreAll'))->assertSessionHas('message', 'Hoàn tác thành công');
+        $this->actingAs($admin)->patch(route('page.restoreAll'))->assertSessionHas('message', 'Hoàn tác thành công');
         $this->assertSame(0, PageModel::onlyTrashed()->count());
 
-        $this->actingAs($admin)->get(route('page.restoreAll'))->assertSessionHas('message', 'Không có dữ liệu trong thùng rác!');
+        $this->actingAs($admin)->patch(route('page.restoreAll'))->assertSessionHas('message', 'Không có dữ liệu trong thùng rác!');
 
         PageModel::query()->first()?->delete();
-        $this->actingAs($admin)->get(route('page.delete.all'))->assertSessionHas('message', 'Xóa dữ liệu thành công!');
+        $this->actingAs($admin)->delete(route('page.delete.all'))->assertSessionHas('message', 'Xóa dữ liệu thành công!');
         $this->assertSame(0, PageModel::withTrashed()->count());
     }
 
@@ -281,7 +281,7 @@ class PolicyPagesTest extends TestCase
         $this->policy('Chính sách giao hàng', 'Nội dung.')->delete();
         ResponseCache::spy();
 
-        $this->actingAs($this->admin())->get(route('page.restoreAll'));
+        $this->actingAs($this->admin())->patch(route('page.restoreAll'));
 
         ResponseCache::shouldHaveReceived('clear');
     }
@@ -329,19 +329,19 @@ class PolicyPagesTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)->get(route('page.trashed'))->assertOk()->assertDontSee('Giới thiệu về Sneaker Square');
-        $this->actingAs($admin)->get(route('page.restore', encrypt($about->page_id)))->assertNotFound();
-        $this->actingAs($admin)->get(route('page.delete', encrypt($about->page_id)))->assertNotFound();
+        $this->actingAs($admin)->patch(route('page.restore', encrypt($about->page_id)))->assertNotFound();
+        $this->actingAs($admin)->delete(route('page.delete', encrypt($about->page_id)))->assertNotFound();
 
-        $this->actingAs($admin)->get(route('page.restoreAll'))->assertSessionHas('message', 'Hoàn tác thành công');
+        $this->actingAs($admin)->patch(route('page.restoreAll'))->assertSessionHas('message', 'Hoàn tác thành công');
         $this->assertNotSoftDeleted('pages', ['page_id' => $policy->page_id]);
         $this->assertSoftDeleted('pages', ['page_id' => $about->page_id]);
 
         $policy->delete();
-        $this->actingAs($admin)->get(route('page.delete.all'))->assertSessionHas('message', 'Xóa dữ liệu thành công!');
+        $this->actingAs($admin)->delete(route('page.delete.all'))->assertSessionHas('message', 'Xóa dữ liệu thành công!');
         $this->assertDatabaseMissing('pages', ['page_id' => $policy->page_id]);
         $this->assertSoftDeleted('pages', ['page_id' => $about->page_id]);
 
-        $this->actingAs($admin)->get(route('page.delete.all'))->assertSessionHas('message', 'Không có dữ liệu trong thùng rác!');
+        $this->actingAs($admin)->delete(route('page.delete.all'))->assertSessionHas('message', 'Không có dữ liệu trong thùng rác!');
     }
 
     private function admin(bool $withPermission = true): UserModel

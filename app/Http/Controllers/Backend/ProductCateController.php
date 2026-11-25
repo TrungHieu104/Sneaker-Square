@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Backend\ProductCateRequest;
 use App\Models\CategoryModel as Category;
 use App\Models\ProductModel as Product;
+use App\Services\TrashPurge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 
 class ProductCateController extends Controller
 {
+    private const REFERENCES = ['products' => 'cate_id', 'category' => 'cate_parent_id'];
+
     private const IMAGE_DIR = 'backend/uploads/product/category/';
 
     /**
@@ -190,7 +193,8 @@ class ProductCateController extends Controller
         if ($cate == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            redirect()->back()->with('message', 'Không tồn tại danh mục.');
+
+            return redirect()->back()->with('message', 'Không tồn tại danh mục.');
         }
 
         if (count($cate->getChildCate) != 0) {
@@ -255,25 +259,34 @@ class ProductCateController extends Controller
     /**
      * Permanently delete one category.
      */
-    public function delete(string $cateId)
+    public function delete(TrashPurge $purge, string $cateId)
     {
-        $cate = Category::withTrashed()->find($cateId);
-        if ($cate) {
-            $cate->forceDelete();
-            Session::flash('iconMessage', 'success');
-
-            return redirect()->back()->with('message', 'Xóa danh mục thành công!');
-        } else {
+        $cate = Category::onlyTrashed()->find($cateId);
+        if (! $cate) {
             return abort(404);
         }
+        if ($purge->isReferenced($cate, self::REFERENCES)) {
+            Session::flash('iconMessage', 'info');
+
+            return redirect()->back()->with('message', 'Danh mục còn sản phẩm hoặc danh mục con, kể cả trong thùng rác. Hãy xóa vĩnh viễn chúng trước!');
+        }
+        $cate->forceDelete();
+        Session::flash('iconMessage', 'success');
+
+        return redirect()->back()->with('message', 'Xóa danh mục thành công!');
     }
 
     /**
      * Permanently delete all categories.
      */
-    public function deleteAll()
+    public function deleteAll(TrashPurge $purge)
     {
-        Category::onlyTrashed()->forceDelete();
+        $kept = $purge->purgeAll(fn () => Category::onlyTrashed(), self::REFERENCES);
+        if ($kept > 0) {
+            Session::flash('iconMessage', 'info');
+
+            return redirect(route('product-category.index'))->with('message', "Còn {$kept} danh mục có sản phẩm hoặc danh mục con nên được giữ lại trong thùng rác.");
+        }
         Session::flash('iconMessage', 'success');
 
         return redirect(route('product-category.index'))->with('message', 'Xóa tất cả danh mục thành công!');

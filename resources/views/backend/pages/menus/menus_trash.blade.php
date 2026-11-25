@@ -18,8 +18,12 @@
         </div> 
         <div class="card-body">
             <div class="d-flex gap-3 mb-3">
-                <a href="{{route('menu.restoreAll')}}" class="btn btn-success mt-1 mb-2">Khôi phục tất cả &nbsp;<i class="fas fa-recycle"></i></a>
-                <a href="{{route('menus.delete.all')}}" title="Xóa" class="btn btn-danger mt-1 mb-2" onclick="return confirm('Bạn có chắc muốn xóa tất cả menu vĩnh viễn?')">Xóa tất cả &nbsp;<i class="fas fa-trash"></i></a>
+                <form action="{{route('menu.restoreAll')}}" method="post"> @csrf @method('PATCH')
+                    <button type="submit" class="btn btn-success mt-1 mb-2">Khôi phục tất cả &nbsp;<i class="fas fa-recycle"></i></button>
+                </form>
+                <form action="{{route('menus.delete.all')}}" method="post" data-confirm="Bạn có chắc muốn xóa tất cả menu vĩnh viễn?"> @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-danger mt-1 mb-2" title="Xóa">Xóa tất cả &nbsp;<i class="fas fa-trash"></i></button>
+                </form>
             </div>
             <div class="table-responsive text-nowrap">
                 <table class="table table-bordered w-100">
@@ -62,8 +66,12 @@
                                 
                                 <td class="text-center">
                                     <div class="row-actions">
-                                        <x-admin.row-action action="restore" title="Khôi phục" href="/admin/menus/restore/{{$data->menu_id}}" />
-                                        <x-admin.row-action action="delete" title="Xóa vĩnh viễn" href="/admin/menus/delete/{{$data->menu_id}}" onclick="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')" />
+                                        <form action="{{route('menu.restore', $data->menu_id)}}" method="post"> @csrf @method('PATCH')
+                                            <x-admin.row-action action="restore" title="Khôi phục" type="submit" />
+                                        </form>
+                                        <form action="{{route('menu.delete', $data->menu_id)}}" method="post" data-confirm="Bạn có chắc muốn xóa menu này vĩnh viễn?"> @csrf @method('DELETE')
+                                            <x-admin.row-action action="delete" title="Xóa vĩnh viễn" type="submit" />
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
