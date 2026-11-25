@@ -22,7 +22,17 @@ class DashboardController extends Controller
 
     public function __construct(Request $request)
     {
-        $keyword = $request->input('keyword');
+        View::share('keyword', $request->input('keyword'));
+    }
+
+    /**
+     * Google Analytics and sign-up figures for the dashboard and the visits
+     * page. Fetched here, not in the constructor: a constructor runs before
+     * the route's middleware, so a guest turned away at login still cost
+     * three calls to Google.
+     */
+    private function shareTrafficFigures(): void
+    {
         // Visits by browser.
         $dataTopBrowsers = Analytics::fetchTopBrowsers(Period::days(7));
         // Visits by referring path.
@@ -44,7 +54,7 @@ class DashboardController extends Controller
         });
         $datatAccountCount['data_count'] = $dailyDataAccount->pluck('data_count');
 
-        View::share(compact('keyword', 'dataTopBrowsers', 'dataTopReferrers', 'dataSystems', 'datatAccountCount'));
+        View::share(compact('dataTopBrowsers', 'dataTopReferrers', 'dataSystems', 'datatAccountCount'));
     }
 
     /**
@@ -57,6 +67,7 @@ class DashboardController extends Controller
      */
     public function index(Request $request, DashboardStatisticsService $stats)
     {
+        $this->shareTrafficFigures();
         $totalOrder = $stats->newOrderCount();
         $totalOrderToday = $stats->todayOrderCount();
         $revenue = $stats->allRevenueRows();
@@ -114,6 +125,8 @@ class DashboardController extends Controller
 
     public function statistical()
     {
+        $this->shareTrafficFigures();
+
         return view('backend.pages.statistical.access');
     }
 

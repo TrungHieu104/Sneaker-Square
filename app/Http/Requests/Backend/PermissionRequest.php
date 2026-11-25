@@ -23,13 +23,15 @@ class PermissionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'permission' => ['min:3', 'unique:permissions,name'],
+            'permission' => ['required', 'string', 'min:3', 'unique:permissions,name'],
         ];
     }
 
     public function messages()
     {
         return [
+            'permission.required' => 'Vui lòng nhập tên quyền!',
+            'permission.string' => 'Tên quyền không hợp lệ!',
             'permission.unique' => 'Tên quyền đã tồn tại!',
             'permission.min' => 'Tiêu đề quá ngắn!',
         ];

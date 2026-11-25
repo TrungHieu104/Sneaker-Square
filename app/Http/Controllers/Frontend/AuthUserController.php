@@ -11,13 +11,12 @@ use App\Mail\RegisterMail;
 use App\Mail\ResetPassword;
 use App\Models\CateNewsModel as CateNews;
 use App\Models\UserModel;
+use App\Services\PasswordResetLinks;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cookie;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Str;
 
 class AuthUserController extends Controller
 {
@@ -84,7 +83,7 @@ class AuthUserController extends Controller
         $user->email = trim(strip_tags($request['email']));
         $user->save();
 
-        Mail::to($user->email)->send(new RegisterMail($user));
+        Mail::to($user->email)->send(new RegisterMail($user, RegisterMail::verifyLink($user)));
         Session::flash('iconMessage', 'success');
 
         return redirect(route('user.login'))->with('message', 'Đăng ký thành công mời bạn đăng nhập');
@@ -92,7 +91,7 @@ class AuthUserController extends Controller
 
     public function verifiedRegister($user)
     {
-        $user = UserModel::find($user);
+        $user = UserModel::findOrFail($user);
         $user->email_verified_at = Carbon::now();
         $user->save();
         Session::flash('iconMessage', 'success');
@@ -112,15 +111,14 @@ class AuthUserController extends Controller
         return view('frontend.pages.account.forgot');
     }
 
-    public function forgotPost(Request $request)
+    public function forgotPost(Request $request, PasswordResetLinks $links)
     {
         $user = UserModel::getUsersingle($request->email);
         $mailDate = Carbon::now();
 
         if (! empty($user)) {
-            $user->remember_token = Str::random(30);
-            $user->save();
-            Mail::to($user->email)->send(new ResetPassword($user, $mailDate));
+            $link = route('user.reset_pass', ['token' => $links->issue($user), 'email' => $user->email]);
+            Mail::to($user->email)->send(new ResetPassword($user, $mailDate, $link));
             Session::flash('iconMessage', 'success');
 
             return redirect()->back()->with('message', 'Đã gửi mail');
@@ -131,24 +129,25 @@ class AuthUserController extends Controller
         }
     }
 
-    public function resetPass($remember_token)
+    public function resetPass(Request $request, PasswordResetLinks $links, string $token)
     {
-        $user = UserModel::getTokenSingle($remember_token);
-        if (! empty($user)) {
-            $data['user'] = $user;
+        $user = UserModel::getUsersingle((string) $request->query('email'));
+        abort_unless($links->valid($user, $token), 404);
 
-            return view('frontend.pages.account.reset_password', $data);
-        } else {
-            abort(404);
-        }
+        return view('frontend.pages.account.reset_password', ['token' => $token, 'email' => $user->email]);
     }
 
-    public function resetPassPost($token, ResetpassRequets $request)
+    public function resetPassPost(ResetpassRequets $request, PasswordResetLinks $links, string $token)
     {
-        $user = UserModel::getTokenSingle($token);
-        $user->password = Hash::make($request->password);
-        $user->remember_token = Str::random(30);
-        $user->save();
+        $user = UserModel::getUsersingle((string) $request->input('email'));
+
+        if (! $links->valid($user, $token)) {
+            Session::flash('iconMessage', 'error');
+
+            return redirect(route('user.forgot'))->with('message', 'Link đặt lại mật khẩu đã hết hạn, vui lòng gửi lại yêu cầu.');
+        }
+
+        $links->setPassword($user, (string) $request->password);
         Session::flash('iconMessage', 'success');
 
         return redirect(route('user.login'))->with('message', 'Đổi mật khẩu thành công');

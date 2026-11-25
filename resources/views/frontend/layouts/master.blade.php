@@ -120,7 +120,6 @@
 	<script src="{{asset('frontend/ajax/wishlist.js')}}"></script>
 	<script src="{{ asset_v('frontend/ajax/delivery.js') }}"></script>
 	<script src="{{asset('frontend/ajax/filter_product.js')}}"></script>
-	<script src="{{asset('frontend/ajax/remove_verified_email.js')}}"></script>
 	<script src="{{asset('frontend/js/jquery.magnific-popup.min.js')}}"></script>
 	<script src="{{ asset_v('frontend/js/validate_product_checkout.js') }}"></script>
 	<script src="{{ asset('backend/js/sweetalert.min.js') }}"></script>

@@ -21,7 +21,7 @@ class ResetPassword extends Mailable implements ShouldQueue
 
     public $mailDate;
 
-    public function __construct($user, $mailDate)
+    public function __construct($user, $mailDate, public string $link)
     {
         $this->user = $user;
         $this->mailDate = $mailDate;
@@ -47,6 +47,7 @@ class ResetPassword extends Mailable implements ShouldQueue
             with: [
                 'user' => $this->user,
                 'mailDate' => $this->mailDate,
+                'link' => $this->link,
             ],
         );
     }

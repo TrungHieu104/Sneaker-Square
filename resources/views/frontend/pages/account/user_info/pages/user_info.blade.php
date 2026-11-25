@@ -89,7 +89,6 @@
             </div>
         </div>
 
-        <input type="hidden" name="password" value="{{ $user->password }}">
 
         <hr class="my-4">
 

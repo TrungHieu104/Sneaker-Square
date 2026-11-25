@@ -214,6 +214,7 @@ class AuthAdminController extends Controller
     {
         try {
             $id = Crypt::decrypt($encryptedUserId);
+            abort_unless((int) $id === (int) Auth::id(), 403);
             $info = UserModel::find($id);
             $role = UserModel::with('roles', 'permissions');
 
@@ -236,7 +237,13 @@ class AuthAdminController extends Controller
 
     public function edit(Request $request, string $encryptedUserId)
     {
-        $id = Crypt::decrypt($encryptedUserId);
+        try {
+            $id = Crypt::decrypt($encryptedUserId);
+        } catch (DecryptException) {
+            Session::flash('iconMessage', 'info');
+
+            return redirect(self::ACCOUNT_LIST_URL)->with('message', self::ACCOUNT_NOT_FOUND);
+        }
         $userAdmin = UserModel::find($id);
         $role = UserModel::with('roles', 'permissions');
         if ($userAdmin == null) {
@@ -249,11 +256,20 @@ class AuthAdminController extends Controller
         return view('backend.pages.account.admin.admin_edit', compact('userAdmin', 'role'));
     }
 
+    /**
+     * A customer account. Staff accounts are answered as missing here: the
+     * customer screens are open to staff who may not manage other staff.
+     */
+    private function customer(mixed $id): ?UserModel
+    {
+        return UserModel::where('user_role', 0)->find($id);
+    }
+
     public function editUser(Request $request, string $encryptedUserId)
     {
         try {
             $id = Crypt::decrypt($encryptedUserId);
-            $accountUser = UserModel::find($id);
+            $accountUser = $this->customer($id);
             $Order = OrderModel::where('user_id', $id)->orderBy('order_id', 'desc')->confirmedSale()->paginate(20)
                 ->withQueryString();
             if ($accountUser == null) {
@@ -276,7 +292,7 @@ class AuthAdminController extends Controller
     {
         $arr = $request->post();
         $hid = ($request->has('hid')) ? (int) $arr['hid'] : '0';
-        $regis = UserModel::find($id);
+        $regis = $this->customer($id);
         if ($regis == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
@@ -326,6 +342,7 @@ class AuthAdminController extends Controller
 
     public function updateInfo(UserInfoUpRequest $request, string $id)
     {
+        abort_unless((int) $id === (int) Auth::id(), 403);
         $arr = $request->post();
         $name = ($request->has('name')) ? $arr['name'] : '';
         $username = ($request->has('username')) ? $arr['username'] : '';
@@ -388,8 +405,11 @@ class AuthAdminController extends Controller
 
     public function insert_role(Request $request, $id)
     {
-        $data = $request->all();
-        $user = UserModel::find($id);
+        $data = $request->validate(['role' => ['required', 'string', 'exists:roles,name']], [
+            'role.required' => 'Vui lòng chọn một vai trò.',
+            'role.exists' => 'Vai trò không tồn tại.',
+        ]);
+        $user = UserModel::findOrFail($id);
         $user->syncRoles($data['role']);
         Session::flash('iconMessage', 'success');
 
@@ -401,11 +421,16 @@ class AuthAdminController extends Controller
         $data = $request->all();
 
         if (isset($data['permission']) && is_array($data['permission']) && count($data['permission']) > 0) {
-            $user = UserModel::find($id);
-            $role_id = $user->roles->pluck('id')->first();
+            $role = Role::find(UserModel::findOrFail($id)->roles()->value('id'));
 
-            $role = Role::find($role_id);
-            $role->syncPermissions($data['permission']);
+            if ($role === null) {
+                Session::flash('iconMessage', 'error');
+
+                return redirect()->back()->with('message', 'Vui lòng phân vai trò cho user!');
+            }
+
+            // The form sends ids; as strings Spatie would read them as permission names.
+            $role->syncPermissions(array_map('intval', $data['permission']));
 
             Session::flash('iconMessage', 'success');
 

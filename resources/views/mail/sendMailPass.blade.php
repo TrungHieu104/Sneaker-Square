@@ -265,7 +265,7 @@
                                     <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation">
                                     <tr>
                                     <th valign="top" align="center" style="padding: 0px 0px 0px 0px;font-weight: normal;line-height: 1;">
-                                    <a href="{{route('user.change_pass',$user->remember_token)}}" style="margin-top: 30px; margin-bottom: 30px; border-radius: 8px;background-color: #1595e7;padding: 15px 17px 15px 17px;font-family: Arial, Helvetica;font-weight: 500;font-size: 16px;line-height: 150%;letter-spacing: -0.2px;color: #ffffff;display: inline-block;vertical-align: top;text-align: center;text-decoration: none;white-space: nowrap;-webkit-text-size-adjust: none;" target="_blank"><span><span style="white-space: pre-wrap;">Xác nhận thay đổi mật khẩu</span></span></a>
+                                    <a href="{{ $link }}" style="margin-top: 30px; margin-bottom: 30px; border-radius: 8px;background-color: #1595e7;padding: 15px 17px 15px 17px;font-family: Arial, Helvetica;font-weight: 500;font-size: 16px;line-height: 150%;letter-spacing: -0.2px;color: #ffffff;display: inline-block;vertical-align: top;text-align: center;text-decoration: none;white-space: nowrap;-webkit-text-size-adjust: none;" target="_blank"><span><span style="white-space: pre-wrap;">Xác nhận thay đổi mật khẩu</span></span></a>
                                     </th>
                                     </tr>
                                     </table>

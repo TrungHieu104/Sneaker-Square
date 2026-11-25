@@ -56,7 +56,8 @@
                         <!-- /Logo -->
                         <h3 class="mb-4 text-center">Đặt lại mật khẩu mới</h3>
                         <form id="formAuthentication" class="mb-3" method="post"
-                            action="{{ route('user.reset_pass_post', $user->remember_token) }}">
+                            action="{{ route('user.reset_pass_post', $token) }}">
+                            <input type="hidden" name="email" value="{{ $email }}">
                             @csrf
                             <div class="mb-4 form-password-toggle position-relative">
                                 <div class="position-relative">

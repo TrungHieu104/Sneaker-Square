@@ -19,7 +19,7 @@ class sendMailPass extends Mailable implements ShouldQueue
      */
     public $user;
 
-    public function __construct($user)
+    public function __construct($user, public string $link)
     {
         $this->user = $user;
     }

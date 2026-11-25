@@ -8,6 +8,7 @@
                 action="{{ route('user.update_pass_post', [Auth::guard('web')->user()->user_id]) }}"
                 method="post" id="changePass">
                 @csrf @method('PUT')
+                <input type="hidden" name="token" value="{{ $token }}">
                 <div class="row container-xxl p-5">
                     <div class="col-md-6 col-12 mb-4">
                         <label class="form-label" for="">Mật khẩu mới</label>
