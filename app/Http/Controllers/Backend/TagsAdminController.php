@@ -134,7 +134,8 @@ class TagsAdminController extends Controller
         if ($tags == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            redirect()->back()->with('message', 'Không tồn tại thẻ tag này!');
+
+            return redirect()->back()->with('message', 'Không tồn tại thẻ tag này!');
         }
         $tags->delete();
         Session::flash('iconMessage', 'success');
@@ -176,7 +177,7 @@ class TagsAdminController extends Controller
 
     public function forceDelete($id)
     {
-        $tags = Tags::withTrashed()->find($id);
+        $tags = Tags::onlyTrashed()->find($id);
         if ($tags) {
             $tags->forceDelete();
             Session::flash('iconMessage', 'success');

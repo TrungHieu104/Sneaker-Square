@@ -4,6 +4,7 @@ namespace App\Http\Requests\Backend;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class MenuRequest extends FormRequest
 {
@@ -26,6 +27,7 @@ class MenuRequest extends FormRequest
             'name' => ['required', 'unique:menu,menu_name'],
             'position' => ['nullable', 'min:0', 'max:100000000', 'numeric', 'integer'],
             'slug' => ['required'],
+            'parent_id' => ['nullable', Rule::exists('menu', 'menu_id')->whereNull('deleted_at')],
         ];
     }
 
@@ -33,6 +35,7 @@ class MenuRequest extends FormRequest
     {
         return [
             'name.required' => 'Vui lòng nhập tiêu đề!',
+            'parent_id.exists' => 'Menu cha không tồn tại!',
             'name.unique' => 'Tiêu đề đã tồn tại!',
             'position.required' => 'Vui lòng nhập số thứ tự!',
             'slug.required' => 'Vui lòng nhập đường dẫn!',

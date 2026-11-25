@@ -23,8 +23,8 @@ class DeliveryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'info_name' => 'required', 'max:30',
-            'info_phone' => 'required', 'min:10', 'max:11',
+            'info_name' => 'required|max:30',
+            'info_phone' => ['required', 'regex:/^[0-9]+$/', 'min:10', 'max:11'],
             'info_email' => 'required|email|ends_with:@gmail.com',
             'info_address' => 'required',
             'info_province' => 'required',
@@ -40,9 +40,10 @@ class DeliveryRequest extends FormRequest
         return [
             'info_name.required' => 'Bạn chưa nhập họ và tên',
             'info_name.max' => 'Họ và tên quá dài',
-            'info_phone.min' => 'Số điện thoại phải dài hơn 10 số',
+            'info_phone.min' => 'Số điện thoại phải có ít nhất 10 số',
             'info_phone.max' => 'Số điện thoại quá dài',
             'info_phone.required' => 'Bạn chưa nhập số điện thoại',
+            'info_phone.regex' => 'Số điện thoại chỉ gồm chữ số',
             'info_email.required' => 'Bạn chưa nhập email',
             'info_email.ends_with' => 'Email sai định dạng',
             'info_email.email' => 'Nhập email chưa đúng',

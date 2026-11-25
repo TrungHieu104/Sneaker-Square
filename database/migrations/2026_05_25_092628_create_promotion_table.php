@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('promotion', function (Blueprint $table) {
@@ -20,7 +17,7 @@ return new class extends Migration
             $table->boolean('promotion_hidden')->default(1);
             $table->unsignedInteger('promotion_sort');
             $table->string('promotion_content', 255);
-            $table->timestamp('promotion_date', 0);
+            $table->timestamp('promotion_date')->useCurrent();
             $table->date('promotion_start');
             $table->date('promotion_end');
             $table->string('promotion_note', 2000)->nullable();
@@ -32,9 +29,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('promotion');

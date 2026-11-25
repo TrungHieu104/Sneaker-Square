@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Backend\MenuRequest;
 use App\Http\Requests\Backend\MenuUpRequest;
 use App\Models\MenuModel;
+use App\Services\TrashPurge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 
 class MenusAdminController extends Controller
 {
+    private const REFERENCES = ['menu' => 'menu_parent_id'];
+
     private const MENU_LIST_URL = 'admin/menus';
 
     /**
@@ -95,7 +98,7 @@ class MenusAdminController extends Controller
     {
         $name = $request->input('name', '');
         $slug = $request->input('slug', '');
-        $parent_id = $request->input('parent_id') ?: 0;
+        $parent_id = $request->input('parent_id') ?: null;
         $position = $request->filled('position') ? (int) $request->input('position') : ((MenuModel::max('menu_position') ?? 0) + 1);
         $status = $request->has('status') ? (int) $request->input('status') : 1;
 
@@ -152,7 +155,7 @@ class MenusAdminController extends Controller
         }
         $name = $request->input('name', '');
         $slug = $request->input('slug', '');
-        $parent_id = $request->input('parent_id') ?: 0;
+        $parent_id = $request->input('parent_id') ?: null;
         $position = $request->filled('position') ? (int) $request->input('position') : ($menu->menu_position ?? 1);
         $status = $request->has('status') ? (int) $request->input('status') : 0;
 
@@ -232,24 +235,32 @@ class MenusAdminController extends Controller
         }
     }
 
-    public function forceDelete($id)
+    public function forceDelete(TrashPurge $purge, $id)
     {
-        $menuDe = MenuModel::withTrashed()->find($id); // Fetch the soft-deleted record
-        if ($menuDe) {
-            $menuDe->forceDelete();
-            Session::flash('iconMessage', 'success');
-
-            return redirect()->back()->with('message', 'Xóa thành công!');
-        } else {
+        $menuDe = MenuModel::onlyTrashed()->find($id);
+        if (! $menuDe) {
             return abort(404);
         }
+        if ($purge->isReferenced($menuDe, self::REFERENCES)) {
+            Session::flash('iconMessage', 'info');
+
+            return redirect()->back()->with('message', 'Menu còn menu con, kể cả trong thùng rác. Hãy xóa vĩnh viễn các menu con trước!');
+        }
+        $menuDe->forceDelete();
+        Session::flash('iconMessage', 'success');
+
+        return redirect()->back()->with('message', 'Xóa thành công!');
     }
 
-    public function deleteAll()
+    public function deleteAll(TrashPurge $purge)
     {
-        $trashAll = MenuModel::onlyTrashed()->get();
-        if ($trashAll->count() > 0) {
-            MenuModel::onlyTrashed()->forceDelete();
+        if (MenuModel::onlyTrashed()->exists()) {
+            $kept = $purge->purgeAll(fn () => MenuModel::onlyTrashed(), self::REFERENCES);
+            if ($kept > 0) {
+                Session::flash('iconMessage', 'info');
+
+                return redirect()->back()->with('message', "Còn {$kept} menu có menu con nên được giữ lại trong thùng rác.");
+            }
             Session::flash('iconMessage', 'success');
 
             return redirect()->back()->with('message', 'Xóa menu thành công!');

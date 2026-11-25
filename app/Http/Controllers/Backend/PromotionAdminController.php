@@ -204,8 +204,9 @@ class PromotionAdminController extends Controller
     {
         $promotion = PromotionModel::find($id);
         if ($promotion == null) {
-            $request->session();
-            redirect()->back()->with('message', 'Không tồn tại quảng cáo!');
+            Session::flash('iconMessage', 'info');
+
+            return redirect()->back()->with('message', 'Không tồn tại quảng cáo!');
         }
         $promotion->delete();
         Session::flash('iconMessage', 'success');
@@ -257,9 +258,9 @@ class PromotionAdminController extends Controller
 
     public function forceDelete($id)
     {
-        $promotionDe = PromotionModel::withTrashed()->find($id); // Fetch the soft-deleted record
+        $promotionDe = PromotionModel::onlyTrashed()->find($id);
         if ($promotionDe) {
-            $promotionDe->forceDelete(); // Delete permanently
+            $promotionDe->forceDelete();
             Session::flash('iconMessage', 'success');
 
             return redirect()->back()->with('message', 'Xóa thành công');
@@ -275,7 +276,7 @@ class PromotionAdminController extends Controller
             PromotionModel::onlyTrashed()->forceDelete();
             Session::flash('iconMessage', 'success');
 
-            return redirect()->back()->with('message', 'Xóa hình ảnh thành công!');
+            return redirect()->back()->with('message', 'Xóa slide thành công!');
         } else {
             Session::flash('iconMessage', 'info');
 

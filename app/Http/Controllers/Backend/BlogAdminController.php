@@ -218,7 +218,8 @@ class BlogAdminController extends Controller
         if ($news == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            redirect()->back()->with('message', 'Không tồn tại bài viết này!');
+
+            return redirect()->back()->with('message', 'Không tồn tại bài viết này!');
         }
         $news->delete();
         Session::flash('iconMessage', 'success');
@@ -261,7 +262,7 @@ class BlogAdminController extends Controller
 
     public function forceDelete($id)
     {
-        $news = News::withTrashed()->find($id);
+        $news = News::onlyTrashed()->find($id);
         if ($news) {
             $news->forceDelete();
             Session::flash('iconMessage', 'success');

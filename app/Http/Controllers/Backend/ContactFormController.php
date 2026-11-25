@@ -151,7 +151,7 @@ class ContactFormController extends Controller
 
     public function forceDelete($id)
     {
-        $contactDe = ContactFormModel::withTrashed()->find($id);
+        $contactDe = ContactFormModel::onlyTrashed()->find($id);
         if ($contactDe) {
             $contactDe->forceDelete();
             Session::flash('iconMessage', 'success');

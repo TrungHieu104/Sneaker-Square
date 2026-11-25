@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Backend\CateNewsRequest;
 use App\Http\Requests\Backend\CateNewsUpdateRequest;
 use App\Models\CateNewsModel as CateNews;
+use App\Services\TrashPurge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 
 class BlogCateController extends Controller
 {
+    private const REFERENCES = ['news' => 'cate_news_id'];
+
     private const IMAGE_DIR = '/backend/uploads/blog/';
 
     /**
@@ -156,7 +159,8 @@ class BlogCateController extends Controller
         if ($catenews == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            redirect()->back()->with('message', 'Không tồn tại danh mục!');
+
+            return redirect()->back()->with('message', 'Không tồn tại danh mục!');
         }
 
         if (count($catenews->getNewsInCate) != 0) {
@@ -202,22 +206,31 @@ class BlogCateController extends Controller
         return back()->with('message', 'Hoàn tác thành công!');
     }
 
-    public function forceDelete($id) // Delete permanently
+    public function forceDelete(TrashPurge $purge, $id)
     {
-        $cateBl = CateNews::withTrashed()->find($id); // Fetch the soft-deleted record
-        if ($cateBl) {
-            $cateBl->forceDelete();
-            Session::flash('iconMessage', 'success');
-
-            return redirect()->back()->with('message', 'Xóa thành công!');
-        } else {
+        $cateBl = CateNews::onlyTrashed()->find($id);
+        if (! $cateBl) {
             return abort(404);
         }
+        if ($purge->isReferenced($cateBl, self::REFERENCES)) {
+            Session::flash('iconMessage', 'info');
+
+            return redirect()->back()->with('message', 'Danh mục còn bài viết, kể cả trong thùng rác. Hãy xóa vĩnh viễn các bài viết đó trước!');
+        }
+        $cateBl->forceDelete();
+        Session::flash('iconMessage', 'success');
+
+        return redirect()->back()->with('message', 'Xóa thành công!');
     }
 
-    public function deleteAll()
+    public function deleteAll(TrashPurge $purge)
     {
-        CateNews::onlyTrashed()->forceDelete();
+        $kept = $purge->purgeAll(fn () => CateNews::onlyTrashed(), self::REFERENCES);
+        if ($kept > 0) {
+            Session::flash('iconMessage', 'info');
+
+            return redirect()->back()->with('message', "Còn {$kept} danh mục có bài viết nên được giữ lại trong thùng rác.");
+        }
         Session::flash('iconMessage', 'success');
 
         return redirect()->back()->with('message', 'Xóa tất cả thành công!');

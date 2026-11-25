@@ -148,7 +148,8 @@ class ProductQuantityController extends Controller
         if ($color == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            redirect()->back()->with('message', 'Không tồn tại màu sắc.');
+
+            return redirect()->back()->with('message', 'Không tồn tại màu sắc.');
         }
         $color->delete();
         Session::flash('iconMessage', 'success');
@@ -485,7 +486,8 @@ class ProductQuantityController extends Controller
         if ($quan == null) {
             $request->session();
             Session::flash('iconMessage', 'info');
-            back()->with('message', 'Không tồn tại sản phẩm này trong kho!');
+
+            return back()->with('message', 'Không tồn tại sản phẩm này trong kho!');
         }
         $quan->delete();
         Session::flash('iconMessage', 'success');

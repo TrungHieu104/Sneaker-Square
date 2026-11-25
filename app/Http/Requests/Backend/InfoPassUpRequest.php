@@ -23,7 +23,7 @@ class InfoPassUpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'password' => ['required', 'same:same_password'],
+            'password' => ['required'],
             'new-pass' => ['required', 'min:8', 'max:30', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/'],
         ];
     }
@@ -32,7 +32,6 @@ class InfoPassUpRequest extends FormRequest
     {
         return [
             'password.required' => 'Vui lòng nhập mật khẩu hiện tại!',
-            'password.same' => 'Mật khẩu hiện tại không đúng!',
             'new-pass.min' => 'Mật khẩu ít nhất 8 kí tự!',
             'new-pass.required' => 'Vui lòng nhập mật khẩu mới!',
             'new-pass.max' => 'Mật khẩu tối đa 30 kí tự!',

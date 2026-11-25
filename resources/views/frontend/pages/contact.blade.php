@@ -81,7 +81,7 @@
                                 <div class="row">
                                     <div class="col-lg-6 form-group mb-4 position-relative">
                                         <label for="fullname" class="form-label">Họ và tên</label>
-                                        <input type="text" name="name" class="form-control" placeholder="Nhập tại đây..." id="fullname">
+                                        <input type="text" name="name" class="form-control" placeholder="Nhập tại đây..." id="fullname" value="{{ old('name') }}">
                                         <small class="text-error position-absolute text-danger fst-italic">a</small>
                                         @error('name')
                                             <small class="text-danger fst-italic">
@@ -91,7 +91,7 @@
                                     </div>
                                     <div class="col-lg-6 form-group mb-4 position-relative">
                                         <label for="email" class="form-label">Email</label>
-                                        <input type="email" name="email" class="form-control" placeholder="Nhập tại đây..." id="email">
+                                        <input type="email" name="email" class="form-control" placeholder="Nhập tại đây..." id="email" value="{{ old('email') }}">
                                         <small class="text-error position-absolute text-danger fst-italic">a</small>
                                         @error('email')
                                             <small class="text-danger fst-italic">
@@ -101,12 +101,17 @@
                                     </div>
                                     <div class="col-lg-6 form-group mb-4 position-relative">
                                         <label for="phone" class="form-label">Số điện thoại</label>
-                                        <input type="text" name="phone" class="form-control" placeholder="Nhập tại đây..." id="phone">
+                                        <input type="text" name="phone" class="form-control" placeholder="Nhập tại đây..." id="phone" value="{{ old('phone') }}">
                                         <small class="text-error position-absolute text-danger fst-italic">a</small>
+                                        @error('phone')
+                                            <small class="text-danger fst-italic">
+                                                {{ $message }}
+                                            </small>
+                                        @enderror
                                     </div>
                                     <div class="col-lg-6 form-group mb-4 position-relative">
                                         <label for="problem" class="form-label">Tiêu đề</label>
-                                        <input type="text" name="title" class="form-control" placeholder="Nhập tại đây..." id="problem">
+                                        <input type="text" name="title" class="form-control" placeholder="Nhập tại đây..." id="problem" value="{{ old('title') }}">
                                         <small class="text-error position-absolute text-danger fst-italic">a</small>
                                         @error('title')
                                             <small class="text-danger fst-italic">
@@ -116,7 +121,7 @@
                                     </div>
                                     <div class="col form-group mb-4 position-relative">
                                         <label for="content" class="form-label">Nội dung</label>
-                                        <textarea class="form-control" name="content" id="content" rows="5"></textarea>
+                                        <textarea class="form-control" name="content" id="content" rows="5">{{ old('content') }}</textarea>
                                         <small class="text-error position-absolute text-danger fst-italic">a</small>
                                         @error('content')
                                             <small class="text-danger fst-italic">
