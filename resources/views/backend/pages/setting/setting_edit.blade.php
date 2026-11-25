@@ -170,6 +170,19 @@
                                         <small class="text-danger fst-italic">{{ $message }}</small>
                                     @enderror
                                 </div>
+                                <div class="col-lg-6 mb-3">
+                                    <label for="idle-close-hours" class="form-label">Tự đóng chat nhân viên đã trả lời sau (giờ)</label>
+                                    <input type="number" class="form-control" id="idle-close-hours" name="idle_close_hours"
+                                        min="{{ ShopSettings::MIN_ASSISTANT_IDLE_HOURS }}" max="{{ ShopSettings::MAX_ASSISTANT_IDLE_HOURS }}"
+                                        value="{{ old('idle_close_hours', $assistantIdleHours) }}" />
+                                    @error('idle_close_hours')
+                                        <small class="text-danger fst-italic">{{ $message }}</small>
+                                    @enderror
+                                    <div class="form-text">
+                                        Tính từ tin nhắn cuối. Hết khoảng này mà khách không nhắn thêm, cuộc chat tự đóng và trợ lý
+                                        trả lời khách trở lại. Chat đang chờ nhân viên không bị đóng.
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\AssistantConversationModel as Conversation;
 use App\Models\AssistantMessageModel as Message;
+use App\Services\ShopSettings;
 
 /**
  * Ends a chat with staff. The customer's next question starts a new chat
@@ -11,8 +12,7 @@ use App\Models\AssistantMessageModel as Message;
  */
 class CloseConversationAction
 {
-    // Long enough for a customer to come back to the answer the next day.
-    public const IDLE_HOURS = 24;
+    public function __construct(private readonly ShopSettings $settings) {}
 
     /**
      * @return bool false when the chat was already closed
@@ -47,7 +47,7 @@ class CloseConversationAction
     public function closeIdle(): int
     {
         $idle = Conversation::where('status', Conversation::ANSWERED)
-            ->where('last_message_at', '<', now()->subHours(self::IDLE_HOURS))
+            ->where('last_message_at', '<', now()->subHours($this->settings->assistantIdleHours()))
             ->get();
 
         return $idle->filter(fn (Conversation $conversation) => $this->execute($conversation))->count();

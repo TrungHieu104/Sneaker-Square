@@ -35,6 +35,7 @@ class ShopSettingController extends Controller
             'paymentWindow' => $settings->paymentWindowMinutes(),
             'shopInfo' => $settings->shopInfo(),
             'assistantModel' => $settings->assistantModel(),
+            'assistantIdleHours' => $settings->assistantIdleHours(),
             'assistantReady' => filled(config('services.anthropic.key')),
             'cartReminder' => $settings->cartReminder(),
             'cashbackEnabled' => $settings->segmentCashbackEnabled(),
@@ -65,6 +66,7 @@ class ShopSettingController extends Controller
     public function updateAssistant(AssistantSettingRequest $request, ShopSettings $settings): RedirectResponse
     {
         $settings->setAssistantModel((string) $request->validated('assistant_model'));
+        $settings->setAssistantIdleHours((int) $request->validated('idle_close_hours'));
 
         return $this->saved('#tab-tro-ly', 'Đã lưu cấu hình trợ lý AI.');
     }

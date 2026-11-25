@@ -58,6 +58,19 @@ class ShopSettings
 
     public const DEFAULT_ASSISTANT_MODEL = 'claude-haiku-5-5';
 
+    public const ASSISTANT_IDLE_HOURS = 'assistant.idle_close_hours';
+
+    // Long enough for a customer to come back to the answer the next day.
+    public const DEFAULT_ASSISTANT_IDLE_HOURS = 24;
+
+    /**
+     * Under an hour a customer still reading the answer finds the bot back;
+     * past a week, a chat staff forgot to close keeps the bot silent as long.
+     */
+    public const MIN_ASSISTANT_IDLE_HOURS = 1;
+
+    public const MAX_ASSISTANT_IDLE_HOURS = 168;
+
     /**
      * The abandoned-cart reminder, keyed by the form field that edits each
      * value.
@@ -304,6 +317,22 @@ class ShopSettings
     public function setAssistantModel(string $model): void
     {
         $this->put(self::ASSISTANT_MODEL, $model);
+    }
+
+    /**
+     * Hours a chat staff answered may sit with no new line before it closes
+     * and the bot answers the customer again.
+     */
+    public function assistantIdleHours(): int
+    {
+        $hours = (int) $this->get(self::ASSISTANT_IDLE_HOURS, (string) self::DEFAULT_ASSISTANT_IDLE_HOURS);
+
+        return max(self::MIN_ASSISTANT_IDLE_HOURS, min(self::MAX_ASSISTANT_IDLE_HOURS, $hours));
+    }
+
+    public function setAssistantIdleHours(int $hours): void
+    {
+        $this->put(self::ASSISTANT_IDLE_HOURS, (string) $hours);
     }
 
     /**

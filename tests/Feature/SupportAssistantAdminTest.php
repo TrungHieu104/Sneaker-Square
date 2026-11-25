@@ -288,10 +288,39 @@ class SupportAssistantAdminTest extends TestCase
             ->assertSeeInOrder(['Model Claude', 'data-bs-toggle="tooltip"', 'Model lớn hơn hiểu câu hỏi khó'], false)
             ->assertDontSee('model chỉ đọc rồi trả lời');
 
-        $this->actingAs($admin)->put(route('setting.update_assistant'), ['assistant_model' => 'claude-opus-5-5'])
+        $this->actingAs($admin)->put(route('setting.update_assistant'), ['assistant_model' => 'claude-opus-5-5', 'idle_close_hours' => 24])
             ->assertRedirect(route('setting.edit').'#tab-tro-ly');
 
         $this->assertSame('claude-opus-5-5', app(ShopSettings::class)->assistantModel());
+    }
+
+    public function test_admin_dat_so_gio_tu_dong_chat_trong_cau_hinh(): void
+    {
+        $admin = $this->makeUser('model@example.test', 'chonmodel', role: 1);
+        $admin->givePermissionTo(Permission::findOrCreate('Quản trị Thông tin', 'web'));
+
+        $this->actingAs($admin)->get(route('setting.edit'))
+            ->assertOk()
+            ->assertSee('name="idle_close_hours"', false)
+            ->assertSee('value="'.ShopSettings::DEFAULT_ASSISTANT_IDLE_HOURS.'"', false);
+
+        $this->actingAs($admin)->put(route('setting.update_assistant'), ['assistant_model' => 'claude-haiku-5-5', 'idle_close_hours' => 6])
+            ->assertRedirect(route('setting.edit').'#tab-tro-ly');
+
+        $this->assertSame(6, app(ShopSettings::class)->assistantIdleHours());
+    }
+
+    public function test_so_gio_tu_dong_ngoai_khoang_bi_tu_choi_va_giu_so_cu(): void
+    {
+        $admin = $this->makeUser('model@example.test', 'chonmodel', role: 1);
+        $admin->givePermissionTo(Permission::findOrCreate('Quản trị Thông tin', 'web'));
+
+        foreach ([0, ShopSettings::MAX_ASSISTANT_IDLE_HOURS + 1, 'mot ngay'] as $hours) {
+            $this->actingAs($admin)->put(route('setting.update_assistant'), ['assistant_model' => 'claude-haiku-5-5', 'idle_close_hours' => $hours])
+                ->assertSessionHasErrors('idle_close_hours');
+        }
+
+        $this->assertSame(ShopSettings::DEFAULT_ASSISTANT_IDLE_HOURS, app(ShopSettings::class)->assistantIdleHours());
     }
 
     public function test_model_ngoai_danh_sach_bi_tu_choi_va_giu_model_cu(): void
@@ -340,6 +369,32 @@ class SupportAssistantAdminTest extends TestCase
 
         $this->assertSame(Conversation::CLOSED, $conversation->fresh()->status);
         $this->assertSame('bot', $reply['sender']);
+    }
+
+    public function test_cuoc_chat_tu_dong_theo_so_gio_admin_dat(): void
+    {
+        app(ShopSettings::class)->setAssistantIdleHours(6);
+        $conversation = $this->handedOver(seenAgo: '5 seconds');
+        $this->actingAs($this->staff())->post(route('assistant_admin.reply', $conversation->id), ['body' => 'Bạn lấy size 42 nhé.']);
+
+        $this->travelTo(now()->addHours(5));
+        $this->artisan('assistant:close-idle')->assertSuccessful();
+        $this->assertSame(Conversation::ANSWERED, $conversation->fresh()->status);
+
+        $this->travelTo(now()->addHours(2));
+        $this->artisan('assistant:close-idle')->assertSuccessful();
+        $this->assertSame(Conversation::CLOSED, $conversation->fresh()->status);
+    }
+
+    public function test_so_gio_tu_dong_sai_trong_csdl_van_nam_trong_khoang(): void
+    {
+        $settings = app(ShopSettings::class);
+
+        $settings->setAssistantIdleHours(0);
+        $this->assertSame(ShopSettings::MIN_ASSISTANT_IDLE_HOURS, $settings->assistantIdleHours());
+
+        $settings->setAssistantIdleHours(10000);
+        $this->assertSame(ShopSettings::MAX_ASSISTANT_IDLE_HOURS, $settings->assistantIdleHours());
     }
 
     public function test_cuoc_chat_dang_cho_hoac_moi_tra_loi_khong_bi_tu_dong(): void
