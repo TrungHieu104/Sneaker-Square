@@ -51,6 +51,7 @@
     <link rel="stylesheet" href="{{ asset('frontend/css/jquery.simplyscroll.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <link rel="stylesheet" href="{{ asset_v('frontend/css/main.css') }}">
+    <link rel="stylesheet" href="{{ asset_v('frontend/css/assistant.css') }}">
     <link rel="stylesheet" href="{{ asset_v('frontend/mmenu/demo.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/aos/aos.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/css/animate.css') }}">
@@ -115,6 +116,7 @@
 	<script src="{{asset('frontend/js/jquery.sticky.js')}}"></script>
 	<script src="{{asset('frontend/js/nouislider.min.js')}}"></script>
 	<script src="{{ asset_v('frontend/js/track.js') }}"></script>
+	<script src="{{ asset_v('frontend/js/assistant.js') }}" defer></script>
 	<script src="{{asset('frontend/ajax/wishlist.js')}}"></script>
 	<script src="{{ asset_v('frontend/ajax/delivery.js') }}"></script>
 	<script src="{{asset('frontend/ajax/filter_product.js')}}"></script>
@@ -181,6 +183,8 @@
         </div>
     </div>
     <!-- End Button call -->
+
+    @include('frontend.layouts.partials.assistant')
 
 </body>
 

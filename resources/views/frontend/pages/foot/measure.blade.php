@@ -92,6 +92,9 @@
                                 @endforeach
                             </select>
                             <p class="text-danger small mb-0 mt-1" id="foot-error"></p>
+                            <p class="foot-tool__chart">
+                                Đã biết chiều dài bàn chân? <a href="{{ route('size.chart') }}">Xem bảng quy đổi size</a>
+                            </p>
 
                             <div class="foot-tool__or"><span>hoặc để hệ thống đo giúp</span></div>
 
@@ -118,13 +121,6 @@
                                 </a>
                             @endif
                         </div>
-
-                        @guest
-                            <p class="small text-muted mt-3 mb-0">
-                                Bạn chưa đăng nhập nên size chỉ được nhớ trong lần truy cập này.
-                                <a href="{{ route('user.login') }}">Đăng nhập</a> để lưu vào tài khoản.
-                            </p>
-                        @endguest
                     </div>
                 </div>
             </div>
@@ -301,6 +297,18 @@
         .foot-tool__for a {
             font-weight: bold;
             color: #222;
+        }
+
+        .foot-tool__chart {
+            font-size: 14px;
+            color: #888;
+            margin: 8px 0 0;
+        }
+
+        .foot-tool__chart a {
+            color: var(--color-orange);
+            font-weight: bold;
+            white-space: nowrap;
         }
 
         .foot-tool__or {

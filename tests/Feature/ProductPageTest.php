@@ -69,6 +69,17 @@ class ProductPageTest extends TestCase
         $this->assertStringContainsString('data-label-exact="Số lượng:"', $html);
     }
 
+    public function test_size_dang_chon_bam_lai_thi_bo_chon_duoc(): void
+    {
+        $product = $this->makeProduct(stock: 40, slug: 'giay-bo-chon-size');
+
+        $html = $this->get(route('product.detail', $product->pro_slug))->assertOk()->getContent();
+
+        // The script only lets go of a size inside a list marked this way.
+        $this->assertMatchesRegularExpression('/class="product-list_size[^"]*"[^>]*data-deselectable/', $html);
+        $this->assertStringContainsString("$('.product-list_size[data-deselectable] label').on('click', releaseSize)", $html);
+    }
+
     public function test_sap_het_hang_thi_nhan_doi_sang_trang_thai_gap(): void
     {
         $product = $this->makeProduct(stock: 3, slug: 'giay-sap-het');

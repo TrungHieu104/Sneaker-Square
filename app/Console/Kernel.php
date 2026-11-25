@@ -24,6 +24,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('carts:remind')->withoutOverlapping()->hourly();
         $schedule->command('customers:segment')->withoutOverlapping()->dailyAt('02:00');
         $schedule->command('orders:pay-cashback')->withoutOverlapping()->dailyAt('02:30');
+        $schedule->command('assistant:close-idle')->withoutOverlapping()->hourly();
         $schedule->call(function () {
             Artisan::call('cache:clear');
         })->dailyAt('16:00');

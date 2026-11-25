@@ -115,6 +115,11 @@ return [
         // a fresh checkout works, but production should give it its own.
         'signing_key' => env('WALLET_SIGNING_KEY'),
     ],
+    // The support assistant's Claude API key. Which model answers is an admin
+    // setting, so it can change without a deploy.
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+    ],
     'vnpay' => [
         'url' => env('VNPAY_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'),
         'tmn_code' => env('VNPAY_TMN_CODE'),

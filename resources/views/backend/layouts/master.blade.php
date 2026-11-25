@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="{{ asset_v('backend/assets/css/row-actions.css') }}" />
     <link rel="stylesheet" href="{{asset('frontend/css/animate.css')}}">
 	<link rel="stylesheet" href="{{asset('frontend/css/noty.css')}}">
+    <link rel="stylesheet" href="{{ asset_v('backend/assets/css/toast.css') }}" />
     <!-- Vendors CSS -->
     <link rel="stylesheet" href="{{ asset('backend/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css') }}" />
     <link rel="stylesheet" href="{{ asset('backend/assets/vendor/libs/apex-charts/apex-charts.css') }}" />
@@ -80,6 +81,8 @@
     </div>
     <!-- / Layout wrapper -->
 
+    @include('backend.layouts.partials.confirm-modal')
+
     <!-- Core JS -->
     <!-- build:js assets/vendor/js/core.js -->
     {{-- <script src="{{ asset('frontend/js/main.js')}}"></script> --}}
@@ -97,7 +100,7 @@
     <!-- Main JS -->
     <script src="{{ asset('backend/assets/js/main.js') }}"></script>
     <script src="{{ asset('backend/assets/js/convert-slug.js') }}"></script>
-    <script src="{{ asset('backend/js/sweetalert.min.js') }}"></script>
+    <script src="{{ asset_v('backend/assets/js/confirm-modal.js') }}"></script>
 
     <!-- Page JS -->
     <script src="{{ asset('backend/assets/js/dashboards-analytics.js') }}"></script>
@@ -123,13 +126,18 @@
             line_height: '0.5;0.75;1;1.5;2;2.25;2.75;3;3.75;4;5;6;8;9;10;11;12;15;',
         });
 
-        //Alert Notifications
+        // An action's result is a toast that leaves on its own; a warning or an
+        // error stays longer. Noty renders HTML, so the message is escaped.
         @if (session('message'))
-            swal({
-                title: {{ Illuminate\Support\Js::from(session('message')) }},
-                text: 'Click để hoàn tất!',
-                icon: '{{session('iconMessage')}}',
-            });
+            @php $loai = in_array(session('iconMessage'), ['error', 'warning', 'info'], true) ? session('iconMessage') : 'success'; @endphp
+            new Noty({
+                type: {{ Illuminate\Support\Js::from($loai) }},
+                layout: 'topRight',
+                theme: 'mint',
+                text: {{ Illuminate\Support\Js::from(e(session('message'))) }},
+                timeout: {{ in_array($loai, ['error', 'warning'], true) ? 6000 : 3500 }},
+                progressBar: true,
+            }).show();
         @endif
        
     </script>

@@ -27,7 +27,6 @@ class ShopSettingsPageTest extends TestCase
         'email' => 'lienhe@sneakersquare.test',
         'map_embed' => '<iframe src="https://www.google.com/maps/embed?pb=ban-do-moi"></iframe>',
         'fanpage_embed' => '<div class="fb-page" data-href="https://facebook.com/sneakersquare"></div>',
-        'chat_embed' => '',
     ];
 
     protected function setUp(): void

@@ -240,6 +240,22 @@
                 <div data-i18n="Form Layouts">Ví khách hàng</div>
             </a>
         </li>
+        @endcan
+        @can('Khách hàng liên hệ')
+        <li class="menu-item {{ request()->routeIs('assistant_admin.*') ? 'active' : '' }}" id="assistant-menu">
+            <a href="{{ route('assistant_admin.index') }}" class="menu-link">
+                <i class='bx bx-chat menu-icon'></i>
+                <div data-i18n="Form Layouts">Trợ lý AI</div>
+                @php
+                    $choNhanVien = app(\App\Services\Assistant\SupportDesk::class)->waitingCount();
+                @endphp
+                @if ($choNhanVien > 0)
+                    <span class="badge rounded-pill bg-danger ms-auto">{{ $choNhanVien }}</span>
+                @endif
+            </a>
+        </li>
+        @endcan
+        @can('Quản trị Đơn hàng')
         <li class="menu-item {{(url()->current() == route('ghn_simulator.index')) ? 'active open' : ''}}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class='bx bx-package menu-icon'></i>

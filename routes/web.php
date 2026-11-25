@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Backend\AssistantAdminController;
+use App\Http\Controllers\Backend\AssistantKnowledgeController;
 use App\Http\Controllers\Backend\AuthAdminController;
 use App\Http\Controllers\Backend\BehaviourController;
 use App\Http\Controllers\Backend\BlogAdminController;
@@ -27,6 +29,7 @@ use App\Http\Controllers\Backend\ReturnAdminController;
 use App\Http\Controllers\Backend\ShopSettingController;
 use App\Http\Controllers\Backend\TagsAdminController;
 use App\Http\Controllers\Backend\WalletAdminController;
+use App\Http\Controllers\Frontend\AssistantController;
 use App\Http\Controllers\Frontend\AuthUserController;
 use App\Http\Controllers\Frontend\BlogController;
 use App\Http\Controllers\Frontend\CampaignLinkController;
@@ -46,6 +49,7 @@ use App\Http\Controllers\Frontend\RecommendationController;
 use App\Http\Controllers\Frontend\SearchController;
 use App\Http\Controllers\Frontend\ShippingController;
 use App\Http\Controllers\Frontend\ShippingWebhookController;
+use App\Http\Controllers\Frontend\SizeChartController;
 use App\Http\Controllers\Frontend\SocialLoginController;
 use App\Http\Controllers\Frontend\UserController;
 use App\Http\Controllers\Frontend\WalletController;
@@ -95,11 +99,18 @@ Route::group(['middleware' => 'web'], function () {
 
     // The suggestion is one person's own, so none of it may come from the shared cache.
     Route::get('/do-co-chan', [FootMeasureController::class, 'index'])->name('foot.measure')->middleware('doNotCacheResponse');
+    Route::get('/bang-quy-doi-size', [SizeChartController::class, 'index'])->name('size.chart');
     Route::get('/co-chan-cua-toi', [FootMeasureController::class, 'show'])->name('foot.show')->middleware('doNotCacheResponse');
     Route::get('/goi-y/{pro_slug}', [RecommendationController::class, 'show'])->name('product.recommendations')->middleware('doNotCacheResponse');
     Route::post('/co-chan-cua-toi', [FootMeasureController::class, 'store'])->name('foot.store');
     Route::post('/binh-luan/{pro_id}', [CommentController::class, 'store'])->name('comments.store');
     Route::post('/su-kien', [EventBeaconController::class, 'store'])->name('events.beacon')->middleware('throttle:120,1');
+    // The support chat. What it returns is one person's own, so none of it may
+    // come from the shared cache; each question is a paid Claude call, hence the limits.
+    Route::get('/tro-ly', [AssistantController::class, 'show'])->name('assistant.show')->middleware('doNotCacheResponse');
+    Route::post('/tro-ly/tin-nhan', [AssistantController::class, 'send'])->name('assistant.send')->middleware('throttle:20,1');
+    Route::post('/tro-ly/chuyen-nhan-vien', [AssistantController::class, 'handOff'])->name('assistant.handoff')->middleware('throttle:10,1');
+    Route::post('/tro-ly/kenh', [AssistantController::class, 'channel'])->name('assistant.channel')->middleware('throttle:30,1');
     Route::get('/tim-kiem', [SearchController::class, 'search'])->name('search.frontend');
 
     // Route Product WishList
@@ -451,6 +462,20 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     Route::get('/gio-hang-treo', [OpenCartController::class, 'index'])->name('open_cart.index')->middleware($can['orders']);
     // Giving a discount is the coupon managers' call as much as the order desk's.
     Route::post('/gio-hang-treo/{user_id}/tang-ma', [OpenCartController::class, 'offer'])->name('open_cart.offer')->middleware([$can['orders'], $can['coupons']]);
+    Route::middleware($can['contactForms'])->prefix('/tro-ly-ai')->name('assistant_admin.')->group(function () use ($can) {
+        Route::get('/', [AssistantAdminController::class, 'index'])->name('index');
+        Route::post('/{conversation_id}/tra-loi', [AssistantAdminController::class, 'reply'])->name('reply');
+        Route::post('/{conversation_id}/dong', [AssistantAdminController::class, 'close'])->name('close');
+        Route::get('/chua-tra-loi', [AssistantAdminController::class, 'unanswered'])->name('unanswered');
+        // What is saved here is quoted to every customer, like the policies and the FAQ.
+        Route::post('/chua-tra-loi/{group_id}/tra-loi', [AssistantAdminController::class, 'answer'])->name('answer')->middleware($can['pages']);
+        Route::post('/chua-tra-loi/{group_id}/bo-qua', [AssistantAdminController::class, 'dismiss'])->name('dismiss');
+        Route::get('/cau-tra-loi-mau', [AssistantKnowledgeController::class, 'index'])->name('answers');
+        Route::put('/cau-tra-loi-mau/{knowledge_id}', [AssistantKnowledgeController::class, 'update'])->name('answers.update')->middleware($can['pages']);
+        Route::delete('/cau-tra-loi-mau/{knowledge_id}', [AssistantKnowledgeController::class, 'destroy'])->name('answers.destroy')->middleware($can['pages']);
+        Route::post('/cau-tra-loi-mau/{knowledge_id}/dang-faq', [AssistantKnowledgeController::class, 'publish'])->name('answers.publish')->middleware($can['pages']);
+        Route::post('/{conversation_id}/luu-cau-tra-loi', [AssistantKnowledgeController::class, 'storeFromChat'])->name('save_answer')->middleware($can['pages']);
+    });
     Route::middleware($can['orders'])->prefix('/vi-khach-hang')->name('wallet_admin.')->group(function () {
         Route::get('/', [WalletAdminController::class, 'index'])->name('index');
         Route::post('/rut-tien/{withdrawal_id}/da-chuyen', [WalletAdminController::class, 'markPaid'])->name('withdrawal_paid');
@@ -467,6 +492,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     Route::get('/cau-hinh', [ShopSettingController::class, 'edit'])->name('setting.edit')->middleware($can['ordersOrShopInfo']);
     Route::put('/cau-hinh', [ShopSettingController::class, 'update'])->name('setting.update')->middleware($can['orders']);
     Route::put('/cau-hinh/chung', [ShopSettingController::class, 'updateGeneral'])->name('setting.update_general')->middleware($can['shopInfo']);
+    Route::put('/cau-hinh/tro-ly', [ShopSettingController::class, 'updateAssistant'])->name('setting.update_assistant')->middleware($can['shopInfo']);
     Route::put('/cau-hinh/nhac-gio-hang', [ShopSettingController::class, 'updateCartReminder'])->name('setting.update_cart_reminder')->middleware($can['orders']);
     Route::put('/cau-hinh/phan-khuc', [ShopSettingController::class, 'updateSegmentOffers'])->name('setting.update_segments')->middleware($can['orders']);
 

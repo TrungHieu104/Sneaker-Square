@@ -1,0 +1,437 @@
+/* Support assistant widget. Colours come from the storefront's own tokens in main.css. */
+.assistant {
+    --assistant-bot: #F2F4F6;
+    --assistant-line: #E6E8EB;
+    --assistant-ink: var(--color-secondary, #423F3E);
+    position: fixed;
+    right: 28px;
+    bottom: 28px;
+    z-index: 1000;
+    font-family: var(--font-text);
+    color: var(--assistant-ink);
+}
+
+/* The back-to-top button used to own this corner. */
+.back-to-top {
+    bottom: 104px;
+}
+
+.assistant-launcher {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.assistant-tip {
+    background: #fff;
+    font-size: 14px;
+    line-height: 1.45;
+    padding: 10px 14px;
+    border-radius: 10px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, .14);
+}
+
+.assistant-tip b {
+    display: block;
+}
+
+.assistant-open {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--color-primary);
+    box-shadow: 0 6px 18px rgba(61, 178, 255, .45);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: transform .15s ease;
+}
+
+.assistant-open:hover {
+    transform: translateY(-2px);
+}
+
+.assistant-open:focus-visible,
+.assistant-panel button:focus-visible {
+    outline: 2px solid var(--color-orange);
+    outline-offset: 2px;
+}
+
+.assistant-form input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(61, 178, 255, .18);
+}
+
+.assistant-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--color-red);
+    box-shadow: 0 0 0 2px #fff;
+}
+
+.assistant.is-open .assistant-launcher {
+    display: none;
+}
+
+.assistant-panel {
+    width: 392px;
+    height: min(640px, calc(100vh - 56px));
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .22);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 14px;
+}
+
+.assistant-panel[hidden] {
+    display: none;
+}
+
+.assistant-head {
+    background: var(--color-primary);
+    color: #fff;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.assistant-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--color-primary);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+}
+
+.assistant-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.assistant-title b {
+    display: block;
+    font-size: 15px;
+}
+
+.assistant-title span {
+    font-size: 12.5px;
+    opacity: .92;
+}
+
+.assistant-close {
+    border: 0;
+    background: none;
+    color: #fff;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.assistant-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 14px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.assistant-msg {
+    max-width: 86%;
+    padding: 9px 12px;
+    border-radius: 12px;
+    line-height: 1.5;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.assistant-msg.is-bot,
+.assistant-msg.is-staff {
+    background: var(--assistant-bot);
+    align-self: flex-start;
+    border-top-left-radius: 4px;
+}
+
+.assistant-msg.is-staff {
+    background: #FFF3E6;
+}
+
+.assistant-msg .assistant-who {
+    display: block;
+    font-size: 11.5px;
+    color: #888;
+    margin-bottom: 2px;
+}
+
+.assistant-msg.is-customer {
+    background: var(--color-primary);
+    color: #fff;
+    align-self: flex-end;
+    border-top-right-radius: 4px;
+}
+
+.assistant-link {
+    color: var(--color-primary);
+    text-decoration: underline;
+    overflow-wrap: anywhere;
+}
+
+.assistant-link.is-copied::after {
+    content: " (đã chép số)";
+    color: #888;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.assistant-msg.is-pending {
+    opacity: .7;
+}
+
+.assistant-system {
+    align-self: center;
+    font-size: 12px;
+    color: #666;
+    background: #FFF6E9;
+    border: 1px solid #FBD9AE;
+    padding: 6px 10px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 92%;
+    line-height: 1.45;
+}
+
+.assistant-sources {
+    align-self: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: -4px;
+    max-width: 92%;
+}
+
+.assistant-sources a {
+    font-size: 11.5px;
+    color: #555;
+    border: 1px solid var(--assistant-line);
+    border-radius: 999px;
+    padding: 2px 9px;
+}
+
+.assistant-sources a:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.assistant-sources a::before {
+    content: "Nguồn: ";
+    color: #999;
+}
+
+.assistant-actions,
+.assistant-chips {
+    align-self: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.assistant-action {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    background: #fff;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.assistant-action:hover {
+    background: #EEF8FF;
+}
+
+.assistant-action.is-primary {
+    background: var(--color-orange);
+    border-color: var(--color-orange);
+    color: #fff;
+}
+
+.assistant-action.is-primary:hover {
+    background: var(--color-orange-hover);
+}
+
+.assistant-action:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+.assistant-chip {
+    font-size: 13px;
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    background: #fff;
+    border-radius: 999px;
+    padding: 5px 12px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.assistant-card {
+    align-self: flex-start;
+    width: 86%;
+    border: 1px solid var(--assistant-line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+}
+
+.assistant-card h4 {
+    margin: 0 0 6px;
+    font-size: 13.5px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.assistant-card .row-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 2px 0;
+}
+
+.assistant-card .row-line span:first-child {
+    color: #888;
+}
+
+.assistant-card .row-line span:last-child {
+    text-align: right;
+}
+
+.assistant-tag {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 4px;
+    background: #E8F7EE;
+    color: #198754;
+    white-space: nowrap;
+}
+
+.assistant-tag.is-warn,
+.assistant-tag.is-late {
+    background: #FDECEA;
+    color: #C0392B;
+}
+
+.assistant-tag.is-muted {
+    background: #EEF0F2;
+    color: #777;
+}
+
+.assistant-typing {
+    align-self: flex-start;
+    background: var(--assistant-bot);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 4px;
+}
+
+.assistant-typing i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #AAB;
+    animation: assistant-blink 1.2s infinite ease-in-out;
+}
+
+.assistant-typing i:nth-child(2) {
+    animation-delay: .2s;
+}
+
+.assistant-typing i:nth-child(3) {
+    animation-delay: .4s;
+}
+
+@keyframes assistant-blink {
+    0%, 80%, 100% { opacity: .3; }
+    40% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .assistant-typing i {
+        animation: none;
+    }
+}
+
+.assistant-foot {
+    border-top: 1px solid var(--assistant-line);
+    padding: 10px 12px 8px;
+}
+
+.assistant-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.assistant-form input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #D5D9DE;
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 14px;
+    color: var(--assistant-ink);
+}
+
+.assistant-form button {
+    width: 38px;
+    height: 38px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--color-primary);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+.assistant-form button:disabled {
+    opacity: .6;
+    cursor: default;
+}
+
+.assistant-note {
+    font-size: 11.5px;
+    color: #999;
+    margin-top: 6px;
+    text-align: center;
+}
+
+.assistant-staff {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: var(--color-primary);
+    font-weight: 600;
+    font-size: 11.5px;
+    cursor: pointer;
+}

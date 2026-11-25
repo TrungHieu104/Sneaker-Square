@@ -33,5 +33,9 @@
              never reach GHN, whatever .env happens to hold. -->
         <env name="GHN_TOKEN" value=""/>
         <env name="GHN_STREAM_SECONDS" value="0"/>
+        <!-- Chat signals go nowhere; tests that need the socket settings set them. -->
+        <env name="BROADCAST_DRIVER" value="null"/>
+        <!-- Tests never reach the paid Claude API; AssistantFixtures fakes it per test. -->
+        <env name="ANTHROPIC_API_KEY" value=""/>
     </php>
 </phpunit>

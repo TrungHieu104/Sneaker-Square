@@ -2,6 +2,7 @@
 
 use App\Providers\AppServiceProvider;
 use App\Providers\AuthServiceProvider;
+use App\Providers\BroadcastServiceProvider;
 use App\Providers\EventServiceProvider;
 use App\Providers\RouteServiceProvider;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -177,7 +178,7 @@ return [
          */
         AppServiceProvider::class,
         AuthServiceProvider::class,
-        // App\Providers\BroadcastServiceProvider::class,
+        BroadcastServiceProvider::class,
         EventServiceProvider::class,
         RouteServiceProvider::class,
         ExcelServiceProvider::class,

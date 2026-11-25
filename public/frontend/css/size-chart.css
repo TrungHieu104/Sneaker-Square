@@ -1,0 +1,107 @@
+/* The storefront size chart: how to measure on the left, the chart on the right. */
+
+.size-chart-guide {
+    border: 1px solid #e6e6e6;
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.size-chart-guide h4 {
+    margin-bottom: 16px;
+}
+
+/* Numbered like the steps on the foot-measuring page. */
+.size-chart-guide__steps {
+    counter-reset: step;
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 20px;
+    color: #555;
+}
+
+.size-chart-guide__steps li {
+    counter-increment: step;
+    position: relative;
+    padding-left: 34px;
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+.size-chart-guide__steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 1px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff4ea;
+    color: var(--color-orange);
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 24px;
+    text-align: center;
+}
+
+.size-chart-guide__measure {
+    padding: 16px;
+    border-radius: 10px;
+    background: #fff4ea;
+    color: #555;
+}
+
+.size-chart-table {
+    border: 1px solid #e6e6e6;
+    border-radius: 12px;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+}
+
+.size-chart-table thead th {
+    background: #f6f7f9;
+    color: var(--color-secondary);
+}
+
+.size-chart-table th,
+.size-chart-table td {
+    padding: 10px 20px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.size-chart-table thead small {
+    display: block;
+    font-weight: normal;
+    font-size: 12px;
+    color: #999;
+}
+
+.size-chart-table__asian {
+    color: #777;
+}
+
+.size-chart-table tbody tr:nth-child(even) {
+    background: #fafafa;
+}
+
+.size-chart-table tbody tr:last-child th,
+.size-chart-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.size-chart-note {
+    font-size: 14px;
+    color: #888;
+}
+
+@media (max-width: 575.98px) {
+    .size-chart-guide {
+        padding: 16px;
+    }
+
+    .size-chart-table th,
+    .size-chart-table td {
+        padding: 10px 8px;
+    }
+}

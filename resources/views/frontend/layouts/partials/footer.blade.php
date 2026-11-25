@@ -72,7 +72,4 @@
         </div>
     </div>
 </footer>
-@foreach($contact as $data)
-{!!$data->tawk_link!!}
-@endforeach
 <!-- End footer Area -->

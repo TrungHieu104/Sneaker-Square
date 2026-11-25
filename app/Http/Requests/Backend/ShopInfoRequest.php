@@ -22,7 +22,6 @@ class ShopInfoRequest extends FormRequest
             'email' => ['required', 'email', 'max:255'],
             'map_embed' => ['nullable', 'string', 'max:5000'],
             'fanpage_embed' => ['nullable', 'string', 'max:5000'],
-            'chat_embed' => ['nullable', 'string', 'max:5000'],
         ];
     }
 

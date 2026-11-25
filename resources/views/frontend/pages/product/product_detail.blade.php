@@ -129,7 +129,7 @@
                                         <i class='bx bx-ruler'></i> <span>Đo cỡ chân của tôi</span>
                                     </a>
                                 </div>
-                                <div class="product-list_size d-flex flex-wrap gap-3">
+                                <div class="product-list_size d-flex flex-wrap gap-3" data-deselectable>
                                     @php $i = 1; @endphp
                                     @foreach ($getSize as $size)
                                         <input type="radio" class="btn-check btn-radio" name="options-size"
@@ -412,6 +412,8 @@
 @endsection
 
 @push('css-access')
+    {{-- The support assistant answers size and product questions about this page. --}}
+    <meta name="assistant-product" content="{{ $detailProduct->pro_id }}">
     <style>
         img {
             max-width: 100%;
@@ -779,6 +781,24 @@
             );
         }
 
+        // A radio cannot be unticked, so a size picked ahead of time would keep the
+        // colours it lacks shut for good. A second click on it lets it go.
+        function releaseSize(event) {
+            const input = document.getElementById(this.htmlFor);
+
+            if (!input || input.disabled || !input.checked) {
+                return;
+            }
+
+            event.preventDefault();
+            input.checked = false;
+            $('#foot-suggest').addClass('d-none');
+            refreshColors();
+            refreshSizes();
+            refreshPrice();
+            refreshQuantity();
+        }
+
         $(document).ready(function() {
             // Each side is narrowed by the other's current pick, so whichever the
             // customer chooses first, the second list only offers pairs that exist.
@@ -797,6 +817,7 @@
                 reportVariant();
             });
             $('.product-list_color label, .product-list_size label').on('click', reportSoldOut);
+            $('.product-list_size[data-deselectable] label').on('click', releaseSize);
             refreshSizes();
             refreshColors();
             refreshPrice();
