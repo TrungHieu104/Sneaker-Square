@@ -17,8 +17,12 @@ Bài viết
         <div class="card-body">
             @if ($blogTrash->isNotEmpty())
                 <div class="d-flex mb-3 gap-3">
-                    <a href="{{route('blog.restoreAll')}}" class="btn btn-success mt-1 mb-2">Khôi phục tất cả &nbsp;<i class="fas fa-recycle"></i></a>
-                    <a href="{{route('blog.deleteAll')}}" class="btn btn-danger mt-1 mb-2">Xóa tất cả</a>
+                    <form action="{{route('blog.restoreAll')}}" method="post"> @csrf @method('PATCH')
+                        <button type="submit" class="btn btn-success mt-1 mb-2">Khôi phục tất cả &nbsp;<i class="fas fa-recycle"></i></button>
+                    </form>
+                    <form action="{{route('blog.deleteAll')}}" method="post" data-confirm="Bạn có chắc muốn xóa tất cả bài viết vĩnh viễn?"> @csrf @method('DELETE')
+                        <button type="submit" class="btn btn-danger mt-1 mb-2">Xóa tất cả</button>
+                    </form>
                 </div>
             @endif
             <div class="table-responsive text-nowrap">
@@ -62,10 +66,12 @@ Bài viết
                                     <td>{{ date('d/m/Y', strtotime($bT->post_date)) }}</td>
                                     <td class="text-center">
                                         <div class="row-actions">
-                                            <x-admin.row-action action="restore" title="Khôi phục" href="{{route('blog.restore',['id'=>$bT->news_id])}}" />
-                                            <form action="{{route('blog.delete',['id'=>$bT->news_id])}}" method="post"> @csrf @method('DELETE')
-                                                <x-admin.row-action action="delete" title="Xóa vĩnh viễn" onclick="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')" type="submit" />
-                                            </form>  
+                                            <form action="{{route('blog.restore',['id'=>$bT->news_id])}}" method="post"> @csrf @method('PATCH')
+                                                <x-admin.row-action action="restore" title="Khôi phục" type="submit" />
+                                            </form>
+                                            <form action="{{route('blog.delete',['id'=>$bT->news_id])}}" method="post" data-confirm="Bạn có chắc muốn xóa bài viết này vĩnh viễn?"> @csrf @method('DELETE')
+                                                <x-admin.row-action action="delete" title="Xóa vĩnh viễn" type="submit" />
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>

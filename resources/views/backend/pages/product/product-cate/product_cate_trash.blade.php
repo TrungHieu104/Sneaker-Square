@@ -17,8 +17,12 @@
         <div class="card-body">
             @if($cateTrash->isNotEmpty())
                 <div class="mb-3 d-flex gap-3">
-                    <a href="{{ route('product-category.restore.all') }}" title="Khôi phục" class="btn btn-success mt-1 mb-2">Khôi phục tất cả &nbsp;<i class="fas fa-trash-restore"></i></a>
-                    <a href="{{ route('product-category.delete.all') }}" title="Xóa" class="btn btn-danger mt-1 mb-2" onclick="return confirm('Bạn có chắc muốn xóa tất cả danh mục vĩnh viễn?')">Xóa tất cả &nbsp;<i class="fas fa-trash"></i></a>
+                    <form action="{{ route('product-category.restore.all') }}" method="post"> @csrf @method('PATCH')
+                        <button type="submit" class="btn btn-success mt-1 mb-2" title="Khôi phục">Khôi phục tất cả &nbsp;<i class="fas fa-trash-restore"></i></button>
+                    </form>
+                    <form action="{{ route('product-category.delete.all') }}" method="post" data-confirm="Bạn có chắc muốn xóa tất cả danh mục vĩnh viễn?"> @csrf @method('DELETE')
+                        <button type="submit" class="btn btn-danger mt-1 mb-2" title="Xóa">Xóa tất cả &nbsp;<i class="fas fa-trash"></i></button>
+                    </form>
                 </div>
             @endif
             <div class="table-responsive text-nowrap">
@@ -93,9 +97,13 @@
 
                                     <td class="text-center dx-res">
                                         <div class="row-actions">
-                                            <x-admin.row-action action="restore" title="Khôi phục" href="{{route('product-category.restore', $cates->cate_id)}}" />
+                                            <form action="{{route('product-category.restore', $cates->cate_id)}}" method="post"> @csrf @method('PATCH')
+                                                <x-admin.row-action action="restore" title="Khôi phục" type="submit" />
+                                            </form>
 
-                                            <x-admin.row-action action="delete" title="Xóa vĩnh viễn" href="{{route('product-category.delete', $cates->cate_id)}}" onclick="return confirm('Bạn có chắc muốn xóa danh mục này vĩnh viễn?')" />                                       
+                                            <form action="{{route('product-category.delete', $cates->cate_id)}}" method="post" data-confirm="Bạn có chắc muốn xóa danh mục này vĩnh viễn?"> @csrf @method('DELETE')
+                                                <x-admin.row-action action="delete" title="Xóa vĩnh viễn" type="submit" />
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>

@@ -16,8 +16,14 @@
         </div> 
         <div class="card-body">
             @if($imgTrash->isNotEmpty())
-                <a href="{{ route('image.restore.all', $imgTrash[0]->getProduct->pro_slug) }}" title="Khôi phục" class="btn btn-success mt-1 mb-2">Khôi phục tất cả &nbsp;<i class="fas fa-trash-restore"></i></a>
-                <a href="{{ route('image.delete.all', $imgTrash[0]->getProduct->pro_slug) }}" title="Xóa" class="btn btn-danger mt-1 mb-2" onclick="return confirm('Bạn có chắc muốn xóa tất cả sản phẩm vĩnh viễn?')">Xóa tất cả &nbsp;<i class="fas fa-trash"></i></a>
+                <div class="d-flex gap-3 mb-3">
+                    <form action="{{ route('image.restore.all', $imgTrash[0]->getProduct->pro_slug) }}" method="post"> @csrf @method('PATCH')
+                        <button type="submit" class="btn btn-success mt-1 mb-2" title="Khôi phục">Khôi phục tất cả &nbsp;<i class="fas fa-trash-restore"></i></button>
+                    </form>
+                    <form action="{{ route('image.delete.all', $imgTrash[0]->getProduct->pro_slug) }}" method="post" data-confirm="Bạn có chắc muốn xóa tất cả hình ảnh của sản phẩm này vĩnh viễn?"> @csrf @method('DELETE')
+                        <button type="submit" class="btn btn-danger mt-1 mb-2" title="Xóa">Xóa tất cả &nbsp;<i class="fas fa-trash"></i></button>
+                    </form>
+                </div>
             @endif
             <div class="table-responsive text-nowrap">
                 <table class="table table-bordered w-100">
@@ -54,9 +60,13 @@
                                     
                                     <td class="text-center dx-res">
                                         <div class="row-actions">
-                                            <x-admin.row-action action="restore" title="Khôi phục" href="{{route('image.restore', $images->img_id)}}" />
+                                            <form action="{{route('image.restore', $images->img_id)}}" method="post"> @csrf @method('PATCH')
+                                                <x-admin.row-action action="restore" title="Khôi phục" type="submit" />
+                                            </form>
 
-                                            <x-admin.row-action action="delete" title="Xóa vĩnh viễn" href="{{route('image.delete', $images->img_id)}}" onclick="return confirm('Bạn có chắc muốn xóa hình ảnh này vĩnh viễn?')" />                                        
+                                            <form action="{{route('image.delete', $images->img_id)}}" method="post" data-confirm="Bạn có chắc muốn xóa hình ảnh này vĩnh viễn?"> @csrf @method('DELETE')
+                                                <x-admin.row-action action="delete" title="Xóa vĩnh viễn" type="submit" />
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>

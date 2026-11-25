@@ -15,8 +15,12 @@
         </div> 
         <div class="card-body">
             <div class="d-flex gap-3 mb-3">
-                <a href="{{route('page.restoreAll')}}" class="btn btn-success mt-1 mb-2">Khôi phục tất cả &nbsp;<i class="fas fa-recycle"></i></a>
-                <a href="{{route('page.delete.all')}}" title="Xóa" class="btn btn-danger mt-1 mb-2" onclick="return confirm('Bạn có chắc muốn xóa tất cả chính sách vĩnh viễn?')">Xóa tất cả &nbsp;<i class="fas fa-trash"></i></a>
+                <form action="{{route('page.restoreAll')}}" method="post"> @csrf @method('PATCH')
+                    <button type="submit" class="btn btn-success mt-1 mb-2">Khôi phục tất cả &nbsp;<i class="fas fa-recycle"></i></button>
+                </form>
+                <form action="{{route('page.delete.all')}}" method="post" data-confirm="Bạn có chắc muốn xóa tất cả chính sách vĩnh viễn?"> @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-danger mt-1 mb-2" title="Xóa">Xóa tất cả &nbsp;<i class="fas fa-trash"></i></button>
+                </form>
             </div>
             <div class="table-responsive text-nowrap">
                 <table class="table table-bordered w-100">
@@ -53,8 +57,12 @@
                                     
                                     <td class="text-center dx-res">
                                         <div class="row-actions">
-                                            <x-admin.row-action action="restore" title="Khôi phục" href="{{route('page.restore',['encryptedPageId'=>encrypt($data->page_id)])}}" />
-                                            <x-admin.row-action action="delete" title="Xóa vĩnh viễn" href="{{route('page.delete',['encryptedPageId'=>encrypt($data->page_id)])}}" onclick="return confirm('Bạn có chắc muốn xóa danh mục vĩnh viễn?')" />
+                                            <form action="{{route('page.restore',['encryptedPageId'=>encrypt($data->page_id)])}}" method="post"> @csrf @method('PATCH')
+                                                <x-admin.row-action action="restore" title="Khôi phục" type="submit" />
+                                            </form>
+                                            <form action="{{route('page.delete',['encryptedPageId'=>encrypt($data->page_id)])}}" method="post" data-confirm="Bạn có chắc muốn xóa chính sách này vĩnh viễn?"> @csrf @method('DELETE')
+                                                <x-admin.row-action action="delete" title="Xóa vĩnh viễn" type="submit" />
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>

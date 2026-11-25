@@ -123,9 +123,9 @@
                                         @method('PUT') @csrf
                                         <x-admin.row-action action="more" title="Đã xử lý" icon="fas fa-check" type="submit" :disabled="$ct->status == 2" />
                                     </form>
-                                    <form action="{{route('contact-form.destroy',$ct->id)}}" method="post">
+                                    <form action="{{route('contact-form.destroy',$ct->id)}}" method="post" data-confirm="Bạn có muốn đưa liên hệ này vào thùng rác?">
                                         @method('delete') @csrf
-                                        <x-admin.row-action action="delete" title="Xóa" onclick="return confirm('Bạn có muốn đưa liên hệ này vào sọt rác ?')" type="submit" />
+                                        <x-admin.row-action action="delete" title="Xóa" type="submit" />
                                     </form>
                                 </div>
                             </td>

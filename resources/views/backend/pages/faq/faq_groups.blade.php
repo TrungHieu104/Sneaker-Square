@@ -79,12 +79,11 @@
                                             <div class="row-actions">
                                                 <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{ route('faq_group.edit', $group->group_id) }}" />
                                                 {{-- A disabled button shows no tooltip, so the form keeps a box and carries it. --}}
-                                                <form class="d-inline-flex" action="{{ route('faq_group.destroy', $group->group_id) }}" method="post"
+                                                <form class="d-inline-flex" action="{{ route('faq_group.destroy', $group->group_id) }}" method="post" data-confirm="Xoá nhóm này?"
                                                     @if ($group->faqs_count > 0) title="Nhóm còn câu hỏi, hãy chuyển hoặc xoá các câu hỏi trước" @endif>
                                                     @csrf
                                                     @method('DELETE')
-                                                    <x-admin.row-action action="delete" title="Xóa" type="submit" :disabled="$group->faqs_count > 0"
-                                                        onclick="return confirm('Xoá nhóm này?')" />
+                                                    <x-admin.row-action action="delete" title="Xóa" type="submit" :disabled="$group->faqs_count > 0" />
                                                 </form>
                                             </div>
                                         </td>

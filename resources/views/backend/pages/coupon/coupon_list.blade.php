@@ -116,10 +116,10 @@
                                             @else
                                                 <x-admin.row-action action="more" title="Gửi" icon="fas fa-share" disabled data-bs-toggle="modal" data-bs-target="#coupon{{$data->coupon_id}}" />
                                             @endif
-                                            <form action="{{ route('coupon.softDelete', ['id' => $data->coupon_id]) }}" method="post">
+                                            <form action="{{ route('coupon.softDelete', ['id' => $data->coupon_id]) }}" method="post" data-confirm="Bạn có chắc muốn xóa?">
                                                 @csrf
                                                 @method('DELETE')
-                                                <x-admin.row-action action="delete" title="Xóa" type="submit" onclick="return confirm('Bạn có chắc muốn xóa?')" />
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" />
                                             </form>                                                                                
                                         </div>
                                     </td> 

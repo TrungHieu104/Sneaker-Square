@@ -435,7 +435,7 @@
             </a>
         </li>
         <div class="menu-item p-3">
-            <a onclick="return confirm('Bạn có chắc muốn thoát khỏi phiên đăng nhập này?')" href="{{route('admin.logout')}}" class="btn btn-secondary mx-3 d-flex justify-content-center align-items-center m-2">
+            <a data-confirm="Bạn có chắc muốn thoát khỏi phiên đăng nhập này?" data-confirm-ok="Thoát" href="{{route('admin.logout')}}" class="btn btn-secondary mx-3 d-flex justify-content-center align-items-center m-2">
                 <i class="bx bx-power-off me-2"></i>
                 Đăng xuất
             </a>

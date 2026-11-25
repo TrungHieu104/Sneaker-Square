@@ -119,12 +119,16 @@
         // the upgrade notice is switched off for every editor (technical-debt #9).
         CKEDITOR.config.versionCheck = false;
 
-        CKEDITOR.replace('content', {
-            filebrowserBrowseUrl: "{{ route('ckfinder_browser') }}",
-            language: 'vi',
-            extraPlugins: 'lineheight',
-            line_height: '0.5;0.75;1;1.5;2;2.25;2.75;3;3.75;4;5;6;8;9;10;11;12;15;',
-        });
+        // Only the forms with a long text carry a "content" field; CKEditor
+        // looks it up by id, then by name, and throws on every other page.
+        if (document.getElementById('content') || document.getElementsByName('content').length) {
+            CKEDITOR.replace('content', {
+                filebrowserBrowseUrl: "{{ route('ckfinder_browser') }}",
+                language: 'vi',
+                extraPlugins: 'lineheight',
+                line_height: '0.5;0.75;1;1.5;2;2.25;2.75;3;3.75;4;5;6;8;9;10;11;12;15;',
+            });
+        }
 
         // An action's result is a toast that leaves on its own; a warning or an
         // error stays longer. Noty renders HTML, so the message is escaped.

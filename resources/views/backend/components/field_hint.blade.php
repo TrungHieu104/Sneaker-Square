@@ -5,10 +5,6 @@
     template's bundle publishes no `bootstrap` global, so a `data-bs-toggle
     ="tooltip"` anywhere would throw and take the rest of that file down.
 
-    Font Awesome rather than boxicons: boxicons.css points at
-    ../fonts/boxicons.woff2 while the fonts live in fonts/boxicons/, so every
-    bx-* icon renders as an empty box.
-
     @param string $text  what to explain
 --}}
 @once

@@ -55,9 +55,9 @@
                                     <td class="text-center">
                                         <div class="row-actions">
                                             <x-admin.row-action action="edit" title="Chỉnh sửa" href="{{route('tags.edit', ['tag' => $t->tag_id])}}" />
-                                            <form action="{{route('tags.destroy', ['tag' => $t->tag_id])}}" method="POST">
+                                            <form action="{{route('tags.destroy', ['tag' => $t->tag_id])}}" method="POST" data-confirm="Bạn muốn xóa tag này?">
                                                 @csrf @method('delete')
-                                                <x-admin.row-action action="delete" title="Xóa" onclick="return confirm('Bạn muốn xóa tag này?')" type="submit" />
+                                                <x-admin.row-action action="delete" title="Xóa" type="submit" />
                                             </form>
                                         </div>
                                     </td>
