@@ -1,6 +1,6 @@
 # Technical debt register
 
-Updated: 2026-10-05.
+Updated: 2026-11-25.
 
 ## Current metrics
 
@@ -14,7 +14,8 @@ Updated: 2026-10-05.
 | SonarQube | Reliability / Security / Maintainability rating | A / A / A |
 | SonarQube | Remaining code smells | 34 Major, 10 Minor |
 | gitleaks | Secrets in the current source and the whole Git history | 0 (2 old leaks revoked, listed in `.gitleaksignore`) |
-| PHPUnit | Feature tests | 859 passing |
+| PHPUnit | Tests | 1,586 passing |
+| PHPUnit + Xdebug | Line coverage of `app/` (command in `README.md`, Tests) | 93.16% (9,536 / 10,236 lines); methods 83.70%, classes 65.17% |
 
 The SonarQube scope, and the reason each part is excluded, is in `sonar-project.properties`.
 

@@ -136,6 +136,19 @@ php artisan test
 ```
 
 CI (`.github/workflows/ci.yml`) runs all three, plus gitleaks, on every push and pull request.
+
+Coverage is measured locally, not in CI. It needs the Xdebug extension:
+
+```bash
+XDEBUG_MODE=coverage php -d memory_limit=2G vendor/bin/phpunit --coverage-text --only-summary-for-coverage-text
+```
+
+These are PHPUnit's own options. PHPUnit runs the suites listed under `<testsuites>` in
+`phpunit.xml`, and Xdebug records which lines of the `<source>` directory (`app/`) they
+execute. `Lines` is the share of executable lines run at least once; comments, blank
+lines and signatures are not counted. `Methods` and `Classes` count a method or class
+only when every line in it ran. Drop `--only-summary-for-coverage-text` to see the
+figure for each class.
 Branch, pull request and commit message conventions are in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Default admin account
