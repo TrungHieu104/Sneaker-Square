@@ -6,14 +6,13 @@ use App\Exports\ExportStatistic;
 use App\Http\Controllers\Controller;
 use App\Models\StatisticModel;
 use App\Models\UserModel;
+use App\Services\Analytics\GoogleTraffic;
 use App\Services\DashboardStatisticsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Maatwebsite\Excel\Facades\Excel;
-use Spatie\Analytics\Facades\Analytics;
-use Spatie\Analytics\Period;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
@@ -31,14 +30,11 @@ class DashboardController extends Controller
      * the route's middleware, so a guest turned away at login still cost
      * three calls to Google.
      */
-    private function shareTrafficFigures(): void
+    private function shareTrafficFigures(GoogleTraffic $traffic): void
     {
-        // Visits by browser.
-        $dataTopBrowsers = Analytics::fetchTopBrowsers(Period::days(7));
-        // Visits by referring path.
-        $dataTopReferrers = Analytics::fetchTopReferrers(Period::days(7), 15);
-        // Visits by operating system.
-        $dataSystems = Analytics::fetchTopOperatingSystems(Period::days(7));
+        $dataTopBrowsers = $traffic->topBrowsers(7);
+        $dataTopReferrers = $traffic->topReferrers(7, 15);
+        $dataSystems = $traffic->topOperatingSystems(7);
         // chart account
         $sub7days = Carbon::now()->subDays(7)->toDateString();
         $now = Carbon::now()->toDateString();
@@ -65,9 +61,9 @@ class DashboardController extends Controller
      * three times written out in full, and the seven-day revenue query was
      * built twice in a row with the second assignment discarding the first.
      */
-    public function index(Request $request, DashboardStatisticsService $stats)
+    public function index(Request $request, DashboardStatisticsService $stats, GoogleTraffic $traffic)
     {
-        $this->shareTrafficFigures();
+        $this->shareTrafficFigures($traffic);
         $totalOrder = $stats->newOrderCount();
         $totalOrderToday = $stats->todayOrderCount();
         $revenue = $stats->allRevenueRows();
@@ -80,15 +76,12 @@ class DashboardController extends Controller
         $chart_data = $stats->revenueChart();
 
         // Visits, from Google Analytics rather than our own tables.
-        $dataVisitor = [];
-        $dataTotalVisitor = Analytics::fetchTotalVisitorsAndPageViews(Period::days(7))->sortBy('date');
-        $dataVisitor['date'] = $dataTotalVisitor->pluck('date')->map(fn ($date) => $date->format(self::DATE_FORMAT));
-        $dataVisitor['activeUsers'] = $dataTotalVisitor->pluck('activeUsers');
-        $dataVisitor['screenPageViews'] = $dataTotalVisitor->pluck('screenPageViews');
+        $dataVisitor = $traffic->dailyVisits(7, self::DATE_FORMAT);
+        $trafficUnavailable = $traffic->unavailable();
 
         return view('backend.pages.dashboard', compact('revenue', 'totalOrder', 'countVisitor', 'chart_data',
             'totalOrderToday', 'dataTotal', 'dataVisitor', 'onlineVisitorCount', 'dataOrder', 'dataTotalCoupon',
-            'couponName'));
+            'couponName', 'trafficUnavailable'));
     }
 
     public function indexPost(Request $request, DashboardStatisticsService $stats)
@@ -100,17 +93,15 @@ class DashboardController extends Controller
         return response()->json(['error' => 'Không tìm thấy dữ liệu']);
     }
 
-    public function filterVisitor(Request $request)
+    public function filterVisitor(Request $request, GoogleTraffic $traffic)
     {
         $dataFilter = $request->input('dataDate');
         if ($dataFilter) {
-            $dataVisitor = [];
-            $dataTotalVisitor = Analytics::fetchTotalVisitorsAndPageViews(Period::days($dataFilter))->sortBy('date');
-            $dataVisitor['date'] = $dataTotalVisitor->pluck('date')->map(function ($date) {
-                return $date->format(self::DATE_FORMAT);
-            });
-            $dataVisitor['activeUsers'] = $dataTotalVisitor->pluck('activeUsers');
-            $dataVisitor['screenPageViews'] = $dataTotalVisitor->pluck('screenPageViews');
+            $dataVisitor = $traffic->dailyVisits((int) $dataFilter, self::DATE_FORMAT);
+
+            if ($traffic->unavailable()) {
+                $dataVisitor['unavailable'] = true;
+            }
 
             return response()->json($dataVisitor);
         } else {
@@ -123,11 +114,11 @@ class DashboardController extends Controller
         return view('backend.pages.support.support');
     }
 
-    public function statistical()
+    public function statistical(GoogleTraffic $traffic)
     {
-        $this->shareTrafficFigures();
+        $this->shareTrafficFigures($traffic);
 
-        return view('backend.pages.statistical.access');
+        return view('backend.pages.statistical.access', ['trafficUnavailable' => $traffic->unavailable()]);
     }
 
     public function dashboardFilter(Request $request)

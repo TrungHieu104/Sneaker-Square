@@ -6,6 +6,9 @@
 
 @section('content')
     <h4 class="fw-bold py-3 mb-3"><span class="text-muted fw-light">Tổng quát</span></h4>
+    @if ($trafficUnavailable)
+        <x-admin.traffic-unavailable class="mb-4" />
+    @endif
     <!-- Bordered Table -->
     <div class="card mb-4 card-border-top">
         <div class="d-flex justify-content-between align-items-center">
