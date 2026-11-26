@@ -270,7 +270,7 @@
                 @if (\App\Http\Controllers\Backend\GhnSimulatorController::enabled())
                 <li class="menu-item {{(url()->current() == route('ghn_simulator.index')) ? 'active' : ''}}">
                     <a href="{{route('ghn_simulator.index')}}" class="menu-link">
-                        <div data-i18n="Basic Inputs">Giả lập GHN (local)</div>
+                        <div data-i18n="Basic Inputs">Giả lập GHN</div>
                     </a>
                 </li>
                 @endif

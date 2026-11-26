@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Actions\PlaceOrderAction;
 use App\Enums\OrderStatus;
+use App\Http\Controllers\Backend\GhnSimulatorController;
 use App\Models\OrderModel;
 use App\Models\OrderReturnModel;
 use App\Models\UserModel;
@@ -86,6 +87,15 @@ class GhnSimulatorTest extends TestCase
             ->get(route('ghn_simulator.index'))
             ->assertSee('Có API, chưa tới được')
             ->assertSee('GHN chỉ nhận khi vận đơn đã qua bước lấy hàng');
+    }
+
+    public function test_ghi_chu_sandbox_nam_trong_tooltip_khong_chiem_cho_tren_trang(): void
+    {
+        $page = $this->actingAs($this->admin)->get(route('ghn_simulator.index'));
+
+        $page->assertSee('title="'.e(GhnSimulatorController::ON_SANDBOX['storing']['note']).'"', false);
+        $page->assertDontSee('Sandbox GHN chỉ cho shop đổi');
+        $page->assertDontSee('không cần đợi scheduler');
     }
 
     public function test_nut_ghn_that_goi_api_chuyen_trang_thai_va_khong_tu_ghi_hanh_trinh(): void
