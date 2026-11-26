@@ -569,6 +569,9 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    @if ($trafficUnavailable)
+                        <x-admin.traffic-unavailable class="mb-3" />
+                    @endif
                     <div class="row">
                         <div class="col-12">
                             <div id="chartVisitor"></div>
