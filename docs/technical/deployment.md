@@ -76,13 +76,31 @@ Every key, token and password is read from `.env`. The full list, with explanati
 
 ## Deploying a new release
 
+Every push to `main` deploys itself. In `.github/workflows/ci.yml`, the `deploy` job waits for
+the tests, Pint, Larastan and gitleaks to pass, then SSHes into the server and pipes in
+`scripts/deploy.sh` with the commit being deployed. The script fetches first, puts the site in
+maintenance mode, checks out that commit, runs `composer install`, `ckfinder:download`,
+`npm ci && npm run build`, `migrate --force` and the caches, restarts the queue worker and
+Reverb, and brings the site back up, even when a step fails. A commit that is not on
+`origin/main` is refused before the site goes down. A typical deploy keeps the site on its
+maintenance page (503) for about 15 seconds.
+
+The job reads three repository secrets (Settings › Secrets and variables › Actions):
+
+| Secret | Value |
+|---|---|
+| `DEPLOY_HOST` | The server's public IP |
+| `DEPLOY_SSH_KEY` | A private key used only by GitHub Actions. Its public half sits in `~ubuntu/.ssh/authorized_keys` behind `no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty` |
+| `DEPLOY_KNOWN_HOSTS` | The output of `ssh-keyscan -t ed25519 <server IP>`, so the job refuses a server that is not ours |
+
+The server needs `.env` readable by `www-data` (`sudo chown ubuntu:www-data .env`, mode 640):
+`composer install` drops the cached config, and until `config:cache` runs again the site reads
+`.env` directly. The script stops before touching anything if that is not the case.
+
+To deploy by hand, run the same script from a checkout of the commit:
+
 ```bash
-git pull
-composer install --no-dev --optimize-autoloader
-php artisan migrate --force
-php artisan config:cache && php artisan route:cache && php artisan view:cache
-php artisan queue:restart
-php artisan reverb:restart
+ssh ubuntu@<server> bash -s -- "$(git rev-parse HEAD)" < scripts/deploy.sh
 ```
 
 ### Once, on a database from before `pages`
