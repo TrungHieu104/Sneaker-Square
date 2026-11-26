@@ -10,32 +10,7 @@
 @endphp
 
 @section('content')
-    <h4 class="fw-bold py-3 mb-3">Giả lập GHN <span class="badge bg-label-warning align-middle fs-6">chỉ ở local</span></h4>
-
-    <div class="card mb-4 card-border-top">
-        <div class="card-body">
-            <p class="mb-2">
-                Gửi vào hệ thống đúng request mà GHN gọi webhook, rồi xử lý bằng chính code nhận webhook thật.
-                Chỉ bỏ qua bước HTTP và token trên URL.
-            </p>
-            <p class="mb-2">
-                Sandbox GHN chỉ cho shop đổi <b>4 trạng thái</b>: <code>ready_to_pick</code>, <code>cancel</code>,
-                <code>storing</code>, <code>return</code>. Các chặng còn lại do nhân viên GHN quét ngoài thực địa,
-                shop không gọi được — nên phải giả lập ở đây. Trong 4 trạng thái đó, thực tế trên sandbox chỉ
-                <code>cancel</code> dùng được: <code>storing</code> và <code>return</code> được cấp quyền nhưng
-                GHN đòi vận đơn đã qua bước lấy hàng, mà bước đó sandbox không chạy.
-            </p>
-            <p class="mb-2">
-                Trạng thái nào GHN cho gọi thì có thêm nút <b>GHN thật</b>: nút này gọi API của GHN, đổi vận đơn
-                trên hệ thống GHN. Hành trình trong shop chỉ đổi khi GHN gọi webhook về, nên phải bật tunnel và
-                khai báo URL webhook trên trang GHN. Nút <b>Giả lập</b> thì ghi thẳng vào hệ thống, không đụng GHN.
-            </p>
-            <p class="mb-0 text-muted small">
-                Tên và thứ tự trạng thái lấy từ payload GHN đã gửi về hệ thống.
-                Trang này chỉ bật khi <code>GHN_SIMULATOR=true</code>, ở production luôn trả 404.
-            </p>
-        </div>
-    </div>
+    <h4 class="fw-bold py-3 mb-3">Giả lập GHN <span class="badge bg-label-warning align-middle fs-6">chỉ để test</span></h4>
 
     @if ($parcels->isEmpty())
         <div class="alert alert-info">Chưa có đơn hàng nào có mã vận đơn. Tạo hoặc gắn vận đơn cho một đơn trước.</div>
@@ -71,10 +46,6 @@
                                         value="{{ app(\App\Services\ShopSettings::class)->autoCompleteDays() }}">
                                     <span class="input-group-text">ngày</span>
                                     <button type="submit" class="btn btn-outline-secondary">Chạy</button>
-                                </div>
-                                <div class="form-text">
-                                    Chạy ngay lệnh <code>orders:auto-complete</code> như thể đã qua số ngày này kể từ bây giờ,
-                                    không cần đợi scheduler. Không đổi dữ liệu của GHN.
                                 </div>
                             </form>
 
@@ -122,24 +93,27 @@
                                                         </td>
                                                         <td class="small">
                                                             @if ($sandbox = Sim::ON_SANDBOX[$status] ?? null)
-                                                                @if ($sandbox['reachable'])
-                                                                    <span class="text-success">Có</span>
-                                                                @else
-                                                                    <span class="text-warning">Có API, chưa tới được</span>
-                                                                @endif
-                                                                · {{ $sandbox['note'] }}
+                                                                <span tabindex="0" data-bs-toggle="tooltip" title="{{ $sandbox['note'] }}" @class([
+                                                                    'text-success' => $sandbox['reachable'],
+                                                                    'text-warning' => ! $sandbox['reachable'],
+                                                                ])>{{ $sandbox['reachable'] ? 'Có' : 'Có API, chưa tới được' }}</span>
                                                             @else
                                                                 <span class="text-danger">Không</span>
                                                             @endif
                                                         </td>
                                                         <td class="text-end text-nowrap">
                                                             <button type="submit" name="status" value="{{ $status }}"
-                                                                class="btn btn-sm btn-primary">Giả lập</button>
+                                                                class="btn btn-sm btn-primary" data-bs-toggle="tooltip"
+                                                                title="Ghi thẳng vào hệ thống, không gọi GHN">Giả lập</button>
                                                             @if (Sim::ON_SANDBOX[$status]['api'] ?? null)
-                                                                <button type="button" class="btn btn-sm btn-outline-danger"
-                                                                    data-bs-toggle="modal" data-bs-target="#goiGhnThat"
-                                                                    data-status="{{ $status }}"
-                                                                    data-label="{{ GhnStatus::label($status) }}">GHN thật</button>
+                                                                {{-- The button already opens the modal, so the wrapper carries the tooltip. --}}
+                                                                <span class="d-inline-block" data-bs-toggle="tooltip"
+                                                                    title="Gọi API GHN; hành trình chỉ đổi khi GHN gọi webhook về">
+                                                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                        data-bs-toggle="modal" data-bs-target="#goiGhnThat"
+                                                                        data-status="{{ $status }}"
+                                                                        data-label="{{ GhnStatus::label($status) }}">GHN thật</button>
+                                                                </span>
                                                             @endif
                                                         </td>
                                                     </tr>

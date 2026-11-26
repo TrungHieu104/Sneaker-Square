@@ -9,6 +9,7 @@ use App\Models\UserModel;
 use App\Services\ShopSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\AssertsTooltips;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
 
@@ -18,6 +19,7 @@ use Tests\TestCase;
  */
 class ShopSettingsPageTest extends TestCase
 {
+    use AssertsTooltips;
     use RefreshDatabase;
     use ShopFixtures;
 
@@ -151,6 +153,38 @@ class ShopSettingsPageTest extends TestCase
         $this->get(route('user.login'))
             ->assertOk()
             ->assertSee('href="tel:0901234567"', false);
+    }
+
+    // ----------------------------------------------------- notes in tooltips
+
+    public function test_huong_dan_lay_ma_ban_do_nam_trong_tooltip_con_canh_bao_ma_nhung_van_hien(): void
+    {
+        $page = $this->actingAs($this->adminWith('Quản trị Thông tin'))->get(route('setting.edit'))->assertOk();
+
+        $this->assertOnlyInTooltip($page, 'Bản đồ Google Maps', 'Google Maps → Chia sẻ → Nhúng bản đồ → Sao chép HTML. Hiện ở trang Liên hệ.');
+        $page->assertSee('Mã được chèn thẳng vào trang')->assertSee('Hiện ở chân trang.');
+    }
+
+    public function test_cach_tinh_tu_hoan_thanh_va_giu_hang_nam_trong_tooltip(): void
+    {
+        $page = $this->actingAs($this->adminWith('Quản trị Đơn hàng'))->get(route('setting.edit'))->assertOk();
+
+        $this->assertOnlyInTooltip($page, 'Tự động hoàn thành đơn sau (ngày)',
+            'Tính từ lúc GHN báo giao hàng thành công. Nếu khách không bấm "Đã nhận được hàng" trong khoảng này, đơn tự chuyển sang Thành công. Áp dụng cả cho các đơn đang chờ.');
+        $this->assertOnlyInTooltip($page, 'Giữ hàng chờ thanh toán qua VNPay / MoMo (phút)',
+            'Tính từ lúc khách đặt hàng. Hết thời gian mà chưa trả tiền thì đơn tự huỷ, hàng và mã giảm giá được trả lại. Chỉ áp dụng cho đơn đặt sau khi lưu; đơn đang chờ giữ hạn cũ.');
+        $page->assertSee('Quá hạn này khách không gửi được yêu cầu trả hàng.');
+    }
+
+    public function test_gioi_thieu_nhac_gio_hang_va_cach_tang_ma_nam_trong_tooltip(): void
+    {
+        $page = $this->actingAs($this->adminWith('Quản trị Đơn hàng'))->get(route('setting.edit'))->assertOk();
+
+        $this->assertOnlyInTooltip($page, 'Email nhắc giỏ hàng bỏ quên',
+            'Chỉ gửi cho khách đã đăng nhập khi thêm vào giỏ. Mỗi giỏ được nhắc tự động tối đa hai lần, không kèm mã giảm giá, dừng ngay khi khách đặt hàng hoặc bấm huỷ nhận trong email. Hệ thống kiểm tra mỗi giờ một lần.');
+        $this->assertOnlyInTooltip($page, 'Tặng mã giảm giá',
+            'Mã chỉ được tặng khi admin bấm ở trang Giỏ hàng đang treo: mỗi lần tạo một mã riêng, dùng được một lần, được áp sẵn khi khách bấm nút trong email.');
+        $page->assertSee('Tính từ lần cuối khách thêm hoặc bỏ sản phẩm trong giỏ.');
     }
 
     // ------------------------------------------------------ permissions
