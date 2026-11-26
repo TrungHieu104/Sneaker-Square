@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\AssertsTooltips;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
 
@@ -26,6 +27,7 @@ use Tests\TestCase;
  */
 class OpenCartTest extends TestCase
 {
+    use AssertsTooltips;
     use RefreshDatabase;
     use ShopFixtures;
 
@@ -125,6 +127,14 @@ class OpenCartTest extends TestCase
 
         $this->actingAs($admin)->get(route('open_cart.index', ['sap-xep' => OpenCartBoard::SORT_RECENT]))
             ->assertSeeInOrder(['khach@example.test', 'lon@example.test']);
+    }
+
+    public function test_cach_tang_ma_nam_trong_tooltip_canh_tieu_de_bang(): void
+    {
+        $page = $this->actingAs($this->admin())->get(route('open_cart.index'))->assertOk();
+
+        $this->assertOnlyInTooltip($page, 'Giỏ của khách đã đăng nhập, chưa đặt hàng',
+            'Bấm "Tặng mã" để gửi ngay cho khách một mã dùng một lần, giỏ đó sẽ không nhận email nhắc tự động nữa.');
     }
 
     public function test_de_xuat_tang_ma_khi_da_nhac_het_ma_khach_co_mo_email(): void

@@ -59,7 +59,11 @@
 
     <div class="card card-border-top">
         <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <h5 class="mb-0">Giỏ của khách đã đăng nhập, chưa đặt hàng</h5>
+            <h5 class="mb-0">
+                Giỏ của khách đã đăng nhập, chưa đặt hàng
+                <i class="bx bx-help-circle text-muted align-middle" tabindex="0" role="button" aria-label="Tặng mã" data-bs-toggle="tooltip"
+                    title="Bấm &quot;Tặng mã&quot; để gửi ngay cho khách một mã dùng một lần, giỏ đó sẽ không nhận email nhắc tự động nữa."></i>
+            </h5>
             <form method="GET" action="{{ route('open_cart.index') }}" class="d-flex flex-wrap align-items-center gap-3">
                 <div class="form-check mb-0">
                     <input class="form-check-input" type="checkbox" id="chi-de-xuat" name="de-xuat" value="1"
@@ -73,14 +77,10 @@
                     <option value="{{ OpenCartBoard::SORT_VALUE }}" @selected($sort === OpenCartBoard::SORT_VALUE)>Giá trị lớn nhất</option>
                     <option value="{{ OpenCartBoard::SORT_RECENT }}" @selected($sort === OpenCartBoard::SORT_RECENT)>Mới bỏ quên nhất</option>
                 </select>
+                <a class="small" href="{{ route('setting.edit') }}#tab-nhac-gio-hang">Cấu hình nhắc giỏ hàng</a>
             </form>
         </div>
         <div class="card-body">
-            <p class="text-muted small">
-                Bấm "Tặng mã" để gửi ngay cho khách một mã dùng một lần, giỏ đó sẽ không nhận email nhắc tự động nữa.
-                <a href="{{ route('setting.edit') }}#tab-nhac-gio-hang">Cấu hình nhắc giỏ hàng</a>
-            </p>
-
             @if ($carts->isEmpty())
                 <p class="text-muted mb-0">Không có giỏ hàng nào đang treo.</p>
             @else

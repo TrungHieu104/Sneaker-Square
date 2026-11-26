@@ -72,7 +72,10 @@
                                     @if ($duocLuuMau && $tin->sender === Msg::STAFF && $replies[$tin->id]['saved'])
                                         <span class="d-block mt-1 text-muted" style="font-size: 12px;"><i class="bx bx-check" style="font-size: 13px;"></i> Đã lưu thành câu trả lời mẫu</span>
                                     @elseif ($duocLuuMau && $tin->sender === Msg::STAFF)
-                                        <button type="button" class="btn btn-link btn-sm p-0 d-block mt-1 text-muted fw-normal" style="font-size: 12px;" data-bs-toggle="offcanvas" data-bs-target="#luu-mau-{{ $tin->id }}"><i class="bx bx-bookmark" style="font-size: 13px;"></i> Lưu thành câu trả lời mẫu</button>
+                                        {{-- The button already toggles the offcanvas, so the wrapper carries the tooltip. --}}
+                                        <span class="d-table" data-bs-toggle="tooltip" title="Câu trả lời dùng được cho khách khác thì lưu lại để trợ lý dùng cho lần sau">
+                                            <button type="button" class="btn btn-link btn-sm p-0 d-block mt-1 text-muted fw-normal" style="font-size: 12px;" data-bs-toggle="offcanvas" data-bs-target="#luu-mau-{{ $tin->id }}"><i class="bx bx-bookmark" style="font-size: 13px;"></i> Lưu thành câu trả lời mẫu</button>
+                                        </span>
                                     @endif
                                 </div>
                             @endif
@@ -129,13 +132,6 @@
                                 <a class="small" href="{{ route('orders.edit', ['encryptedOrderId' => encrypt($customer['latest']->order_id)]) }}">Mở đơn hàng</a>
                             @endif
                         @endif
-                    @endif
-                    @if ($duocLuuMau)
-                        <hr>
-                        <h6>Sau khi trả lời</h6>
-                        <p class="text-muted small mb-0">
-                            Nếu câu trả lời dùng được cho khách khác, bấm "Lưu thành câu trả lời mẫu" dưới tin nhắn của bạn để trợ lý dùng cho lần sau.
-                        </p>
                     @endif
                 </div>
             </div>

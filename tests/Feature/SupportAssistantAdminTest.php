@@ -16,6 +16,7 @@ use App\Services\ShopSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\AssertsTooltips;
 use Tests\Support\AssistantFixtures;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
@@ -26,6 +27,7 @@ use Tests\TestCase;
  */
 class SupportAssistantAdminTest extends TestCase
 {
+    use AssertsTooltips;
     use AssistantFixtures;
     use RefreshDatabase;
     use ShopFixtures;
@@ -310,6 +312,17 @@ class SupportAssistantAdminTest extends TestCase
         $this->assertSame(6, app(ShopSettings::class)->assistantIdleHours());
     }
 
+    public function test_cach_tinh_tu_dong_chat_nam_trong_tooltip(): void
+    {
+        $admin = $this->makeUser('model@example.test', 'chonmodel', role: 1);
+        $admin->givePermissionTo(Permission::findOrCreate('Quản trị Thông tin', 'web'));
+
+        $page = $this->actingAs($admin)->get(route('setting.edit'))->assertOk();
+
+        $this->assertOnlyInTooltip($page, 'Tự đóng chat nhân viên đã trả lời sau (giờ)',
+            'Tính từ tin nhắn cuối. Hết khoảng này mà khách không nhắn thêm, cuộc chat tự đóng và trợ lý trả lời khách trở lại. Chat đang chờ nhân viên không bị đóng.');
+    }
+
     public function test_so_gio_tu_dong_ngoai_khoang_bi_tu_choi_va_giu_so_cu(): void
     {
         $admin = $this->makeUser('model@example.test', 'chonmodel', role: 1);
@@ -470,6 +483,17 @@ class SupportAssistantAdminTest extends TestCase
         $this->actingAs($staff)->get(route('assistant_admin.index', ['chat' => $conversation->id]))
             ->assertSee('Đã lưu thành câu trả lời mẫu')
             ->assertDontSee('data-bs-target="#luu-mau-'.$reply->id.'"', false);
+    }
+
+    public function test_goi_y_luu_cau_tra_loi_mau_nam_trong_tooltip_cua_nut_luu(): void
+    {
+        [$conversation] = $this->twoUnansweredThenStaffReply();
+
+        $page = $this->actingAs($this->staff())->get(route('assistant_admin.index', ['chat' => $conversation->id]))->assertOk();
+
+        $this->assertOnlyInTooltip($page, 'Đơn của bạn đang giao.', 'Câu trả lời dùng được cho khách khác thì lưu lại để trợ lý dùng cho lần sau');
+        $page->assertSeeInOrder(['title="Câu trả lời dùng được cho khách khác', 'Lưu thành câu trả lời mẫu</button>'], false)
+            ->assertDontSee('Sau khi trả lời');
     }
 
     public function test_luu_mau_chi_dong_cau_hoi_nhan_vien_vua_tra_loi_cau_truoc_van_mo(): void

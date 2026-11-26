@@ -112,12 +112,15 @@
                             </div>
                             <div class="row">
                                 <div class="col-lg-12 mb-3">
-                                    <label for="shop-map" class="form-label">Bản đồ Google Maps</label>
+                                    <label for="shop-map" class="form-label">
+                                        Bản đồ Google Maps
+                                        <i class="bx bx-help-circle text-muted" tabindex="0" role="button" aria-label="Cách lấy mã" data-bs-toggle="tooltip"
+                                            title="Google Maps → Chia sẻ → Nhúng bản đồ → Sao chép HTML. Hiện ở trang Liên hệ."></i>
+                                    </label>
                                     <textarea class="form-control font-monospace small" id="shop-map" name="map_embed" rows="4">{{ old('map_embed', $shopInfo['map_embed']) }}</textarea>
                                     @error('map_embed')
                                         <small class="text-danger fst-italic">{{ $message }}</small>
                                     @enderror
-                                    <div class="form-text">Google Maps → Chia sẻ → Nhúng bản đồ → Sao chép HTML. Hiện ở trang Liên hệ.</div>
                                 </div>
                                 <div class="col-lg-12 mb-3">
                                     <label for="shop-fanpage" class="form-label">Fanpage Facebook</label>
@@ -171,17 +174,17 @@
                                     @enderror
                                 </div>
                                 <div class="col-lg-6 mb-3">
-                                    <label for="idle-close-hours" class="form-label">Tự đóng chat nhân viên đã trả lời sau (giờ)</label>
+                                    <label for="idle-close-hours" class="form-label">
+                                        Tự đóng chat nhân viên đã trả lời sau (giờ)
+                                        <i class="bx bx-help-circle text-muted" tabindex="0" role="button" aria-label="Cách tính" data-bs-toggle="tooltip"
+                                            title="Tính từ tin nhắn cuối. Hết khoảng này mà khách không nhắn thêm, cuộc chat tự đóng và trợ lý trả lời khách trở lại. Chat đang chờ nhân viên không bị đóng."></i>
+                                    </label>
                                     <input type="number" class="form-control" id="idle-close-hours" name="idle_close_hours"
                                         min="{{ ShopSettings::MIN_ASSISTANT_IDLE_HOURS }}" max="{{ ShopSettings::MAX_ASSISTANT_IDLE_HOURS }}"
                                         value="{{ old('idle_close_hours', $assistantIdleHours) }}" />
                                     @error('idle_close_hours')
                                         <small class="text-danger fst-italic">{{ $message }}</small>
                                     @enderror
-                                    <div class="form-text">
-                                        Tính từ tin nhắn cuối. Hết khoảng này mà khách không nhắn thêm, cuộc chat tự đóng và trợ lý
-                                        trả lời khách trở lại. Chat đang chờ nhân viên không bị đóng.
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -207,17 +210,17 @@
                             </div>
                             <div class="row">
                                 <div class="col-lg-6 mb-3">
-                                    <label for="auto-complete-days" class="form-label">Tự động hoàn thành đơn sau (ngày)</label>
+                                    <label for="auto-complete-days" class="form-label">
+                                        Tự động hoàn thành đơn sau (ngày)
+                                        <i class="bx bx-help-circle text-muted" tabindex="0" role="button" aria-label="Cách tính" data-bs-toggle="tooltip"
+                                            title="Tính từ lúc GHN báo giao hàng thành công. Nếu khách không bấm &quot;Đã nhận được hàng&quot; trong khoảng này, đơn tự chuyển sang Thành công. Áp dụng cả cho các đơn đang chờ."></i>
+                                    </label>
                                     <input type="number" class="form-control" id="auto-complete-days" name="auto_complete_days"
                                         min="{{ ShopSettings::MIN_DAYS }}" max="{{ ShopSettings::MAX_DAYS }}"
                                         value="{{ old('auto_complete_days', $autoCompleteDays) }}" />
                                     @error('auto_complete_days')
                                         <small class="text-danger fst-italic">{{ $message }}</small>
                                     @enderror
-                                    <div class="form-text">
-                                        Tính từ lúc GHN báo giao hàng thành công. Nếu khách không bấm "Đã nhận được hàng"
-                                        trong khoảng này, đơn tự chuyển sang Thành công. Áp dụng cả cho các đơn đang chờ.
-                                    </div>
                                 </div>
                                 <div class="col-lg-6 mb-3">
                                     <label for="return-days" class="form-label">Cho phép yêu cầu trả hàng trong (ngày)</label>
@@ -237,17 +240,17 @@
                             <h5 class="fs-4 text-primary mb-3">Thanh toán</h5>
                             <div class="row">
                                 <div class="col-lg-6 mb-3">
-                                    <label for="payment-window" class="form-label">Giữ hàng chờ thanh toán qua VNPay / MoMo (phút)</label>
+                                    <label for="payment-window" class="form-label">
+                                        Giữ hàng chờ thanh toán qua VNPay / MoMo (phút)
+                                        <i class="bx bx-help-circle text-muted" tabindex="0" role="button" aria-label="Cách tính" data-bs-toggle="tooltip"
+                                            title="Tính từ lúc khách đặt hàng. Hết thời gian mà chưa trả tiền thì đơn tự huỷ, hàng và mã giảm giá được trả lại. Chỉ áp dụng cho đơn đặt sau khi lưu; đơn đang chờ giữ hạn cũ."></i>
+                                    </label>
                                     <input type="number" class="form-control" id="payment-window" name="payment_window_minutes"
                                         min="{{ ShopSettings::MIN_PAYMENT_WINDOW }}" max="{{ ShopSettings::MAX_PAYMENT_WINDOW }}"
                                         value="{{ old('payment_window_minutes', $paymentWindow) }}" />
                                     @error('payment_window_minutes')
                                         <small class="text-danger fst-italic">{{ $message }}</small>
                                     @enderror
-                                    <div class="form-text">
-                                        Tính từ lúc khách đặt hàng. Hết thời gian mà chưa trả tiền thì đơn tự huỷ, hàng và
-                                        mã giảm giá được trả lại. Chỉ áp dụng cho đơn đặt sau khi lưu; đơn đang chờ giữ hạn cũ.
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -268,16 +271,15 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-lg-6 mb-3 d-flex align-items-center">
-                                    <h5 class="fs-4 text-primary my-0">Email nhắc giỏ hàng bỏ quên</h5>
+                                    <h5 class="fs-4 text-primary my-0">
+                                        Email nhắc giỏ hàng bỏ quên
+                                        <i class="bx bx-help-circle text-muted fs-5 align-middle" tabindex="0" role="button" aria-label="Cách gửi" data-bs-toggle="tooltip"
+                                            title="Chỉ gửi cho khách đã đăng nhập khi thêm vào giỏ. Mỗi giỏ được nhắc tự động tối đa hai lần, không kèm mã giảm giá, dừng ngay khi khách đặt hàng hoặc bấm huỷ nhận trong email. Hệ thống kiểm tra mỗi giờ một lần."></i>
+                                    </h5>
                                 </div>
                                 <div class="col-lg-6 mb-3 d-flex justify-content-end gap-3">
                                     <button type="submit" class="btn btn-success px-5">Lưu</button>
                                 </div>
-                            </div>
-                            <div class="form-text mb-3 mt-0">
-                                Chỉ gửi cho khách đã đăng nhập khi thêm vào giỏ. Mỗi giỏ được nhắc tự động tối đa hai lần, không
-                                kèm mã giảm giá, dừng ngay khi khách đặt hàng hoặc bấm huỷ nhận trong email. Hệ thống kiểm tra
-                                mỗi giờ một lần.
                             </div>
 
                             <div class="form-check form-switch mb-4">
@@ -329,11 +331,11 @@
                             </div>
 
                             <hr class="my-4">
-                            <h6 class="mb-1">Tặng mã giảm giá</h6>
-                            <div class="form-text mt-0 mb-3">
-                                Mã chỉ được tặng khi admin bấm ở trang <a href="{{ route('open_cart.index') }}">Giỏ hàng đang treo</a>:
-                                mỗi lần tạo một mã riêng, dùng được một lần, được áp sẵn khi khách bấm nút trong email.
-                            </div>
+                            <h6 class="mb-3">
+                                Tặng mã giảm giá
+                                <i class="bx bx-help-circle text-muted" tabindex="0" role="button" aria-label="Cách tặng mã" data-bs-toggle="tooltip"
+                                    title="Mã chỉ được tặng khi admin bấm ở trang Giỏ hàng đang treo: mỗi lần tạo một mã riêng, dùng được một lần, được áp sẵn khi khách bấm nút trong email."></i>
+                            </h6>
                             <div class="row">
                                 <div class="col-lg-6 mb-3">
                                     <label for="cr-percent" class="form-label">Mức giảm mặc định (%)</label>
