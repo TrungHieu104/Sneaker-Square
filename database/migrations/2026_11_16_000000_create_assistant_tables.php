@@ -11,11 +11,11 @@ return new class extends Migration
         Schema::create('assistant_conversations', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id')->nullable();
-            $table->foreign('user_id')->references('user_id')->on('users')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreign('user_id')->references('user_id')->on('users')->cascadeOnDelete()->cascadeOnUpdate();
             $table->char('session_id', 40)->nullable();
             $table->string('status', 16)->default('bot');
             $table->unsignedBigInteger('pro_id')->nullable();
-            $table->foreign('pro_id')->references('pro_id')->on('products')->onDelete('set null')->onUpdate('cascade');
+            $table->foreign('pro_id')->references('pro_id')->on('products')->nullOnDelete()->cascadeOnUpdate();
             $table->timestamp('handed_off_at')->nullable();
             $table->timestamp('customer_seen_at')->nullable();
             $table->timestamp('last_message_at')->nullable();
@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('intent', 16)->nullable();
             $table->json('meta')->nullable();
             $table->unsignedBigInteger('staff_id')->nullable();
-            $table->foreign('staff_id')->references('user_id')->on('users')->onDelete('set null')->onUpdate('cascade');
+            $table->foreign('staff_id')->references('user_id')->on('users')->nullOnDelete()->cascadeOnUpdate();
             $table->timestamp('created_at')->nullable();
 
             $table->index(['conversation_id', 'id']);
@@ -48,7 +48,7 @@ return new class extends Migration
             $table->text('content');
             $table->foreignId('message_id')->nullable()->unique()->constrained('assistant_messages')->nullOnDelete();
             $table->unsignedBigInteger('created_by')->nullable();
-            $table->foreign('created_by')->references('user_id')->on('users')->onDelete('set null')->onUpdate('cascade');
+            $table->foreign('created_by')->references('user_id')->on('users')->nullOnDelete()->cascadeOnUpdate();
             $table->timestamps();
 
             $table->index(['scope_type', 'scope_id']);
@@ -63,7 +63,7 @@ return new class extends Migration
             $table->string('reason', 16)->default('no_data');
             $table->string('topic', 24)->nullable();
             $table->unsignedBigInteger('pro_id')->nullable();
-            $table->foreign('pro_id')->references('pro_id')->on('products')->onDelete('set null')->onUpdate('cascade');
+            $table->foreign('pro_id')->references('pro_id')->on('products')->nullOnDelete()->cascadeOnUpdate();
             $table->unsignedBigInteger('group_id')->nullable();
             $table->string('resolution', 16)->nullable();
             $table->timestamp('resolved_at')->nullable();

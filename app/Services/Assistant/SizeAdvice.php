@@ -128,7 +128,7 @@ class SizeAdvice
             AssistantIntent::Size,
             $stock === []
                 ? $product->pro_name.' đã hết size '.$size.' ở mọi màu.'
-                : $product->pro_name.' size '.$size.' còn hàng: '.$this->stockList($stock).'.',
+                : $this->inStock($product, $size, $stock),
             $this->stockFacts($product, $size, $stock),
             $actions,
         );
@@ -175,7 +175,15 @@ class SizeAdvice
             return [$product->pro_name.' đã hết size '.$size.' ở mọi màu.'];
         }
 
-        return [$product->pro_name.' size '.$size.' còn hàng: '.$this->stockList($stock).'.'];
+        return [$this->inStock($product, $size, $stock)];
+    }
+
+    /**
+     * @param  array<string, int>  $stock
+     */
+    private function inStock(ProductModel $product, int $size, array $stock): string
+    {
+        return $product->pro_name.' size '.$size.' còn hàng: '.$this->stockList($stock).'.';
     }
 
     /**
@@ -185,7 +193,7 @@ class SizeAdvice
     {
         return $stock === []
             ? 'Size của bạn là '.$size.', nhưng '.$product->pro_name.' đã hết size này.'
-            : 'Size của bạn là '.$size.'. '.$product->pro_name.' size '.$size.' còn hàng: '.$this->stockList($stock).'.';
+            : 'Size của bạn là '.$size.'. '.$this->inStock($product, $size, $stock);
     }
 
     /**

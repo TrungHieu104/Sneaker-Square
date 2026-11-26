@@ -7,6 +7,8 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class CouponRequest extends FormRequest
 {
+    private const NOT_INTEGER = 'Vui lòng nhập số nguyên';
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -55,15 +57,15 @@ class CouponRequest extends FormRequest
             'quantity.min' => 'Vui lòng nhập số lượng lớn hơn 0!',
             'quantity.max' => 'Số lượng mã quá lớn!',
             'quantity.numeric' => 'Số lượng mã không được nhập chữ!',
-            'quantity.integer' => 'Vui lòng nhập số nguyên',
+            'quantity.integer' => self::NOT_INTEGER,
             'money.min' => 'Vui lòng nhập giá trị lớn hơn 0',
             'money.required' => 'Vui lòng nhập giá trị!',
             'money.numeric' => 'Giá trị giảm không được nhập chữ!',
-            'money.integer' => 'Vui lòng nhập số nguyên',
-            'min_order.integer' => 'Vui lòng nhập số nguyên',
+            'money.integer' => self::NOT_INTEGER,
+            'min_order.integer' => self::NOT_INTEGER,
             'min_order.min' => 'Đơn tối thiểu không được âm',
             'min_order.max' => 'Đơn tối thiểu quá lớn',
-            'max_discount.integer' => 'Vui lòng nhập số nguyên',
+            'max_discount.integer' => self::NOT_INTEGER,
             'max_discount.min' => 'Giảm tối đa ít nhất 1.000 VNĐ',
             'max_discount.max' => 'Giảm tối đa quá lớn',
         ];

@@ -28,6 +28,10 @@ class SalesCouponAdminTest extends TestCase
 
     private const EMPTY_TRASH = 'Không có dữ liệu trong thùng rác!';
 
+    private const NOT_INTEGER = 'Vui lòng nhập số nguyên';
+
+    private const DECIMALS = ['quantity' => 10.5, 'money' => 15.5, 'min_order' => 100000.5, 'max_discount' => 5000.5];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -276,6 +280,22 @@ class SalesCouponAdminTest extends TestCase
         ]);
 
         $this->assertSame(self::CODE, $coupon->refresh()->coupon_code);
+    }
+
+    public function test_them_ma_nhap_so_le_bi_tu_choi_vi_khong_phai_so_nguyen(): void
+    {
+        $this->actingAs($this->admin())->post(route('coupon.store'), $this->payload(self::DECIMALS))
+            ->assertSessionHasErrors(array_fill_keys(array_keys(self::DECIMALS), self::NOT_INTEGER));
+
+        $this->assertSame(0, CouponModel::count());
+    }
+
+    public function test_cap_nhat_ma_nhap_so_le_bi_tu_choi_vi_khong_phai_so_nguyen(): void
+    {
+        $coupon = $this->coupon(self::NAME, self::CODE);
+
+        $this->actingAs($this->admin())->put(route('coupon.update', $coupon->coupon_id), $this->payload(['id' => $coupon->coupon_id] + self::DECIMALS))
+            ->assertSessionHasErrors(array_fill_keys(array_keys(self::DECIMALS), self::NOT_INTEGER));
     }
 
     public function test_cap_nhat_ma_khong_ton_tai_quay_ve_danh_sach(): void

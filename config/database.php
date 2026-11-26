@@ -58,6 +58,9 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            // Pinned so that TIMESTAMP columns read back as they were written,
+            // whatever the server's default becomes: the wallet ledger signs them.
+            'timezone' => env('DB_TIMEZONE'),
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
