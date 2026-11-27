@@ -179,6 +179,19 @@ class OrderPaymentFlowTest extends TestCase
         );
     }
 
+    public function test_link_momo_het_han_dung_luc_don_bi_huy(): void
+    {
+        $this->fakeMomo(['payUrl' => 'https://momo.test/pay/abc', 'resultCode' => 0]);
+        $order = $this->placeOrder('payUrl');
+        $this->travel(10)->minutes();
+
+        $this->actingAs($this->customer)->post(route('order.pay', $order->order_code));
+
+        $minutesLeft = (int) floor(now()->diffInSeconds($order->fresh()->order_payment_due_at) / 60);
+        Http::assertSent(fn ($request) => $request->url() === self::MOMO_ENDPOINT
+            && ($request->data()['orderExpireTime'] ?? null) === $minutesLeft);
+    }
+
     public function test_tra_tien_bang_ma_lan_thu_moi_danh_dau_don_da_tra(): void
     {
         $order = $this->placeOrder();
