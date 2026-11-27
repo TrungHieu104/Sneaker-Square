@@ -496,7 +496,6 @@ class OrderAdminController extends Controller
             return back()->with('message', 'Chỉ đơn hàng mới mới cần xác nhận!');
         }
 
-        $order->order_payment_time = now();
         $order->moveTo(OrderStatus::Confirmed, OrderStatusLogModel::ACTOR_ADMIN, 'Xác nhận đơn hàng');
 
         return null;
