@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\AddStockVariantAction;
 use App\Http\Requests\Backend\StockVariantRequest;
 use App\Models\ProductModel;
 use App\Models\ProductQuantityModel;
@@ -82,6 +83,23 @@ class AdminAddVariantTest extends TestCase
             'pro_price_sale' => null,
             'capital_price' => null,
         ]);
+    }
+
+    public function test_them_bien_the_trung_luc_nhap_kho_khong_tao_dong_trung(): void
+    {
+        $product = $this->stockedProduct();
+        // A delivery booking the same unsized, uncoloured row between the form
+        // being checked and the variant being written.
+        $this->app->resolving(AddStockVariantAction::class, function () use ($product) {
+            ProductQuantityModel::create(['pro_id' => $product->pro_id, 'size_id' => null, 'color_id' => null, 'quantity' => 3, 'quantity_date' => now()->toDateString()]);
+        });
+
+        $this->actingAs($this->admin)
+            ->post(route('stock.variant.store', $product->pro_slug), $this->payload(['size_id' => null, 'color_id' => null]))
+            ->assertRedirect()
+            ->assertSessionHas('message', 'Biến thể này đã có trong kho, hãy nhập thêm hàng cho nó!');
+
+        $this->assertSame(1, ProductQuantityModel::where('pro_id', $product->pro_id)->whereNull('size_id')->whereNull('color_id')->count());
     }
 
     public function test_them_bien_the_kem_gia_rieng(): void

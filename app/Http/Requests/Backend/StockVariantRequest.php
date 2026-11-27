@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Session;
  */
 class StockVariantRequest extends FormRequest
 {
+    public const ALREADY_STOCKED = 'Biến thể này đã có trong kho, hãy nhập thêm hàng cho nó!';
+
     public const ERROR_BAG = 'stock-variant';
 
     public function authorize(): bool
@@ -32,7 +34,7 @@ class StockVariantRequest extends FormRequest
         return [
             'size_id' => ['nullable', 'exists:size,size_id'],
             'color_id' => ['nullable', 'exists:color,color_id'],
-            'quantity' => ['required', 'numeric', 'integer', 'gt:0', 'max:999999'],
+            'quantity' => ['required', 'numeric', 'integer', 'gt:0', 'max:'.ProductQuantityModel::MAX_STOCK_MOVE],
             'quantity_date' => ['required', 'date'],
             'pro_price' => ['nullable', 'numeric', 'integer', 'min:1', 'max:9999999999'],
             'pro_price_sale' => ['nullable', 'numeric', 'integer', 'min:0', 'max:9999999999'],
@@ -71,7 +73,7 @@ class StockVariantRequest extends FormRequest
             ->exists();
 
         if ($exists) {
-            $validator->errors()->add('size_id', 'Biến thể này đã có trong kho, hãy nhập thêm hàng cho nó!');
+            $validator->errors()->add('size_id', self::ALREADY_STOCKED);
         }
     }
 
