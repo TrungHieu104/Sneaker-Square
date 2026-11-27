@@ -52,7 +52,7 @@ class CheckWallets extends Command
     private function checkSignature(WalletSignature $signature, WalletModel $wallet): void
     {
         if ($wallet->balance_hash === null) {
-            $this->flag($wallet, 'Chưa có chữ ký số dư (ví tạo trước khi bật ký). Chạy lại một giao dịch bất kỳ để ký.');
+            $this->flag($wallet, 'Chưa có chữ ký số dư. Số dư khớp sổ cái thì ví được ký ở lần dùng tới; lệch sổ cái thì ví bị khoá.');
 
             return;
         }

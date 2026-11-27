@@ -67,12 +67,14 @@ class WalletService
         // version is still null produces a hash the next read cannot reproduce.
         $wallet = WalletModel::firstOrCreate(['user_id' => $userId], ['balance' => 0, 'version' => 0]);
 
+        $this->checked($wallet);
+
         if ($wallet->balance_hash === null) {
             $wallet->balance_hash = $this->signature->balanceHash($wallet);
             $wallet->save();
         }
 
-        return $this->checked($wallet);
+        return $wallet;
     }
 
     /**
@@ -284,14 +286,16 @@ class WalletService
             // loaded before another request moved the same money.
             $locked = WalletModel::where('wallet_id', $wallet->wallet_id)->lockForUpdate()->firstOrFail();
 
+            // Checked first: a forged balance must not be quoted back as the
+            // reason a payment was refused.
+            $this->checked($locked);
+
             if ($direction === WalletTransactionModel::OUT && ! $locked->canAfford($amount)) {
                 throw new InsufficientBalance(
                     'Số dư ví không đủ: cần '.number_format($amount, 0, ',', '.')
                     .' đ, hiện có '.number_format($locked->balance, 0, ',', '.').' đ.'
                 );
             }
-
-            $this->checked($locked);
 
             $balance = $locked->balance + ($direction === WalletTransactionModel::IN ? $amount : -$amount);
 
