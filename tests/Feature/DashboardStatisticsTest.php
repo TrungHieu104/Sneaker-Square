@@ -136,4 +136,33 @@ class DashboardStatisticsTest extends TestCase
         $this->assertSame(0, $snapshot['contactCount']);
         $this->assertSame([], $snapshot['couponCount']);
     }
+
+    public function test_don_online_chua_tra_tien_khong_lam_chuong_bao_don_moi(): void
+    {
+        $this->travelTo(now()->subHour());
+        $real = $this->makeOrder('cod', 0);
+        $this->travelBack();
+        $this->makeOrder('redirect', 0);
+
+        $snapshot = $this->stats()->notificationSnapshot();
+
+        $this->assertSame(1, $snapshot['newOrderCount']);
+        $this->assertSame($real->created_at->timestamp, $snapshot['timestampOrder']);
+    }
+
+    public function test_don_online_tra_tien_sau_thi_moc_chuong_la_luc_tra_tien(): void
+    {
+        $this->travelTo(now()->subHour());
+        $online = $this->makeOrder('redirect', 0);
+        $this->travelTo(now()->addMinutes(30));
+        $this->makeOrder('cod', 0);
+        $this->travelBack();
+        $paidAt = now()->startOfSecond();
+        $online->forceFill(['order_payment_status' => 1, 'order_payment_time' => $paidAt])->save();
+
+        $snapshot = $this->stats()->notificationSnapshot();
+
+        $this->assertSame(2, $snapshot['newOrderCount']);
+        $this->assertSame($paidAt->timestamp, $snapshot['timestampOrder']);
+    }
 }
