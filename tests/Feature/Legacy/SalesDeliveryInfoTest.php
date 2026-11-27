@@ -203,6 +203,19 @@ class SalesDeliveryInfoTest extends TestCase
         $this->assertSame(1, (int) $second->refresh()->info_default);
     }
 
+    public function test_dat_mac_dinh_gui_kem_gia_tri_0_van_khong_lam_mat_dia_chi_mac_dinh(): void
+    {
+        $first = $this->makeAddress($this->customer);
+        $second = $this->makeAddress($this->customer);
+        $second->info_default = 0;
+        $second->save();
+
+        $this->actingAs($this->customer)->post(route('deliInfoDefault'), ['info_id' => $second->info_id, 'info_default' => 0]);
+
+        $this->assertSame(0, (int) $first->refresh()->info_default);
+        $this->assertSame(1, (int) $second->refresh()->info_default);
+    }
+
     public function test_chon_lai_dia_chi_dang_mac_dinh_van_giu_mac_dinh(): void
     {
         $current = $this->makeAddress($this->customer);
