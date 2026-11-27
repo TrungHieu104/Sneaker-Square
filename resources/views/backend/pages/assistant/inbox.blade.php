@@ -176,11 +176,9 @@
             thread.scrollTop = thread.scrollHeight;
         }
     </script>
+    {{-- The socket scripts come with the admin layout. --}}
     @inject('liveSocket', 'App\Services\LiveSocket')
     @if ($live = $liveSocket->forBrowser())
-        @foreach ($liveSocket::SCRIPTS as $script)
-            <script src="{{ asset_v($script) }}"></script>
-        @endforeach
         <script id="assistant-live" type="application/json">{!! json_encode($live + ['auth' => url('/broadcasting/auth'), 'channel' => App\Models\AssistantConversationModel::INBOX_CHANNEL], JSON_HEX_TAG) !!}</script>
     @endif
     <script src="{{ asset_v('backend/assets/js/assistant-inbox.js') }}"></script>

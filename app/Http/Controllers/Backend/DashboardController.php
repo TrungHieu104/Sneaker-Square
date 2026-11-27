@@ -8,12 +8,12 @@ use App\Models\StatisticModel;
 use App\Models\UserModel;
 use App\Services\Analytics\GoogleTraffic;
 use App\Services\DashboardStatisticsService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
@@ -237,39 +237,14 @@ class DashboardController extends Controller
         return Excel::download(ExportStatistic::thisYear(), 'Doanh thu năm.xlsx');
     }
 
-    public function sseNotifications(Request $request)
+    /**
+     * What the bell shows. Every admin page fetches it on load, again when
+     * the socket says an order or a contact message changed, and on a timer
+     * while there is no socket.
+     */
+    public function notifications(DashboardStatisticsService $statistics): JsonResponse
     {
-        $response = new StreamedResponse(function () {
-            // Detect if running on single-threaded php built-in server (cli-server)
-            $isBuiltInServer = (php_sapi_name() === 'cli-server');
-            $maxIterations = $isBuiltInServer ? 1 : 10;
-
-            // Set retry interval for browser reconnection to 3 seconds
-            echo "retry: 3000\n\n";
-
-            for ($i = 0; $i < $maxIterations; $i++) {
-                if (connection_aborted()) {
-                    break;
-                }
-
-                $data = app(DashboardStatisticsService::class)->notificationSnapshot();
-
-                echo 'data: '.json_encode($data)."\n\n";
-                ob_flush();
-                flush();
-
-                if ($maxIterations > 1) {
-                    sleep(2);
-                }
-            }
-        });
-
-        $response->headers->set('Content-Type', 'text/event-stream');
-        $response->headers->set('Cache-Control', 'no-cache');
-        $response->headers->set('Connection', 'keep-alive');
-        $response->headers->set('X-Accel-Buffering', 'no');
-
-        return $response;
+        return response()->json($statistics->notificationSnapshot());
     }
 
     public function revenue(Request $request)

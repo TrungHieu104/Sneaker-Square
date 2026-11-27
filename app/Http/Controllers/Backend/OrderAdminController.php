@@ -14,15 +14,16 @@ use App\Services\Shipping\ShipmentPulse;
 use App\Services\Shipping\ShippingUnavailable;
 use App\Services\ShippingService;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderAdminController extends Controller
 {
@@ -357,91 +358,35 @@ class OrderAdminController extends Controller
     }
 
     /**
-     * Streams this order's shipment history to an open admin page.
-     *
-     * The browser never asks again: it opens one EventSource and is written to
-     * when GHN's callback moves the marker. The watching happens here, against
-     * the cache, so a page left open costs no database work.
+     * The shipment and tracking blocks of the order page, which it fetches when
+     * told the shipment changed. With the marker it last saw, an unchanged
+     * shipment answers 204, so a page polling without the socket costs little.
      */
-    public function shipmentStream(string $order_id, ShipmentPulse $pulse): StreamedResponse
+    public function shipmentBlocks(Request $request, string $order_id, ShipmentPulse $pulse): JsonResponse|Response
     {
-        $order = OrderModel::find($order_id);
+        $order = OrderModel::with('shipmentEvents')->find($order_id);
 
         if ($order == null) {
             abort(404);
         }
 
-        $giay = (int) config('services.ghn.stream_seconds', 60);
+        $marker = $pulse->current((int) $order_id);
 
-        return response()->stream(function () use ($order_id, $pulse, $giay) {
-            $moc = $pulse->current((int) $order_id);
-
-            $this->sendShipmentEvent($order_id, $moc);
-
-            for ($i = 0; $i < $giay; $i++) {
-                if (connection_aborted()) {
-                    return;
-                }
-
-                sleep(1);
-                $moiNhat = $pulse->current((int) $order_id);
-
-                if ($moiNhat !== $moc) {
-                    $moc = $moiNhat;
-                    $this->sendShipmentEvent($order_id, $moc);
-
-                    continue;
-                }
-
-                // A comment line keeps proxies from closing an idle stream and
-                // is how a disconnected browser gets noticed.
-                echo ": .\n\n";
-                $this->flushStream();
-            }
-        }, 200, [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache, private',
-            'Connection' => 'keep-alive',
-            'X-Accel-Buffering' => 'no',
-        ]);
-    }
-
-    private function sendShipmentEvent(string $order_id, string $moc): void
-    {
-        // Re-read rather than reuse: the callback that moved the marker wrote
-        // the rows this render has to pick up.
-        $order = OrderModel::with('shipmentEvents')->find($order_id);
-
-        if ($order == null) {
-            return;
+        if ($request->query('since') === $marker) {
+            return response()->noContent();
         }
 
         // Both halves, because a parcel cancelled on GHN's dashboard has to take
         // its buttons away too, not merely gain a line of history.
-        $khoi = [
-            'vandon' => view('backend.pages.order.partials.shipping_actions', [
-                'order' => $order,
-            ])->render(),
+        return response()->json([
+            'marker' => $marker,
+            'vandon' => view('backend.pages.order.partials.shipping_actions', ['order' => $order])->render(),
             'hanhtrinh' => view('components.shipment_timeline', [
                 'order' => $order,
                 'formHuy' => config('services.ghn.create_orders') ? 'form-huy-van-don' : null,
                 'hienVanDonCu' => true,
             ])->render(),
-        ];
-
-        echo 'event: hanhtrinh'."\n";
-        echo 'id: '.$moc."\n";
-        echo 'data: '.json_encode($khoi, JSON_UNESCAPED_UNICODE)."\n\n";
-        $this->flushStream();
-    }
-
-    private function flushStream(): void
-    {
-        if (ob_get_level() > 0) {
-            ob_flush();
-        }
-
-        flush();
+        ]);
     }
 
     /**

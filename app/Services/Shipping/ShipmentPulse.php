@@ -2,12 +2,15 @@
 
 namespace App\Services\Shipping;
 
+use App\Events\ShipmentChanged;
+use App\Services\LiveSocket;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 /**
- * A marker that says "this order's shipment changed", so an open admin page can
- * be told without asking the database over and over.
+ * A marker that says "this order's shipment changed". Moving it signals the open
+ * admin page; a page polling without the socket compares markers instead of
+ * re-rendering the shipment every time.
  *
  * Deliberately a cache key and not a table: it carries no history, only an
  * opaque token that differs from the last one, and losing it costs a page one
@@ -21,11 +24,14 @@ class ShipmentPulse
      */
     private const TTL_SECONDS = 86400;
 
+    public function __construct(private readonly LiveSocket $socket) {}
+
     public function mark(int $orderId): void
     {
         // A token rather than a timestamp: booking and cancelling can land inside
         // the same millisecond, and the second one still has to move the marker.
         Cache::put($this->key($orderId), Str::random(12), self::TTL_SECONDS);
+        $this->socket->send(new ShipmentChanged($orderId));
     }
 
     public function current(int $orderId): string

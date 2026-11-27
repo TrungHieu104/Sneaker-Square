@@ -250,89 +250,101 @@
             $('#notification-count').addClass('d-none').removeClass('d-flex');
         });
 
-        if (!!window.EventSource) {
-            const source = new EventSource("{{ route('sse.noti') }}");
+        let lastSnapshot = null;
+
+        function render(response) {
+            $('#newOrderCount').text(response.newOrderCount);
+            $('#returnOrderCount').text(response.returnOrderCount);
+            $('#sucessOrderCount').text(response.sucessOrderCount);
+            $('#couponCount').text(response.couponCount.length !== undefined ? response.couponCount.length : response.couponCount);
+            $('#contactCount').text(response.contactCount);
+            $('#slideCount').text(response.slideCount.length !== undefined ? response.slideCount.length : response.slideCount);
             
-            source.onmessage = function(event) {
-                const response = JSON.parse(event.data);
-                
-                $('#newOrderCount').text(response.newOrderCount);
-                $('#returnOrderCount').text(response.returnOrderCount);
-                $('#sucessOrderCount').text(response.sucessOrderCount);
-                $('#couponCount').text(response.couponCount.length !== undefined ? response.couponCount.length : response.couponCount);
-                $('#contactCount').text(response.contactCount);
-                $('#slideCount').text(response.slideCount.length !== undefined ? response.slideCount.length : response.slideCount);
-                
-                latestTimestamps = {
-                    neworder: response.timestampOrder,
-                    return: response.timestampReturnOrder,
-                    success: response.timestampSuccessOrder,
-                    contact: response.timestampContact,
-                    promotion: response.timestampSlide,
-                    coupon: response.timestampCoupon,
-                };
-
-                const elementsToUpdate = {
-                    timestampOrder: 'timeAgo',
-                    timestampReturnOrder: 'timeReturnAgo',
-                    timestampSuccessOrder: 'timeSuccessAgo',
-                    timestampContact: 'timeContactAgo',
-                    timestampSlide: 'timeSlideAgo',
-                    timestampCoupon: 'timeCouponAgo',
-                };
-
-                for (const key in elementsToUpdate) {
-                    if (Object.hasOwnProperty.call(elementsToUpdate, key)) {
-                        const timestamp = response[key];
-                        const id = elementsToUpdate[key];
-                        updateTimeAgo(timestamp, id);
-                    }
-                }
-
-                let unreadCount = 0;
-                let activeTypeCount = 0;
-
-                function processNoti(type, val, timestamp) {
-                    const hasData = Array.isArray(val) ? val.length > 0 : Boolean(val && val > 0);
-                    if (!hasData) {
-                        $('.' + type).hide();
-                        return;
-                    }
-                    $('.' + type).show();
-                    activeTypeCount++;
-
-                    const lastRead = parseInt(localStorage.getItem('noti_read_' + type) || '0');
-                    if (timestamp > lastRead) {
-                        unreadCount++;
-                    }
-                }
-
-                processNoti('return', response.returnOrderCount, response.timestampReturnOrder);
-                processNoti('success', response.sucessOrderCount, response.timestampSuccessOrder);
-                processNoti('neworder', response.newOrderCount, response.timestampOrder);
-                processNoti('coupon', response.couponCount, response.timestampCoupon);
-                processNoti('promotion', response.slideCount, response.timestampSlide);
-                processNoti('contact', response.contactCount, response.timestampContact);
-
-                if (activeTypeCount === 0) {
-                    $('#noti-alert').text('Không có thông báo mới');
-                } else {
-                    $('#noti-alert').text('');
-                }
-
-                if (unreadCount === 0) {
-                    $('#notification-count').addClass('d-none').removeClass('d-flex');
-                } else {
-                    $('#notification-count').text(unreadCount).removeClass('d-none').addClass('d-flex');
-                }
+            latestTimestamps = {
+                neworder: response.timestampOrder,
+                return: response.timestampReturnOrder,
+                success: response.timestampSuccessOrder,
+                contact: response.timestampContact,
+                promotion: response.timestampSlide,
+                coupon: response.timestampCoupon,
             };
 
-            source.onerror = function(err) {
-                console.error('SSE connection failed or was closed:', err);
+            const elementsToUpdate = {
+                timestampOrder: 'timeAgo',
+                timestampReturnOrder: 'timeReturnAgo',
+                timestampSuccessOrder: 'timeSuccessAgo',
+                timestampContact: 'timeContactAgo',
+                timestampSlide: 'timeSlideAgo',
+                timestampCoupon: 'timeCouponAgo',
             };
-        } else {
-            console.warn('Your browser does not support Server-Sent Events.');
+
+            for (const key in elementsToUpdate) {
+                if (Object.hasOwnProperty.call(elementsToUpdate, key)) {
+                    const timestamp = response[key];
+                    const id = elementsToUpdate[key];
+                    updateTimeAgo(timestamp, id);
+                }
+            }
+
+            let unreadCount = 0;
+            let activeTypeCount = 0;
+
+            function processNoti(type, val, timestamp) {
+                const hasData = Array.isArray(val) ? val.length > 0 : Boolean(val && val > 0);
+                if (!hasData) {
+                    $('.' + type).hide();
+                    return;
+                }
+                $('.' + type).show();
+                activeTypeCount++;
+
+                const lastRead = parseInt(localStorage.getItem('noti_read_' + type) || '0');
+                if (timestamp > lastRead) {
+                    unreadCount++;
+                }
+            }
+
+            processNoti('return', response.returnOrderCount, response.timestampReturnOrder);
+            processNoti('success', response.sucessOrderCount, response.timestampSuccessOrder);
+            processNoti('neworder', response.newOrderCount, response.timestampOrder);
+            processNoti('coupon', response.couponCount, response.timestampCoupon);
+            processNoti('promotion', response.slideCount, response.timestampSlide);
+            processNoti('contact', response.contactCount, response.timestampContact);
+
+            if (activeTypeCount === 0) {
+                $('#noti-alert').text('Không có thông báo mới');
+            } else {
+                $('#noti-alert').text('');
+            }
+
+            if (unreadCount === 0) {
+                $('#notification-count').addClass('d-none').removeClass('d-flex');
+            } else {
+                $('#notification-count').text(unreadCount).removeClass('d-none').addClass('d-flex');
+            }
         }
+
+        function refresh() {
+            fetch(@json(route('admin.notifications')), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                .then(function (reply) {
+                    return reply.ok && !reply.redirected ? reply.json() : Promise.reject(reply);
+                })
+                .then(function (response) {
+                    lastSnapshot = response;
+                    render(response);
+                })
+                .catch(function () {});
+        }
+
+        refresh();
+        window.AdminLive.watch(@json(App\Events\AdminNoticesChanged::CHANNEL), @json(App\Events\AdminNoticesChanged::NAME), refresh);
+
+        // Keeps "x phút trước" moving between refreshes without asking the server.
+        setInterval(function () {
+            if (lastSnapshot) {
+                render(lastSnapshot);
+            }
+        }, 30000);
     });
 
     function updateTimeAgo(timestamp, id) {

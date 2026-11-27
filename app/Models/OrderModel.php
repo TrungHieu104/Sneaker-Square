@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\OrderStatus;
+use App\Events\AdminNoticesChanged;
 use App\Services\ShopSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -116,6 +117,13 @@ class OrderModel extends Model
         'order_status' => OrderStatus::class,
         'order_refund_required' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(fn () => AdminNoticesChanged::announce());
+        static::updated(fn () => AdminNoticesChanged::announce());
+        static::deleted(fn () => AdminNoticesChanged::announce());
+    }
 
     /**
      * How the customer paid, as the bill and the confirmation email say it.

@@ -122,8 +122,11 @@
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label class="form-label">Hành trình vận đơn:</label>
+                        @inject('shipmentPulse', 'App\Services\Shipping\ShipmentPulse')
                         <div class="border rounded p-3" id="hanh-trinh-van-don"
-                             data-stream="{{ route('order.shipment_stream', $order->order_id) }}">
+                             data-blocks="{{ route('order.shipment_blocks', $order->order_id) }}"
+                             data-channel="{{ App\Events\ShipmentChanged::channelFor((int) $order->order_id) }}"
+                             data-marker="{{ $shipmentPulse->current((int) $order->order_id) }}">
                             @include('components.shipment_timeline', [
                                 'order' => $order,
                                 'formHuy' => $batTaoVanDon ? 'form-huy-van-don' : null,
@@ -283,16 +286,13 @@
             const khoi = document.getElementById('hanh-trinh-van-don');
             const khoiVanDon = document.getElementById('khoi-van-don');
 
-            if (!khoi || !khoiVanDon || typeof EventSource === 'undefined') {
+            if (!khoi || !khoiVanDon || !window.AdminLive) {
                 return;
             }
 
-            // EventSource reconnects on its own when the stream reaches its time
-            // limit, so there is nothing here to schedule or retry.
-            const nguon = new EventSource(khoi.dataset.stream);
+            let moc = khoi.dataset.marker;
 
-            nguon.addEventListener('hanhtrinh', function (su) {
-                const moi = JSON.parse(su.data);
+            function ve(moi) {
                 const dangMo = khoi.querySelector('.ship-past')?.open;
 
                 khoi.innerHTML = moi.hanhtrinh;
@@ -303,15 +303,37 @@
                 }
 
                 // Never yank the field out from under someone typing a code
-                // into it; the next event repaints it once they move away.
+                // into it; the next change repaints it once they move away.
                 if (!khoiVanDon.contains(document.activeElement)) {
                     khoiVanDon.innerHTML = moi.vandon;
                 }
-            });
+            }
 
-            window.addEventListener('beforeunload', function () {
-                nguon.close();
-            });
+            function taiLai(daBao) {
+                const url = new URL(khoi.dataset.blocks);
+
+                if (!daBao) {
+                    url.searchParams.set('since', moc);
+                }
+
+                fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                    .then(function (tra) {
+                        if (tra.status === 204) {
+                            return null;
+                        }
+
+                        return tra.ok && !tra.redirected ? tra.json() : Promise.reject(tra);
+                    })
+                    .then(function (moi) {
+                        if (moi) {
+                            moc = moi.marker;
+                            ve(moi);
+                        }
+                    })
+                    .catch(function () {});
+            }
+
+            window.AdminLive.watch(khoi.dataset.channel, @json(App\Events\ShipmentChanged::NAME), taiLai);
         })();
     </script>
 @endpush

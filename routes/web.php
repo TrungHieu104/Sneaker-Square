@@ -283,7 +283,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     Route::post('/export-csv-month-prev', [DashboardController::class, 'export_scv_monthprev'])->name('export.scvmonthprev')->middleware($can['revenue']);
     Route::post('/export-csv-year', [DashboardController::class, 'export_scv_year'])->name('export.scvyear')->middleware($can['revenue']);
     Route::get('/support', [DashboardController::class, 'support'])->name('support');
-    Route::get('/sse-notifications', [DashboardController::class, 'sseNotifications'])->name('sse.noti');
+    Route::get('/thong-bao', [DashboardController::class, 'notifications'])->name('admin.notifications');
     Route::get('/revenue', [DashboardController::class, 'revenue'])->name('admin.revenue')->middleware($can['revenue']);
 
     // Visitor
@@ -447,7 +447,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     Route::post('/order/{order_id}/huy-don', [OrderAdminController::class, 'cancelByShop'])->name('order.cancel_by_shop')->middleware($can['orders']);
     // Server-sent events: the page is written to when GHN's callback lands, so
     // nothing on the client polls.
-    Route::get('/order/{order_id}/hanh-trinh-stream', [OrderAdminController::class, 'shipmentStream'])->name('order.shipment_stream')->middleware($can['orders']);
+    Route::get('/order/{order_id}/hanh-trinh', [OrderAdminController::class, 'shipmentBlocks'])->name('order.shipment_blocks')->middleware($can['orders']);
     Route::middleware($can['orders'])->prefix('/order/{order_id}/tra-hang')->name('returns.')->group(function () {
         Route::post('/duyet', [ReturnAdminController::class, 'approve'])->name('approve');
         Route::post('/tu-choi', [ReturnAdminController::class, 'reject'])->name('reject');
