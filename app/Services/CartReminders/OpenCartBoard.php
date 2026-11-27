@@ -60,7 +60,7 @@ class OpenCartBoard
             ->groupBy('user_id')
             ->selectRaw('user_id, max(sent_at) as last_sent')
             ->pluck('last_sent', 'user_id');
-        $optedOut = $this->carts->optedOut();
+        $optedOut = $this->carts->refusesOffers();
         $segments = CustomerSegmentModel::whereIn('user_id', $userIds)->pluck('segment', 'user_id');
         $rows = [];
 

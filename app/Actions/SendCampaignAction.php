@@ -122,9 +122,7 @@ class SendCampaignAction
             return false;
         }
 
-        // A sample account's domain cannot receive mail: handing it to a real
-        // SMTP server only earns the shop's address a bounce.
-        if (! str_ends_with((string) $customer->email, SampleData::EMAIL_DOMAIN)) {
+        if (! SampleData::ownsEmail($customer->email)) {
             Mail::to($customer->email)->queue(new CampaignMail($recipient));
         }
 

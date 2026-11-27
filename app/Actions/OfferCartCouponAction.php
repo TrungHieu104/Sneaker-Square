@@ -38,6 +38,10 @@ class OfferCartCouponAction
             return 'Khách đã huỷ nhận email nhắc giỏ hàng.';
         }
 
+        if (in_array($userId, $this->carts->refusesOffers(), true)) {
+            return 'Khách đã huỷ nhận email ưu đãi.';
+        }
+
         if (CartReminderModel::where('cart_key', $cart->key)->where('step', CartReminderModel::OFFER)->exists()) {
             return 'Giỏ hàng này đã được tặng mã.';
         }
