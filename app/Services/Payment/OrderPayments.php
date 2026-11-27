@@ -184,6 +184,7 @@ class OrderPayments
 
             $wasGateway = in_array($fresh->order_payment, self::GATEWAYS, true);
             $fresh->order_payment = $method;
+            $this->closePendingAttempts($fresh);
 
             if ($method === PlaceOrderAction::PAY_FROM_WALLET) {
                 $this->payFromWallet($fresh);
@@ -234,10 +235,32 @@ class OrderPayments
                     'Quá hạn thanh toán',
                 );
 
+                if ($cancelled) {
+                    $this->closePendingAttempts($order);
+                }
+
                 $expired += $cancelled ? 1 : 0;
             });
 
+        // An attempt is opened inside its order's window and its link closes
+        // with it, so one older than a window is finished whatever became of
+        // the order: cancelled, paid another way, or paid from a newer link.
+        PaymentAttemptModel::where('status', PaymentAttemptModel::PENDING)
+            ->where('created_at', '<=', $legacyCutoff)
+            ->update(['status' => PaymentAttemptModel::FAILED]);
+
         return $expired;
+    }
+
+    /**
+     * Closes the gateway sessions nobody will finish any more. Failed rather
+     * than deleted: money that still arrives for one is refunded to SPay.
+     */
+    private function closePendingAttempts(OrderModel $order): void
+    {
+        PaymentAttemptModel::where('order_id', $order->order_id)
+            ->where('status', PaymentAttemptModel::PENDING)
+            ->update(['status' => PaymentAttemptModel::FAILED]);
     }
 
     /**
