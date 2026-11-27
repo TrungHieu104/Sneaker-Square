@@ -155,6 +155,10 @@ class CartPricingService
             return 'Rất tiếc! Mã giảm giá đã hết lượt sử dụng.';
         }
 
+        if ($fresh->coupon_start && Carbon::parse($fresh->coupon_start)->startOfDay()->isFuture()) {
+            return 'Mã giảm giá này dùng được từ ngày '.Carbon::parse($fresh->coupon_start)->format('d/m/Y').'.';
+        }
+
         if ($fresh->coupon_end && Carbon::parse($fresh->coupon_end)->endOfDay()->isPast()) {
             return 'Opps!!! Mã giảm giá đã quá hạn sử dụng.';
         }

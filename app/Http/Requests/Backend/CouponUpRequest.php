@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backend;
 
+use App\Models\CouponModel;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -27,7 +28,7 @@ class CouponUpRequest extends FormRequest
     {
         return [
             'name' => ['required', 'min:3', 'max:50', Rule::unique('coupon', 'coupon_name')->ignore(request()->id, 'coupon_id')],
-            'code' => ['required', 'max:50', 'regex:/[A-Z]/', 'min:3', Rule::unique('coupon', 'coupon_code')->ignore(request()->id, 'coupon_id')],
+            'code' => ['required', 'max:'.CouponModel::MAX_CODE_LENGTH, 'regex:/[A-Z]/', 'min:3', Rule::unique('coupon', 'coupon_code')->ignore(request()->id, 'coupon_id')],
             'start_coupon' => ['required'],
             'end_coupon' => ['required', 'after:start_coupon'],
             'quantity' => ['required', 'min:0', 'max:100000000', 'numeric', 'integer'],

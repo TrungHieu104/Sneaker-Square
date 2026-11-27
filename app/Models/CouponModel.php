@@ -11,6 +11,11 @@ class CouponModel extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * Admin creates codes up to this length; the cart must accept every one of them.
+     */
+    public const MAX_CODE_LENGTH = 50;
+
     protected $table = 'coupon';
 
     public $primaryKey = 'coupon_id';
