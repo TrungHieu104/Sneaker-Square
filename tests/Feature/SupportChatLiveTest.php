@@ -7,15 +7,15 @@ use App\Events\AssistantChatChanged;
 use App\Models\AssistantConversationModel as Conversation;
 use App\Models\AssistantMessageModel as Message;
 use App\Models\UserModel;
-use App\Services\Assistant\ChatSignal;
+use App\Services\LiveSocket;
 use Illuminate\Broadcasting\BroadcastException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Mail;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\AssistantFixtures;
+use Tests\Support\ReverbFixtures;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
 
@@ -27,13 +27,8 @@ class SupportChatLiveTest extends TestCase
 {
     use AssistantFixtures;
     use RefreshDatabase;
+    use ReverbFixtures;
     use ShopFixtures;
-
-    private const KEY = 'khoa-cong-khai';
-
-    private const SECRET = 'khoa-bi-mat';
-
-    private const SOCKET = '1234.5678';
 
     private UserModel $customer;
 
@@ -45,24 +40,6 @@ class SupportChatLiveTest extends TestCase
         $this->travelTo(now()->setTime(10, 0));
         $this->seedLookupTables();
         $this->customer = $this->makeUser();
-    }
-
-    /**
-     * Broadcasting on Reverb, as a shop running `reverb:start` has it. The
-     * channels are registered again, since the ones from boot went to the
-     * null broadcaster the tests start with.
-     */
-    private function reverbOn(int $port = 8080): void
-    {
-        config([
-            'broadcasting.default' => 'reverb',
-            'broadcasting.connections.reverb.key' => self::KEY,
-            'broadcasting.connections.reverb.secret' => self::SECRET,
-            'broadcasting.connections.reverb.app_id' => '1001',
-            'broadcasting.connections.reverb.options' => ['host' => '127.0.0.1', 'port' => $port, 'scheme' => 'http', 'useTLS' => false],
-        ]);
-        Broadcast::forgetDrivers();
-        require base_path('routes/channels.php');
     }
 
     private function staff(): UserModel
@@ -85,11 +62,6 @@ class SupportChatLiveTest extends TestCase
     private function signalsFor(int $conversationId): int
     {
         return Event::dispatched(AssistantChatChanged::class, fn (AssistantChatChanged $event) => $event->conversationId === $conversationId)->count();
-    }
-
-    private function signature(string $channel): string
-    {
-        return self::KEY.':'.hash_hmac('sha256', self::SOCKET.':'.$channel, self::SECRET);
     }
 
     public function test_khach_hoi_va_bot_tra_loi_deu_bao_cuoc_chat_doi(): void
@@ -241,7 +213,7 @@ class SupportChatLiveTest extends TestCase
     {
         $this->actingAs($this->staff())->get(route('assistant_admin.index'))->assertOk()
             ->assertSee('backend/assets/js/assistant-inbox.js', false)
-            ->assertSee('data-poll-ms="'.ChatSignal::INBOX_POLL_MS.'"', false)
+            ->assertSee('data-poll-ms="'.LiveSocket::ADMIN_POLL_MS.'"', false)
             ->assertDontSee('js/realtime/pusher-8.6.0.min.js', false)
             ->assertDontSee('id="assistant-live"', false);
     }
