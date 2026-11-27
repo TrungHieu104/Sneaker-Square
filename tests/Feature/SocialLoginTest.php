@@ -20,7 +20,7 @@ class SocialLoginTest extends TestCase
     use RefreshDatabase;
     use ShopFixtures;
 
-    private function provider(string $driver, string $id, string $email, string $name = 'Trần Văn B'): void
+    private function provider(string $driver, string $id, ?string $email, string $name = 'Trần Văn B'): void
     {
         $user = (new SocialUser)->map(['id' => $id, 'name' => $name, 'email' => $email, 'avatar' => 'https://example.test/a.png']);
 
@@ -62,9 +62,48 @@ class SocialLoginTest extends TestCase
 
         $this->get('/auth/google/callback')
             ->assertRedirect(route('user.login'))
-            ->assertSessionHas('message', 'Tài khoản Google đã tồn tại');
+            ->assertSessionHas('message', 'Email này đã được đăng ký bằng phương thức khác.');
 
         $this->assertGuest();
+    }
+
+    public function test_dang_nhap_facebook_khong_co_email_bao_ro_loi(): void
+    {
+        $this->provider('facebook', 'f-1', null);
+
+        $this->get('/auth/facebook/callback')
+            ->assertRedirect(route('user.login'))
+            ->assertSessionHas('message', 'Tài khoản Facebook của bạn không chia sẻ email. Vui lòng cho phép chia sẻ email hoặc đăng ký bằng email.');
+
+        $this->assertGuest();
+        $this->assertSame(0, UserModel::count());
+    }
+
+    public function test_dang_nhap_facebook_khong_co_email_nhung_da_lien_ket_van_vao_duoc(): void
+    {
+        $existing = $this->makeUser(email: 'cu@example.test');
+        $existing->facebook_id = 'f-9';
+        $existing->save();
+        $this->provider('facebook', 'f-9', null);
+
+        $this->get('/auth/facebook/callback')->assertRedirect(route('home.page'));
+
+        $this->assertAuthenticatedAs($existing);
+    }
+
+    public function test_email_da_gan_tai_khoan_google_khac_bao_ro_loi(): void
+    {
+        $existing = $this->makeUser(email: 'trung@example.test');
+        $existing->google_id = 'g-cu';
+        $existing->save();
+        $this->provider('google', 'g-moi', 'trung@example.test');
+
+        $this->get('/auth/google/callback')
+            ->assertRedirect(route('user.login'))
+            ->assertSessionHas('message', 'Email này đã gắn với một tài khoản Google khác. Vui lòng đăng nhập bằng đúng tài khoản đó, hoặc dùng "Quên mật khẩu" để đặt mật khẩu cho email này.');
+
+        $this->assertGuest();
+        $this->assertSame(1, UserModel::count());
     }
 
     public function test_nha_cung_cap_loi_thi_bao_khong_dang_nhap_duoc(): void
