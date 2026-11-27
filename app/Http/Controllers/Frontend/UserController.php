@@ -138,7 +138,9 @@ class UserController extends Controller
             ->get();
         $all_order_detail = OrderDetail::all();
 
+        // Still open: an order cancelled for running out of time belongs under the cancelled tab.
         $wait_payment = Order::where('user_id', $current_user)
+            ->where('order_status', OrderStatus::New)
             ->whereIn('order_payment', ['payUrl', 'redirect'])
             ->where('order_payment_status', 0)
             ->orderBy('created_at', 'desc')
