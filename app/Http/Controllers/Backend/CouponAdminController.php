@@ -9,9 +9,11 @@ use App\Http\Requests\Backend\CouponUpRequest;
 use App\Mail\CouponMail;
 use App\Models\CouponModel;
 use App\Models\UserModel;
+use App\Services\SampleData;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
@@ -311,7 +313,11 @@ class CouponAdminController extends Controller
      */
     private function activeCustomers(?array $orders)
     {
-        $customers = UserModel::where('user_role', 0)->where('user_status', 1);
+        // A coupon email is an offer: whoever unsubscribed from offers is left
+        // out, and a sample account's address cannot receive mail at all.
+        $customers = UserModel::where('user_role', 0)->where('user_status', 1)
+            ->whereNotIn('user_id', DB::table('campaign_opt_outs')->select('user_id'))
+            ->where('email', 'not like', '%'.SampleData::EMAIL_DOMAIN);
 
         if ($orders !== null) {
             [$fewest, $most] = $orders;
