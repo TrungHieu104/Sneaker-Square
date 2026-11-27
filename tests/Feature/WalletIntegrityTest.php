@@ -213,6 +213,31 @@ class WalletIntegrityTest extends TestCase
             ->assertExitCode(0);
     }
 
+    public function test_doi_soat_phat_hien_sai_lech_thi_ghi_log_canh_bao(): void
+    {
+        $wallet = $this->fund(100_000);
+        $this->tamper($wallet, ['balance' => 99_000_000]);
+        $payment = $this->captureLog(LogChannel::PAYMENT);
+        $general = $this->captureLog('daily');
+
+        $this->reconcile();
+
+        foreach ([$payment, $general] as $log) {
+            $this->assertContains($wallet->wallet_id, array_column($this->logged($log, 'Wallet reconciliation found a mismatch'), 'wallet_id'));
+        }
+    }
+
+    public function test_doi_soat_khong_sai_lech_thi_ghi_moc_chuoi_vao_log(): void
+    {
+        $this->fund(100_000);
+        $moc = WalletTransactionModel::orderByDesc('transaction_id')->value('entry_hash');
+        $payment = $this->captureLog(LogChannel::PAYMENT);
+
+        $this->reconcile();
+
+        $this->assertSame([['wallets' => 1, 'anchor' => $moc]], $this->logged($payment, 'Wallet reconciliation passed'));
+    }
+
     public function test_khach_mo_trang_vi_bi_sua_thi_thay_thong_bao_chu_khong_loi_500(): void
     {
         $wallet = $this->fund(100_000);
@@ -221,8 +246,41 @@ class WalletIntegrityTest extends TestCase
         $this->actingAs($this->customer)
             ->from(route('user.wallet'))
             ->get(route('user.wallet'))
-            ->assertRedirect(route('user.wallet'))
+            ->assertRedirect(route('home.page'))
             ->assertSessionHas('message', fn (string $message) => str_contains($message, 'tạm khoá để đối soát'));
+    }
+
+    public function test_vi_bi_khoa_mo_tu_trang_khac_thi_quay_lai_trang_do(): void
+    {
+        $wallet = $this->fund(100_000);
+        $this->tamper($wallet, ['balance' => 99_000_000]);
+
+        $this->actingAs($this->customer)
+            ->from(route('size.chart'))
+            ->get(route('user.wallet'))
+            ->assertRedirect(route('size.chart'));
+    }
+
+    public function test_vi_bi_khoa_khi_den_tu_trang_cong_thanh_toan_thi_ve_trang_chu(): void
+    {
+        $wallet = $this->fund(100_000);
+        $this->tamper($wallet, ['balance' => 99_000_000]);
+
+        $this->actingAs($this->customer)
+            ->from('https://sandbox.vnpayment.vn/paymentv2/vpcpay.html')
+            ->get(route('user.wallet'))
+            ->assertRedirect(route('home.page'));
+    }
+
+    public function test_vi_bi_khoa_tai_lai_trang_vi_kem_tham_so_van_ve_trang_chu(): void
+    {
+        $wallet = $this->fund(100_000);
+        $this->tamper($wallet, ['balance' => 99_000_000]);
+
+        $this->actingAs($this->customer)
+            ->from(route('user.wallet', ['page' => 2]))
+            ->get(route('user.wallet'))
+            ->assertRedirect(route('home.page'));
     }
 
     public function test_doi_khoa_ky_thi_moi_chu_ky_cu_deu_khong_hop_le(): void
