@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Actions\ReplyToCustomerAction;
 use App\Events\AssistantChatChanged;
 use App\Models\AssistantConversationModel as Conversation;
 use App\Models\AssistantMessageModel as Message;
 use App\Models\UserModel;
+use App\Services\Assistant\ChatSignal;
 use Illuminate\Broadcasting\BroadcastException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Broadcast;
@@ -225,9 +227,6 @@ class SupportChatLiveTest extends TestCase
     {
         $staff = $this->staff();
 
-        $this->actingAs($staff)->get(route('assistant_admin.index'))->assertOk()
-            ->assertDontSee('assistant-inbox.js', false);
-
         $this->reverbOn();
 
         $this->actingAs($staff)->get(route('assistant_admin.index'))->assertOk()
@@ -236,5 +235,50 @@ class SupportChatLiveTest extends TestCase
             ->assertSee('"channel":"assistant.inbox"', false)
             ->assertSee(self::KEY)
             ->assertDontSee(self::SECRET);
+    }
+
+    public function test_tat_reverb_thi_hop_thu_van_tu_hoi_lai_dinh_ky(): void
+    {
+        $this->actingAs($this->staff())->get(route('assistant_admin.index'))->assertOk()
+            ->assertSee('backend/assets/js/assistant-inbox.js', false)
+            ->assertSee('data-poll-ms="'.ChatSignal::INBOX_POLL_MS.'"', false)
+            ->assertDontSee('js/realtime/pusher-8.6.0.min.js', false)
+            ->assertDontSee('id="assistant-live"', false);
+    }
+
+    public function test_khung_chat_bao_dang_xem_som_hon_moc_vang(): void
+    {
+        $html = $this->get(route('size.chart'))->assertOk()->getContent();
+
+        $this->assertSame(1, preg_match('/data-seen-ms="(\d+)"/', (string) $html, $match));
+        $this->assertLessThan(ReplyToCustomerAction::AWAY_AFTER_MINUTES * 60_000, (int) $match[1]);
+    }
+
+    public function test_so_chat_cho_nhan_vien_tra_ve_cho_badge_menu(): void
+    {
+        $staff = $this->staff();
+        $chat = Conversation::create(['session_id' => str_repeat('a', 40), 'status' => Conversation::WAITING_STAFF, 'handed_off_at' => now(), 'last_message_at' => now()]);
+
+        $this->actingAs($staff)->getJson(route('assistant_admin.waiting_count'))
+            ->assertOk()
+            ->assertExactJson(['waiting' => 1]);
+
+        $chat->update(['status' => Conversation::ANSWERED]);
+        $this->actingAs($staff)->getJson(route('assistant_admin.waiting_count'))->assertExactJson(['waiting' => 0]);
+    }
+
+    public function test_trang_admin_khac_cung_tu_cap_nhat_badge_tro_ly(): void
+    {
+        $this->actingAs($this->staff())->get(route('contact-form.index'))->assertOk()
+            ->assertSee('backend/assets/js/assistant-badge.js', false)
+            ->assertSee('data-count-url="'.route('assistant_admin.waiting_count').'"', false);
+    }
+
+    public function test_nhan_vien_khong_co_quyen_lien_he_khong_xem_duoc_so_chat_cho(): void
+    {
+        $other = $this->makeUser('donhang@example.test', 'donhang', role: 1);
+        $other->givePermissionTo(Permission::findOrCreate('Quản trị Đơn hàng', 'web'));
+
+        $this->actingAs($other)->getJson(route('assistant_admin.waiting_count'))->assertForbidden();
     }
 }

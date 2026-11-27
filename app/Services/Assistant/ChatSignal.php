@@ -15,6 +15,9 @@ class ChatSignal
     // The browser builds the widget and the inbox load, kept in public/ since the project has no build step.
     public const SCRIPTS = ['js/realtime/pusher-8.6.0.min.js', 'js/realtime/echo-2.6.3.iife.js'];
 
+    // Each poll fetches the whole inbox page, so it runs far less often than the widget's.
+    public const INBOX_POLL_MS = 15000;
+
     /**
      * Where a browser reaches the socket server, or null while broadcasting
      * is off and the widget and the inbox poll instead. Only the public key

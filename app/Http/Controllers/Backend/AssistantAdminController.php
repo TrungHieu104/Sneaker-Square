@@ -13,6 +13,7 @@ use App\Models\AssistantUnansweredModel;
 use App\Models\UserModel;
 use App\Services\Assistant\SupportDesk;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -51,6 +52,14 @@ class AssistantAdminController extends Controller
             'waiting' => $desk->waitingCount(),
             'openGroups' => $desk->stats()['open_groups'],
         ]);
+    }
+
+    /**
+     * The number behind the menu badge, for admin pages other than the inbox.
+     */
+    public function waitingCount(SupportDesk $desk): JsonResponse
+    {
+        return response()->json(['waiting' => $desk->waitingCount()]);
     }
 
     public function reply(AssistantReplyRequest $request, ReplyToCustomerAction $reply, int $conversation_id): RedirectResponse
