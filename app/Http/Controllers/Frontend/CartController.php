@@ -26,6 +26,11 @@ class CartController extends Controller
     use ScreensSessionCart;
     use SharesStorefrontLayout;
 
+    /**
+     * The most one press of the product page's button may add; its quantity box stops here too.
+     */
+    private const MAX_QUANTITY = 20;
+
     private const OUT_OF_STOCK = 'Opps!!! Sản phẩm bạn vừa chọn đã hết hàng';
 
     public function __construct(
@@ -74,10 +79,12 @@ class CartController extends Controller
         $color_id = $request['options-color'];
         $size_id = $request['options-size'];
 
-        $product = Product::where('pro_slug', $proSlug)->first();
-        $refusal = $product
-            ? $this->stockRefusal($request, $product, $proSlug, $color_id, $size_id, $quantity)
-            : 'Opps!!! Sản phẩm bạn vừa chọn không có trong hệ thống';
+        $product = Product::where('pro_slug', $proSlug)->released()->first();
+        $refusal = match (true) {
+            ! $product => 'Opps!!! Sản phẩm bạn vừa chọn không có trong hệ thống',
+            $quantity < 1 || $quantity > self::MAX_QUANTITY => 'Mỗi lần thêm được từ 1 đến '.self::MAX_QUANTITY.' sản phẩm.',
+            default => $this->stockRefusal($request, $product, $proSlug, $color_id, $size_id, $quantity),
+        };
 
         if ($refusal === self::OUT_OF_STOCK) {
             $this->events->record(UserEventModel::STOCK_OUT_HIT, [

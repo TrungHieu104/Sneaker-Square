@@ -176,6 +176,14 @@ class ProductModel extends Model
     }
 
     /**
+     * What a customer may see: shown, and on sale from its release date on.
+     */
+    public function scopeReleased(Builder $query): Builder
+    {
+        return $query->where('pro_hidden', 1)->whereDate('pro_date', '<=', now()->toDateString());
+    }
+
+    /**
      * Only the products that are actually discounted somewhere.
      *
      * `pro_price_sale != 0` alone does not answer this: a variant can be
