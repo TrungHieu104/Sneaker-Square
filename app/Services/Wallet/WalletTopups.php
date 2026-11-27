@@ -9,8 +9,10 @@ use App\Services\Payment\GatewayCharge;
 use App\Services\Payment\InvalidPaymentCallbackException;
 use App\Services\Payment\PaymentCallback;
 use App\Services\Payment\PaymentGatewayManager;
+use App\Services\ShopSettings;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Money coming into a wallet from a payment gateway.
@@ -24,6 +26,7 @@ class WalletTopups
     public function __construct(
         private WalletService $wallets,
         private PaymentGatewayManager $gateways,
+        private ShopSettings $settings,
     ) {}
 
     /**
@@ -45,7 +48,17 @@ class WalletTopups
             'status' => WalletTopupModel::PENDING,
         ]);
 
-        $topup->checkout_url = $gateway->checkoutUrl(GatewayCharge::forTopup($topup));
+        $expiresAt = Carbon::now()->addMinutes($this->settings->paymentWindowMinutes());
+
+        try {
+            $topup->checkout_url = $gateway->checkoutUrl(GatewayCharge::forTopup($topup, $expiresAt));
+        } catch (Throwable $e) {
+            report($e);
+            $topup->forceFill(['status' => WalletTopupModel::FAILED])->save();
+
+            throw new InvalidPaymentCallbackException('Không kết nối được cổng thanh toán. Vui lòng thử lại.', 0, $e);
+        }
+
         $topup->save();
 
         return $topup;
@@ -73,7 +86,9 @@ class WalletTopups
             }
 
             // The gateway sends both a redirect and an IPN for the same money.
-            if ($topup->status !== WalletTopupModel::PENDING) {
+            // A failed or expired top-up still takes money that arrives late:
+            // the customer paid it, so it belongs in the wallet.
+            if ($topup->status === WalletTopupModel::PAID) {
                 return false;
             }
 
@@ -109,6 +124,19 @@ class WalletTopups
                 $topup->save();
             }
         });
+    }
+
+    /**
+     * Closes the top-ups the customer walked away from once their gateway link
+     * has run out.
+     *
+     * @return int how many were closed
+     */
+    public function expireStale(): int
+    {
+        return WalletTopupModel::where('status', WalletTopupModel::PENDING)
+            ->where('created_at', '<=', Carbon::now()->subMinutes($this->settings->paymentWindowMinutes()))
+            ->update(['status' => WalletTopupModel::EXPIRED]);
     }
 
     public function gatewayLabel(string $gateway): string

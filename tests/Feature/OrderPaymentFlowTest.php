@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Actions\CancelOrderAction;
 use App\Actions\PlaceOrderAction;
 use App\Enums\OrderStatus;
 use App\Mail\ConfirmOrder;
 use App\Models\OrderModel;
+use App\Models\OrderStatusLogModel;
 use App\Models\PaymentAttemptModel;
 use App\Models\UserModel;
 use App\Models\WalletTransactionModel;
@@ -395,6 +397,42 @@ class OrderPaymentFlowTest extends TestCase
 
         $this->assertSame((int) $order->order_total, $this->walletBalance());
         $this->assertSame(OrderStatus::Cancelled, $order->fresh()->order_status, 'Không được mở lại đơn đã trả hàng về kho');
+    }
+
+    public function test_don_het_han_thi_luot_thanh_toan_cho_cung_dong(): void
+    {
+        $order = $this->placeOrder();
+        $this->payAgain($order);
+
+        $this->travel(31)->minutes();
+        $this->artisan('orders:expire-unpaid');
+
+        $this->assertSame(
+            [PaymentAttemptModel::FAILED],
+            PaymentAttemptModel::where('order_id', $order->order_id)->pluck('status')->unique()->values()->all(),
+        );
+    }
+
+    public function test_khach_huy_don_thi_luot_thanh_toan_dong_khi_link_het_han(): void
+    {
+        $order = $this->placeOrder();
+        $ma = $this->payAgain($order);
+        app(CancelOrderAction::class)->execute($order, false, OrderStatusLogModel::ACTOR_CUSTOMER, 'Đổi ý');
+
+        $this->travel(31)->minutes();
+        $this->artisan('orders:expire-unpaid');
+
+        $this->assertSame(PaymentAttemptModel::FAILED, PaymentAttemptModel::where('code', $ma)->value('status'));
+    }
+
+    public function test_doi_phuong_thuc_thi_luot_thanh_toan_cu_dong_lai(): void
+    {
+        $order = $this->placeOrder();
+        $ma = $this->payAgain($order);
+
+        $this->changeTo($order, 'cod');
+
+        $this->assertSame(PaymentAttemptModel::FAILED, PaymentAttemptModel::where('code', $ma)->value('status'));
     }
 
     public function test_doi_sang_cod_roi_tien_vnpay_cu_ve_thi_shipper_khong_thu_nua(): void

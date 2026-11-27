@@ -22,6 +22,9 @@
     // Longer than the job's own 75s limit, after which it leaves a busy notice:
     // giving up only happens when no worker is running at all.
     const THINK_GIVE_UP_MS = 80000;
+    // Half the time after which the server treats the customer as gone and
+    // emails the answer as well.
+    const SEEN_MS = Number(root.dataset.seenMs) || 60000;
     const WITH_STAFF = ['waiting_staff', 'answered'];
     // The bot writes the shop's own pages as full addresses; staff may paste any.
     const URL_PATTERN = 'https?:\\/\\/[^\\s<>"]+';
@@ -298,6 +301,10 @@
 
         if (withStaff && !connected()) {
             every = panel.hidden ? POLL_CLOSED_MS : POLL_MS;
+        } else if (withStaff && !panel.hidden) {
+            // The socket carries the chat, but only a fetch tells the server
+            // the panel is still open.
+            every = SEEN_MS;
         }
 
         if (every !== pollEvery) {

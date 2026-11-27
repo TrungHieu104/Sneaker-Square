@@ -463,6 +463,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin.login'], function () u
     Route::post('/gio-hang-treo/{user_id}/tang-ma', [OpenCartController::class, 'offer'])->name('open_cart.offer')->middleware([$can['orders'], $can['coupons']]);
     Route::middleware($can['contactForms'])->prefix('/tro-ly-ai')->name('assistant_admin.')->group(function () use ($can) {
         Route::get('/', [AssistantAdminController::class, 'index'])->name('index');
+        Route::get('/so-cho', [AssistantAdminController::class, 'waitingCount'])->name('waiting_count');
         Route::post('/{conversation_id}/tra-loi', [AssistantAdminController::class, 'reply'])->name('reply');
         Route::post('/{conversation_id}/dong', [AssistantAdminController::class, 'close'])->name('close');
         Route::get('/chua-tra-loi', [AssistantAdminController::class, 'unanswered'])->name('unanswered');

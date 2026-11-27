@@ -25,6 +25,15 @@ class SampleData
 
     public const ORDER_PREFIX = 'SAMPLE-';
 
+    /**
+     * A sample account's domain cannot receive mail: handing it to a real
+     * SMTP server only earns the shop's address a bounce.
+     */
+    public static function ownsEmail(?string $email): bool
+    {
+        return str_ends_with((string) $email, self::EMAIL_DOMAIN);
+    }
+
     public function __construct(
         private readonly EventAggregator $aggregator,
         private readonly SegmentCalculator $segments,

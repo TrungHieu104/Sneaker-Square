@@ -29,7 +29,8 @@
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
-    <div class="row g-3 assistant-inbox" id="assistant-inbox" data-chat="{{ $selected?->id }}">
+    <div class="row g-3 assistant-inbox" id="assistant-inbox" data-chat="{{ $selected?->id }}"
+        data-poll-ms="{{ App\Services\Assistant\ChatSignal::INBOX_POLL_MS }}">
         <div class="col-xl-3 col-lg-4">
             <div class="card h-100" id="assistant-chat-list">
                 @forelse ($conversations as $chat)
@@ -181,6 +182,6 @@
             <script src="{{ asset_v($script) }}"></script>
         @endforeach
         <script id="assistant-live" type="application/json">{!! json_encode($live + ['auth' => url('/broadcasting/auth'), 'channel' => App\Models\AssistantConversationModel::INBOX_CHANNEL], JSON_HEX_TAG) !!}</script>
-        <script src="{{ asset_v('backend/assets/js/assistant-inbox.js') }}"></script>
     @endif
+    <script src="{{ asset_v('backend/assets/js/assistant-inbox.js') }}"></script>
 @endpush

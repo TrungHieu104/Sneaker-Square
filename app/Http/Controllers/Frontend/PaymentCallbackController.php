@@ -16,6 +16,7 @@ use App\Services\Payment\PaymentCallback;
 use App\Services\Payment\PaymentGatewayManager;
 use App\Services\Payment\PaymentOutcome;
 use App\Services\UserEventLog;
+use App\Services\Wallet\WalletTampered;
 use App\Services\Wallet\WalletTopups;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -122,6 +123,11 @@ class PaymentCallbackController extends Controller
             $this->logRejection($request, $e, self::VIA_IPN);
 
             return response()->json(['resultCode' => 1, 'message' => $e->getMessage()], 400);
+        } catch (WalletTampered) {
+            // Already logged as critical. Not 2xx, so the gateway keeps
+            // retrying on its own schedule and a retry after the wallet is
+            // reconciled goes through.
+            return response()->json(['resultCode' => 1, 'message' => 'Tạm thời chưa xử lý được, vui lòng gửi lại sau.'], 503);
         }
 
         return response()->json(['resultCode' => 0, 'message' => 'received']);

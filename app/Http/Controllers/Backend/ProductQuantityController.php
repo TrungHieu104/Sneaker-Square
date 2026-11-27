@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Actions\AddStockVariantAction;
+use App\Actions\ReceiveStockAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Backend\ColorRequest;
 use App\Http\Requests\Backend\ProductQuantityRequest;
@@ -161,37 +163,41 @@ class ProductQuantityController extends Controller
      * Receives stock. Prices are entered per colour rather than per size, so every
      * size of a colour is stocked at the same price and cannot drift apart.
      */
-    public function store(ProductQuantityRequest $request)
+    public function store(ProductQuantityRequest $request, ReceiveStockAction $receiveStock)
     {
-        $proId = $request->input('pro_id');
-        $quantityDate = $request->input('quantity_date');
+        $receiveStock->execute(
+            (int) $request->input('pro_id'),
+            (string) $request->input('quantity_date'),
+            $request->hasVariants() ? $this->variantLines($request) : [[
+                // Matched on the null colour and size, not on pro_id alone, or a
+                // product that also has coloured variants lands this delivery on
+                // whichever coloured row came back first.
+                'size_id' => null,
+                'color_id' => null,
+                'quantity' => (int) $request->input('quantityOthers'),
+                'prices' => [
+                    'pro_price' => $request->input('priceOthers'),
+                    'pro_price_sale' => $request->input('priceSaleOthers'),
+                    'capital_price' => $request->input('capitalPriceOthers'),
+                ],
+            ]],
+        );
 
-        if (! $request->hasVariants()) {
-            // Matched on the null colour and size, not on pro_id alone, or a
-            // product that also has coloured variants lands this delivery on
-            // whichever coloured row came back first.
-            $variant = Quantity::where('pro_id', $proId)
-                ->whereNull('size_id')
-                ->whereNull('color_id')
-                ->first()
-                ?? $this->newVariant($proId, null, null);
+        Session::flash('iconMessage', 'success');
 
-            $this->applyStock($variant, $quantityDate, (int) $request->input('quantityOthers'), [
-                'pro_price' => $request->input('priceOthers'),
-                'pro_price_sale' => $request->input('priceSaleOthers'),
-                'capital_price' => $request->input('capitalPriceOthers'),
-            ]);
+        return back()->with('message', 'Nhập hàng thành công!');
+    }
 
-            Session::flash('iconMessage', 'success');
-
-            return back()->with('message', 'Nhập hàng thành công!');
-        }
-
-        $checkedColors = $request->input('color_id', []);
+    /**
+     * @return list<array{size_id: mixed, color_id: mixed, quantity: int, prices: array<string, mixed>}>
+     */
+    private function variantLines(ProductQuantityRequest $request): array
+    {
         $checkedSizes = $request->input('size_id', []);
         $quantities = $request->input('quantityColorAndSize', []);
+        $lines = [];
 
-        foreach ($checkedColors as $colorId) {
+        foreach ($request->input('color_id', []) as $colorId) {
             if (! array_key_exists($colorId, $quantities)) {
                 continue;
             }
@@ -204,52 +210,11 @@ class ProductQuantityController extends Controller
 
             // With no sizes ticked, the colour alone is the variant.
             foreach ($checkedSizes ?: [null] as $sizeId) {
-                $variant = Quantity::where('pro_id', $proId)
-                    ->where('size_id', $sizeId)
-                    ->where('color_id', $colorId)
-                    ->first()
-                    ?? $this->newVariant($proId, $sizeId, $colorId);
-
-                $this->applyStock($variant, $quantityDate, (int) $quantities[$colorId], $prices);
+                $lines[] = ['size_id' => $sizeId, 'color_id' => $colorId, 'quantity' => (int) $quantities[$colorId], 'prices' => $prices];
             }
         }
 
-        Session::flash('iconMessage', 'success');
-
-        return back()->with('message', 'Nhập hàng thành công');
-    }
-
-    private function newVariant(string $proId, $sizeId, $colorId): Quantity
-    {
-        $variant = new Quantity;
-        $variant->pro_id = $proId;
-        $variant->size_id = $sizeId;
-        $variant->color_id = $colorId;
-        $variant->quantity = 0;
-
-        return $variant;
-    }
-
-    /**
-     * Adds the delivery to a variant and records the prices it came in at.
-     *
-     * A blank price box leaves the variant's price alone. Clearing a price is done
-     * on the stock screen, where blank means "follow the product" instead.
-     *
-     * @param  array<string, mixed>  $prices
-     */
-    private function applyStock(Quantity $variant, string $quantityDate, int $quantity, array $prices): void
-    {
-        $variant->quantity_date = $quantityDate;
-        $variant->quantity += $quantity;
-
-        foreach ($prices as $column => $value) {
-            if ($value !== null && $value !== '') {
-                $variant->{$column} = (int) $value;
-            }
-        }
-
-        $variant->save();
+        return $lines;
     }
 
     /**
@@ -286,7 +251,7 @@ class ProductQuantityController extends Controller
      * The intake form stocks the product of every size and colour ticked at once,
      * which is the wrong shape for filling a single gap — one size, one colour.
      */
-    public function storeVariant(StockVariantRequest $request, string $proSlug)
+    public function storeVariant(StockVariantRequest $request, string $proSlug, AddStockVariantAction $addVariant)
     {
         $proId = Product::where('pro_slug', $proSlug)->value('pro_id');
 
@@ -296,15 +261,21 @@ class ProductQuantityController extends Controller
             return back()->with('message', 'Sản phẩm không tồn tại!');
         }
 
-        $variant = $this->newVariant($proId, $request->identifier('size_id'), $request->identifier('color_id'));
-        $variant->quantity_date = $request->input('quantity_date');
-        $variant->quantity = (int) $request->input('quantity');
+        $added = $addVariant->execute((int) $proId, [
+            'size_id' => $request->identifier('size_id'),
+            'color_id' => $request->identifier('color_id'),
+            'quantity' => (int) $request->input('quantity'),
+            'quantity_date' => (string) $request->input('quantity_date'),
+            'pro_price' => $request->identifier('pro_price'),
+            'pro_price_sale' => $request->identifier('pro_price_sale'),
+            'capital_price' => $request->identifier('capital_price'),
+        ]);
 
-        foreach (['pro_price', 'pro_price_sale', 'capital_price'] as $column) {
-            $variant->{$column} = $request->identifier($column);
+        if (! $added) {
+            Session::flash('iconMessage', 'error');
+
+            return back()->with('message', StockVariantRequest::ALREADY_STOCKED);
         }
-
-        $variant->save();
 
         Session::flash('iconMessage', 'success');
 

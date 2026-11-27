@@ -28,6 +28,15 @@ class WalletTampered extends RuntimeException
     {
         Session::flash('iconMessage', 'error');
 
+        // Sent back to the page that just failed, the browser would ask for it
+        // again and be sent back again; a gateway's page is not ours to return to.
+        $previous = url()->previous();
+        $samePage = parse_url($previous, PHP_URL_PATH) === parse_url($request->fullUrl(), PHP_URL_PATH);
+
+        if ($samePage || parse_url($previous, PHP_URL_HOST) !== $request->getHost()) {
+            return redirect()->route('home.page')->with('message', $this->getMessage());
+        }
+
         return back()->with('message', $this->getMessage());
     }
 }

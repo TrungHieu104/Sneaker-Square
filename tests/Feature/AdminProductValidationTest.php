@@ -5,8 +5,11 @@ namespace Tests\Feature;
 use App\Models\CategoryModel;
 use App\Models\ColorModel;
 use App\Models\ProductModel;
+use App\Models\ProductQuantityModel;
 use App\Models\UserModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
@@ -202,6 +205,110 @@ class AdminProductValidationTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertSame(15, $this->stockOf($product, null, null));
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    private function receiveVariant(int $proId, mixed $quantity, array $overrides = [])
+    {
+        return $this->actingAs($this->admin)
+            ->post(route('stock.store'), array_merge([
+                'pro_id' => $proId,
+                'quantity_date' => now()->toDateString(),
+                'pro_type' => 0,
+                'size_id' => [1],
+                'color_id' => [1],
+                'quantityColorAndSize' => [1 => $quantity],
+            ], $overrides));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function notWholeNumbers(): array
+    {
+        return ['số lẻ' => ['1.5'], 'dạng mũ' => ['1e3'], 'chữ' => ['abc']];
+    }
+
+    #[DataProvider('notWholeNumbers')]
+    public function test_nhap_kho_so_luong_khong_phai_so_nguyen_bi_tu_choi(string $quantity): void
+    {
+        $product = $this->makeProduct(stock: 10, slug: 'giay-so-le');
+
+        $this->receiveVariant($product->pro_id, $quantity)
+            ->assertSessionHasErrors('quantityColorAndSize.1');
+
+        $this->assertSame(10, $this->stockOf($product));
+    }
+
+    public function test_nhap_kho_so_luong_vuot_gioi_han_bi_tu_choi(): void
+    {
+        $product = $this->makeProduct(stock: 10, slug: 'giay-qua-nhieu');
+
+        $this->receiveVariant($product->pro_id, '1000000')
+            ->assertSessionHasErrors(['quantityColorAndSize.1' => 'Mỗi lần nhập tối đa 999.999!']);
+        $this->receiveVariant($product->pro_id, '999999')->assertSessionHasNoErrors();
+
+        $this->assertSame(1_000_009, $this->stockOf($product));
+    }
+
+    public function test_nhap_kho_san_pham_khong_ton_tai_bao_loi_thay_vi_500(): void
+    {
+        $this->receiveVariant(999_999, 5)
+            ->assertRedirect()
+            ->assertSessionHasErrors(['pro_id' => 'Sản phẩm không tồn tại!']);
+
+        $this->assertSame(0, ProductQuantityModel::where('pro_id', 999_999)->count());
+    }
+
+    public function test_nhap_kho_san_pham_da_xoa_bi_tu_choi(): void
+    {
+        $product = $this->makeProduct(stock: 10, slug: 'giay-da-xoa');
+        $product->delete();
+
+        $this->receiveVariant($product->pro_id, 5)->assertSessionHasErrors('pro_id');
+
+        $this->assertSame(10, $this->stockOf($product));
+    }
+
+    public function test_nhap_kho_mau_hoac_size_khong_ton_tai_bi_tu_choi(): void
+    {
+        $product = $this->makeProduct(stock: 10, slug: 'giay-mau-la');
+
+        $this->receiveVariant($product->pro_id, 5, ['size_id' => [999], 'color_id' => [998], 'quantityColorAndSize' => [998 => 5]])
+            ->assertSessionHasErrors(['size_id.0', 'color_id.0']);
+
+        $this->assertSame(1, ProductQuantityModel::where('pro_id', $product->pro_id)->count());
+    }
+
+    public function test_nhap_kho_gui_mau_long_mang_bao_loi_thay_vi_500(): void
+    {
+        $product = $this->makeProduct(stock: 10, slug: 'giay-mau-long');
+
+        $this->receiveVariant($product->pro_id, 5, ['color_id' => [[1]]])
+            ->assertRedirect()
+            ->assertSessionHasErrors('color_id.0');
+
+        $this->assertSame(10, $this->stockOf($product));
+    }
+
+    public function test_nhap_kho_khong_ghi_de_luot_ban_xay_ra_cung_luc(): void
+    {
+        $product = $this->makeProduct(stock: 10, slug: 'giay-ban-cung-luc');
+        $sold = false;
+        ProductQuantityModel::updating(function () use (&$sold, $product) {
+            if (! $sold) {
+                $sold = true;
+                // An order taking stock between the delivery's read and its write.
+                DB::table('products_quantity')->where('pro_id', $product->pro_id)->decrement('quantity', 3);
+            }
+        });
+
+        $this->receiveVariant($product->pro_id, 5)->assertSessionHasNoErrors();
+
+        $this->assertTrue($sold);
+        $this->assertSame(12, $this->stockOf($product), '10 tồn - 3 vừa bán + 5 vừa nhập');
     }
 
     public function test_nhap_kho_thieu_ngay_nhap_bi_chan(): void

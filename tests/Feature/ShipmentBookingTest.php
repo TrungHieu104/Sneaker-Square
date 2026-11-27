@@ -14,6 +14,7 @@ use App\Services\Shipping\ShippingUnavailable;
 use App\Services\ShippingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\ShopFixtures;
@@ -282,6 +283,50 @@ class ShipmentBookingTest extends TestCase
         ]);
 
         $this->assertNull($order->fresh()->order_shipping_code);
+    }
+
+    public function test_webhook_muon_cua_kien_da_huy_khong_doi_trang_thai_don(): void
+    {
+        $order = $this->makeOrder('giay-huy-roi-bao-muon');
+        app(ShippingService::class)->book($order);
+        app(ShippingService::class)->cancelBooking($order->fresh());
+
+        $this->ghiSuKien($order, 'FAKE001', 'ready_to_pick');
+
+        $order = $order->fresh();
+        $this->assertSame(self::DA_XAC_NHAN, $order->order_status, 'Kiện đã huỷ không được đẩy đơn đi tiếp');
+        $this->assertSame('cancel', $order->order_shipping_status);
+    }
+
+    public function test_webhook_huy_muon_cua_kien_cu_khong_xoa_ma_kien_moi(): void
+    {
+        $order = $this->makeOrder('giay-huy-muon-kien-cu');
+        app(ShippingService::class)->book($order);
+        app(ShippingService::class)->cancelBooking($order->fresh());
+        app(ShippingService::class)->book($order->fresh());
+        $this->ghiSuKien($order, 'FAKE002', 'ready_to_pick');
+
+        $this->ghiSuKien($order, 'FAKE001', 'cancel');
+
+        $order = $order->fresh();
+        $this->assertSame('FAKE002', $order->order_shipping_code);
+        $this->assertSame('ready_to_pick', $order->order_shipping_status);
+        $this->assertSame(OrderStatus::ReadyToShip, $order->order_status);
+    }
+
+    public function test_webhook_kien_cu_van_luu_vao_hanh_trinh(): void
+    {
+        $order = $this->makeOrder('giay-kien-cu-luu-lai');
+        app(ShippingService::class)->book($order);
+        app(ShippingService::class)->cancelBooking($order->fresh());
+
+        $this->ghiSuKien($order, 'FAKE001', 'ready_to_pick');
+
+        $this->assertDatabaseHas('shipment_events', [
+            'order_id' => $order->order_id,
+            'shipping_code' => 'FAKE001',
+            'status' => 'ready_to_pick',
+        ]);
     }
 
     public function test_hanh_trinh_chi_hien_kien_dang_giao(): void
@@ -634,6 +679,46 @@ class ShipmentBookingTest extends TestCase
             ->post(route('order.book_shipment', $order->order_id))
             ->assertRedirect()
             ->assertSessionHas('message', 'Đơn hàng này đã có vận đơn DA-CO-ROI.');
+    }
+
+    public function test_tao_van_don_ghn_loi_ket_noi_bao_loi(): void
+    {
+        $order = $this->makeOrder();
+        $this->useUnreachableGhn();
+
+        $this->actingAs($this->admin)
+            ->post(route('order.book_shipment', $order->order_id))
+            ->assertRedirect()
+            ->assertSessionHas('message', 'Không kết nối được GHN, vui lòng thử lại sau.');
+
+        $order = $order->fresh();
+        $this->assertNull($order->order_shipping_code);
+        $this->assertSame(self::DA_XAC_NHAN, $order->order_status);
+    }
+
+    public function test_huy_van_don_ghn_loi_ket_noi_bao_loi(): void
+    {
+        $order = $this->makeOrder();
+        app(ShippingService::class)->book($order);
+        $this->useUnreachableGhn();
+
+        $this->actingAs($this->admin)
+            ->post(route('order.cancel_shipment', $order->order_id))
+            ->assertRedirect()
+            ->assertSessionHas('message', 'Không kết nối được GHN, vui lòng thử lại sau.');
+
+        $this->assertSame('FAKE001', $order->fresh()->order_shipping_code);
+    }
+
+    private function useUnreachableGhn(): void
+    {
+        config([
+            'services.ghn.host' => 'https://online-gateway.ghn.vn',
+            'services.ghn.token' => 'token-cua-shop',
+            'services.ghn.shop_id' => 4701794,
+        ]);
+        Http::fake(['*' => Http::failedConnection('cURL error 28: Operation timed out')]);
+        $this->app->instance(ShippingCarrier::class, new GhnCarrier);
     }
 
     public function test_nut_tao_van_don_an_di_khi_co_bi_tat(): void

@@ -20,6 +20,7 @@ class Kernel extends ConsoleKernel
         // past the deadline the customer was shown.
         $schedule->command('orders:expire-unpaid')->withoutOverlapping()->everyMinute();
         $schedule->command('wallet:doi-soat')->withoutOverlapping()->dailyAt('03:00');
+        $schedule->command('wallet:expire-topups')->withoutOverlapping()->hourly();
         $schedule->command('events:aggregate')->withoutOverlapping()->dailyAt('01:00');
         $schedule->command('carts:remind')->withoutOverlapping()->hourly();
         $schedule->command('customers:segment')->withoutOverlapping()->dailyAt('02:00');

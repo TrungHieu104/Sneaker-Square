@@ -9,9 +9,24 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rule;
 
 class ProductQuantityRequest extends FormRequest
 {
+    private const NO_PRODUCT = 'Sản phẩm không tồn tại!';
+
+    private const NO_SIZE = 'Size không tồn tại!';
+
+    private const NO_COLOR = 'Màu không tồn tại!';
+
+    private const QUANTITY_REQUIRED = 'Vui lòng nhập số lượng!';
+
+    private const QUANTITY_INTEGER = 'Số lượng phải là số nguyên!';
+
+    private const QUANTITY_POSITIVE = 'Vui lòng nhập số lượng lớn hơn 0!';
+
+    private const QUANTITY_MAX = 'Mỗi lần nhập tối đa 999.999!';
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -30,19 +45,22 @@ class ProductQuantityRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'pro_id' => ['required'],
-            'quantity_date' => ['required'],
-            'size_id' => ['nullable'],
-            'color_id' => ['nullable'],
+            'pro_id' => ['required', 'integer', Rule::exists('products', 'pro_id')->whereNull('deleted_at')],
+            'quantity_date' => ['required', 'date'],
+            'size_id' => ['nullable', 'array'],
+            'size_id.*' => ['integer', 'exists:size,size_id'],
+            'color_id' => ['nullable', 'array'],
+            'color_id.*' => ['integer', 'exists:color,color_id'],
         ];
+        $quantity = ['integer', 'gt:0', 'max:'.ProductQuantityModel::MAX_STOCK_MOVE];
 
         $price = ['nullable', 'numeric', 'integer', 'min:1', 'max:9999999999'];
         $salePrice = ['nullable', 'numeric', 'integer', 'min:0', 'max:9999999999'];
 
         if ($this->hasVariants()) {
             return $rules + [
-                'quantityColorAndSize' => ['required'],
-                'quantityColorAndSize.*' => ['gt:0'],
+                'quantityColorAndSize' => ['required', 'array'],
+                'quantityColorAndSize.*' => $quantity,
                 'priceColor.*' => $price,
                 'priceSaleColor.*' => $salePrice,
                 'capitalPriceColor.*' => $price,
@@ -50,7 +68,7 @@ class ProductQuantityRequest extends FormRequest
         }
 
         return $rules + [
-            'quantityOthers' => ['required', 'gt:0'],
+            'quantityOthers' => ['required', ...$quantity],
             'priceOthers' => $price,
             'priceSaleOthers' => $salePrice,
             'capitalPriceOthers' => $price,
@@ -69,7 +87,8 @@ class ProductQuantityRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                $product = ProductModel::find($this->input('pro_id'));
+                $proId = $this->input('pro_id');
+                $product = is_scalar($proId) ? ProductModel::find($proId) : null;
 
                 if (! $product) {
                     return;
@@ -91,7 +110,11 @@ class ProductQuantityRequest extends FormRequest
                     return;
                 }
 
-                foreach ($this->input('color_id', []) as $colorId) {
+                foreach ((array) $this->input('color_id', []) as $colorId) {
+                    if (! is_scalar($colorId)) {
+                        continue;
+                    }
+
                     $this->checkPriceTrio(
                         $validator,
                         $product,
@@ -181,14 +204,29 @@ class ProductQuantityRequest extends FormRequest
     {
         return [
             'pro_id.required' => 'Vui lòng chọn sản phẩm!',
+            'pro_id.integer' => self::NO_PRODUCT,
+            'pro_id.exists' => self::NO_PRODUCT,
 
             'quantity_date.required' => 'Vui lòng nhập ngày nhập hàng!',
+            'quantity_date.date' => 'Ngày nhập hàng không hợp lệ!',
 
-            'quantityColorAndSize.required' => 'Vui lòng nhập số lượng!',
-            'quantityColorAndSize.*.gt' => 'Vui lòng nhập số lượng lớn hơn 0!',
+            'size_id.array' => self::NO_SIZE,
+            'size_id.*.integer' => self::NO_SIZE,
+            'size_id.*.exists' => self::NO_SIZE,
+            'color_id.array' => self::NO_COLOR,
+            'color_id.*.integer' => self::NO_COLOR,
+            'color_id.*.exists' => self::NO_COLOR,
 
-            'quantityOthers.required' => 'Vui lòng nhập số lượng!',
-            'quantityOthers.gt' => 'Vui lòng nhập số lượng lớn hơn 0!',
+            'quantityColorAndSize.required' => self::QUANTITY_REQUIRED,
+            'quantityColorAndSize.array' => self::QUANTITY_REQUIRED,
+            'quantityColorAndSize.*.integer' => self::QUANTITY_INTEGER,
+            'quantityColorAndSize.*.gt' => self::QUANTITY_POSITIVE,
+            'quantityColorAndSize.*.max' => self::QUANTITY_MAX,
+
+            'quantityOthers.required' => self::QUANTITY_REQUIRED,
+            'quantityOthers.integer' => self::QUANTITY_INTEGER,
+            'quantityOthers.gt' => self::QUANTITY_POSITIVE,
+            'quantityOthers.max' => self::QUANTITY_MAX,
 
             'priceColor.*.integer' => 'Giá bán phải là số nguyên!',
             'priceColor.*.min' => 'Giá bán phải lớn hơn 0!',

@@ -10,6 +10,7 @@ use App\Models\OrderModel;
 use App\Models\ProductModel;
 use App\Models\UserEventModel as Event;
 use App\Models\UserModel;
+use App\Services\SampleData;
 use App\Services\ShopSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -86,6 +87,17 @@ class CartReminderTest extends TestCase
         $this->assertSame(2_000_000, (int) $reminder->cart_value);
         $this->assertNull($reminder->coupon_id, 'Lần nhắc đầu không kèm mã giảm giá');
         Mail::assertQueued(CartReminderMail::class, fn (CartReminderMail $mail) => $mail->hasTo('khach@example.test'));
+    }
+
+    public function test_tai_khoan_mau_khong_gui_mail_nhac_gio_that(): void
+    {
+        $sample = $this->makeUser(email: 'mau1'.SampleData::EMAIL_DOMAIN, username: 'khachmau');
+        $this->addToCart(now()->subHours(5), userId: $sample->user_id);
+
+        $this->remind();
+
+        $this->assertSame($sample->user_id, (int) $this->sent()->user_id);
+        Mail::assertNothingQueued();
     }
 
     public function test_chua_du_gio_thi_chua_nhac(): void
@@ -285,6 +297,18 @@ class CartReminderTest extends TestCase
         $this->remind();
 
         $this->assertSame(1, CartReminderModel::count());
+    }
+
+    public function test_trang_huy_nhan_nhac_gio_bao_ca_email_uu_dai(): void
+    {
+        $this->addToCart(now()->subDays(3));
+        $this->travelTo(now()->subDays(2));
+        $this->remind();
+        $this->travelBack();
+        $token = $this->sent()->token;
+
+        $this->get(route('cart.reminder.unsubscribe', $token))->assertSee('cùng các email ưu đãi');
+        $this->post(route('cart.reminder.unsubscribe.confirm', $token))->assertSee('email nhắc giỏ hàng và email ưu đãi');
     }
 
     public function test_email_liet_ke_dung_san_pham_va_co_lien_ket(): void

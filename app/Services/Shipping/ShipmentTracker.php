@@ -73,7 +73,11 @@ class ShipmentTracker
                 ]
             );
 
-            $this->syncOrder($order, $payload);
+            // A parcel the shop has since cancelled or replaced keeps its
+            // history, but no longer speaks for the order.
+            if ($shippingCode === null || $shippingCode === $order->order_shipping_code) {
+                $this->syncOrder($order, $payload, $shippingCode);
+            }
 
             if ($event->wasRecentlyCreated) {
                 $this->pulse->mark((int) $order->order_id);
@@ -201,12 +205,13 @@ class ShipmentTracker
      * The order carries the latest state only. Out-of-order callbacks are
      * common, so an older event must not overwrite a newer one.
      */
-    private function syncOrder(OrderModel $order, array $payload): void
+    private function syncOrder(OrderModel $order, array $payload, ?string $shippingCode): void
     {
         $status = (string) $payload['Status'];
         $happenedAt = $this->timeOf($payload);
 
         $newest = ShipmentEventModel::where('order_id', $order->order_id)
+            ->where('shipping_code', $shippingCode)
             ->orderByDesc('happened_at')
             ->value('happened_at');
 

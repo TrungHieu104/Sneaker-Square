@@ -242,7 +242,9 @@
         </li>
         @endcan
         @can('Khách hàng liên hệ')
-        <li class="menu-item {{ request()->routeIs('assistant_admin.*') ? 'active' : '' }}" id="assistant-menu">
+        <li class="menu-item {{ request()->routeIs('assistant_admin.*') ? 'active' : '' }}" id="assistant-menu"
+            data-count-url="{{ route('assistant_admin.waiting_count') }}"
+            data-poll-ms="{{ App\Services\Assistant\ChatSignal::INBOX_POLL_MS }}">
             <a href="{{ route('assistant_admin.index') }}" class="menu-link">
                 <i class='bx bx-chat menu-icon'></i>
                 <div data-i18n="Form Layouts">Trợ lý AI</div>
@@ -254,6 +256,7 @@
                 @endif
             </a>
         </li>
+        <script src="{{ asset_v('backend/assets/js/assistant-badge.js') }}" defer></script>
         @endcan
         @can('Quản trị Đơn hàng')
         <li class="menu-item {{(url()->current() == route('ghn_simulator.index')) ? 'active open' : ''}}">

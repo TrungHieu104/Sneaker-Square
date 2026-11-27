@@ -23,11 +23,14 @@ class WalletTopupModel extends Model
 
     public const FAILED = 'failed';
 
+    public const EXPIRED = 'expired';
+
     /** @var array<string, string> */
     private const STATUS_LABELS = [
         self::PENDING => 'Chờ thanh toán',
         self::PAID => 'Thành công',
         self::FAILED => 'Thất bại',
+        self::EXPIRED => 'Hết hạn',
     ];
 
     public const MIN_AMOUNT = 10000;

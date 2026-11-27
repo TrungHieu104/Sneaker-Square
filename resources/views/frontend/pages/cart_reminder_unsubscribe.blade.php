@@ -15,15 +15,15 @@
                 @if ($done)
                     <h4 class="mb-3">Bạn đã huỷ nhận email nhắc giỏ hàng</h4>
                     <p class="text-muted mb-4">
-                        Sneaker Square sẽ không gửi email nhắc giỏ hàng cho tài khoản của bạn nữa. Email xác nhận đơn
-                        hàng và thông báo giao hàng vẫn được gửi như bình thường.
+                        Sneaker Square sẽ không gửi email nhắc giỏ hàng và email ưu đãi cho tài khoản của bạn nữa. Email
+                        xác nhận đơn hàng và thông báo giao hàng vẫn được gửi như bình thường.
                     </p>
                     <a href="{{ route('home.page') }}" class="btn btn-checkout px-4 text-white border-0">Về trang chủ</a>
                 @else
                     <h4 class="mb-3">Không nhận email nhắc giỏ hàng nữa?</h4>
                     <p class="text-muted mb-4">
                         Khi bạn để lại sản phẩm trong giỏ, chúng tôi gửi tối đa hai email nhắc. Bấm nút dưới đây để
-                        dừng hẳn các email này cho tài khoản của bạn.
+                        dừng hẳn các email này, cùng các email ưu đãi, cho tài khoản của bạn.
                     </p>
                     <form method="POST" action="{{ route('cart.reminder.unsubscribe.confirm', $token) }}">
                         @csrf

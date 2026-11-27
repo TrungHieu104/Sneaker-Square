@@ -38,12 +38,13 @@ final class GatewayCharge
         );
     }
 
-    public static function forTopup(WalletTopupModel $topup): self
+    public static function forTopup(WalletTopupModel $topup, CarbonInterface $expiresAt): self
     {
         return new self(
             code: (string) $topup->topup_code,
             amount: (int) $topup->amount,
             description: 'Nạp tiền vào SPay '.$topup->topup_code,
+            expiresAt: $expiresAt,
         );
     }
 }

@@ -10,6 +10,7 @@
     data-show="{{ route('assistant.show') }}"
     data-send="{{ route('assistant.send') }}"
     data-handoff="{{ route('assistant.handoff') }}"
+    data-seen-ms="{{ App\Actions\ReplyToCustomerAction::CHECK_IN_MS }}"
     @if ($live)
         data-live="{{ json_encode($live + ['auth' => route('assistant.channel'), 'scripts' => array_map('asset_v', $chatSignal::SCRIPTS)], JSON_UNESCAPED_SLASHES) }}"
     @endif

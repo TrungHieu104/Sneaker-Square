@@ -32,7 +32,7 @@ class StockAdjustRequest extends FormRequest
     {
         return [
             'mode' => ['required', 'in:in,out'],
-            'quantity' => ['required', 'numeric', 'integer', 'gt:0', 'max:999999'],
+            'quantity' => ['required', 'numeric', 'integer', 'gt:0', 'max:'.ProductQuantityModel::MAX_STOCK_MOVE],
             'quantity_date' => ['required_if:mode,in', 'nullable', 'date'],
         ];
     }

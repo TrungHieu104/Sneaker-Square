@@ -7,6 +7,7 @@ use App\Models\CartReminderModel;
 use App\Models\CouponModel;
 use App\Models\UserModel;
 use App\Services\OneUseCoupons;
+use App\Services\SampleData;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -78,7 +79,9 @@ class CartReminderSender
             return $reminder;
         });
 
-        Mail::to($user->email)->queue(new CartReminderMail($reminder));
+        if (! SampleData::ownsEmail($user->email)) {
+            Mail::to($user->email)->queue(new CartReminderMail($reminder));
+        }
 
         return $reminder;
     }

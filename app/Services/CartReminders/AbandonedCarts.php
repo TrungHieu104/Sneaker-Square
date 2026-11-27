@@ -87,6 +87,22 @@ class AbandonedCarts
     }
 
     /**
+     * Accounts that must not be sent a coupon for their cart: a coupon email is
+     * an offer, so leaving the campaign emails stops it too.
+     *
+     * @return list<int>
+     */
+    public function refusesOffers(): array
+    {
+        return DB::table('cart_reminder_opt_outs')->pluck('user_id')
+            ->merge(DB::table('campaign_opt_outs')->pluck('user_id'))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
      * The account's cart as it stands: every add since the last order, less
      * what was taken out again.
      */

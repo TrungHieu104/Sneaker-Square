@@ -62,11 +62,11 @@ flowchart LR
 | MySQL 8 | Primary data store | Schema lives in `database/migrations` |
 | Redis | Cache, session, queue, response cache | Required, see `CACHE_DRIVER`, `QUEUE_CONNECTION` |
 | Queue worker | Sends mail (order confirmation, registration, password reset, coupons) and answers support-chat questions | Without a running worker no mail goes out and the chat widget waits, then tells the customer the assistant is busy |
-| Scheduler | Auto-completes orders, cancels unpaid orders, reconciles wallets, builds the sitemap, closes support chats idle for a day | Cron calls `schedule:run` every minute |
+| Scheduler | Auto-completes orders, cancels unpaid orders and closes their open payment attempts, closes abandoned wallet top-ups, reconciles wallets (the result goes to the `payment` log and the daily log), builds the sitemap, closes support chats idle for a day | Cron calls `schedule:run` every minute |
 | VNPay, MoMo | Online payment | IPN calls the server directly, not through the browser |
 | GHN | Shipping | Webhook authenticated by a token in the URL |
 | Google Analytics | Traffic statistics on the dashboard | Key file lives in `storage/`, never in `public/` |
-| Reverb | Tells the open chat widget and the staff inbox that a chat changed; they fetch it themselves | `php artisan reverb:start` under Supervisor, behind the same Nginx as the site (WebSocket proxy to port 8080). `BROADCAST_DRIVER=reverb` and `REVERB_*` in `.env`, with `REVERB_HOST` the public host, `REVERB_PORT=443`, `REVERB_SCHEME=https`. Without it the widget and the inbox poll every few seconds |
+| Reverb | Tells the open chat widget and the staff inbox that a chat changed; they fetch it themselves | `php artisan reverb:start` under Supervisor, behind the same Nginx as the site (WebSocket proxy to port 8080). `BROADCAST_DRIVER=reverb` and `REVERB_*` in `.env`, with `REVERB_HOST` the public host, `REVERB_PORT=443`, `REVERB_SCHEME=https`. Without it the widget polls every few seconds and the staff inbox every 15 seconds. The admin menu badge polls every 15 seconds either way |
 | Claude API | Words the support assistant's answers from data Laravel looked up | `ANTHROPIC_API_KEY`; the model is chosen in admin settings. Without a key the assistant says it is busy and offers staff. Billed per use; the FAQ part of each request is prompt-cached |
 
 ## Environment variables

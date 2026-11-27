@@ -2,12 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Logging\LogChannel;
 use App\Models\WalletModel;
 use App\Models\WalletTopupModel;
 use App\Models\WalletTransactionModel;
 use App\Services\Wallet\WalletSignature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Reads every wallet back and says whether it still adds up.
@@ -172,11 +174,20 @@ class CheckWallets extends Command
         // copy they have no access to, so a changed anchor is proof on its own.
         $anchor = WalletTransactionModel::orderByDesc('transaction_id')->value('entry_hash');
 
+        // The scheduler throws console output away, so the log is the only
+        // place a nightly result is kept.
+        $log = Log::stack([LogChannel::PAYMENT, 'daily']);
+
         if ($this->problems === []) {
+            $log->info('Wallet reconciliation passed', ['wallets' => $checked, 'anchor' => $anchor]);
             $this->info('Đã đối soát '.$checked.' ví, không phát hiện sai lệch.');
             $this->line('Mốc chuỗi mới nhất: '.($anchor ?? 'chưa có giao dịch nào'));
 
             return self::SUCCESS;
+        }
+
+        foreach ($this->problems as [$walletId, $problem]) {
+            $log->critical('Wallet reconciliation found a mismatch', ['wallet_id' => $walletId, 'problem' => $problem]);
         }
 
         $this->error('Phát hiện '.count($this->problems).' sai lệch trên '.$checked.' ví:');

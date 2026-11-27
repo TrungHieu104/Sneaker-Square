@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('email');
             $table->string('phone');
             $table->string('title');
-            $table->boolean('status')->default(0);
+            $table->unsignedTinyInteger('status')->default(0);
             $table->text('content');
             $table->timestamps();
             $table->softDeletes();

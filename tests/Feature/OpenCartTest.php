@@ -280,6 +280,26 @@ class OpenCartTest extends TestCase
         Mail::assertQueuedCount(1);
     }
 
+    public function test_khach_huy_nhan_uu_dai_khong_duoc_tang_ma_gio_hang(): void
+    {
+        $this->addToCart($this->customer, now()->subHour());
+        DB::table('campaign_opt_outs')->insert(['user_id' => $this->customer->user_id, 'created_at' => now()]);
+
+        $this->offer($this->admin())->assertSessionHas('message', 'Khách đã huỷ nhận email ưu đãi.');
+
+        $this->assertSame(0, CouponModel::count());
+        Mail::assertNothingQueued();
+    }
+
+    public function test_khach_huy_nhan_uu_dai_khong_duoc_de_xuat_tang_ma(): void
+    {
+        $this->addToCart($this->customer, now()->subDays(2), quantity: 2);
+        $this->remindedTwice($this->customer);
+        DB::table('campaign_opt_outs')->insert(['user_id' => $this->customer->user_id, 'created_at' => now()]);
+
+        $this->assertSame([], $this->reasonsFor($this->customer));
+    }
+
     public function test_gio_da_dat_hang_thi_khong_tang_ma(): void
     {
         $this->addToCart($this->customer, now()->subHours(2));

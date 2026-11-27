@@ -20,6 +20,9 @@ class ProductQuantityModel extends Model
 {
     use HasFactory;
 
+    /** The most stock one delivery or one adjustment may move. */
+    public const MAX_STOCK_MOVE = 999999;
+
     protected $table = 'products_quantity';
 
     protected $primaryKey = 'quantity_id';

@@ -15,6 +15,8 @@ use App\Services\Wallet\WalletService;
 use App\Services\Wallet\WalletTopups;
 use App\Services\Wallet\WalletWithdrawals;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Spatie\Permission\Models\Permission;
@@ -180,6 +182,76 @@ class WalletTest extends TestCase
 
         $this->assertSame(0, $this->wallet()->balance);
         $this->assertSame(WalletTopupModel::FAILED, $topup->fresh()->status);
+    }
+
+    public function test_nap_vi_momo_loi_ket_noi_bao_than_thien(): void
+    {
+        Http::fake(fn () => throw new ConnectionException('cURL error 28: Operation timed out'));
+
+        $this->actingAs($this->customer)->from(route('user.wallet'))
+            ->post(route('wallet.topup'), ['amount' => 200_000, 'gateway' => 'payUrl'])
+            ->assertRedirect(route('user.wallet'))
+            ->assertSessionHas('message', 'Không kết nối được cổng thanh toán. Vui lòng thử lại.');
+
+        $this->assertSame([WalletTopupModel::FAILED], WalletTopupModel::pluck('status')->all());
+    }
+
+    public function test_momo_tu_choi_tao_link_nap_thi_yeu_cau_nap_that_bai(): void
+    {
+        Http::fake(['*' => Http::response(['resultCode' => 98, 'message' => 'QR Code tạo không thành công.'])]);
+
+        $this->actingAs($this->customer)->from(route('user.wallet'))
+            ->post(route('wallet.topup'), ['amount' => 200_000, 'gateway' => 'payUrl'])
+            ->assertRedirect(route('user.wallet'));
+
+        $this->assertSame([WalletTopupModel::FAILED], WalletTopupModel::pluck('status')->all());
+    }
+
+    public function test_nap_vi_bo_do_qua_han_thi_dong_yeu_cau_nap(): void
+    {
+        $boDo = $this->topUp(200_000);
+        $this->travel(31)->minutes();
+        $vuaTao = $this->topUp(100_000);
+
+        $this->artisan('wallet:expire-topups')->assertExitCode(0);
+
+        $this->assertSame(WalletTopupModel::EXPIRED, $boDo->fresh()->status);
+        $this->assertSame(WalletTopupModel::PENDING, $vuaTao->fresh()->status);
+    }
+
+    public function test_tien_ve_cho_yeu_cau_nap_da_qua_han_van_cong_vao_vi(): void
+    {
+        $topup = $this->topUp(200_000);
+        $this->travel(31)->minutes();
+        $this->artisan('wallet:expire-topups');
+
+        $this->postJson(route('payment.ipn'), $this->momoCallback($topup->topup_code, 200_000))->assertOk();
+
+        $this->assertSame(200_000, $this->wallet()->balance);
+        $this->assertSame(WalletTopupModel::PAID, $topup->fresh()->status);
+    }
+
+    public function test_tien_ve_cho_yeu_cau_nap_da_that_bai_van_cong_vao_vi(): void
+    {
+        $topup = $this->topUp(200_000);
+        $this->postJson(route('payment.ipn'), $this->momoCallback($topup->topup_code, 200_000, 1006))->assertOk();
+
+        $this->postJson(route('payment.ipn'), $this->momoCallback($topup->topup_code, 200_000))->assertOk();
+
+        $this->assertSame(200_000, $this->wallet()->balance);
+        $this->assertSame(WalletTopupModel::PAID, $topup->fresh()->status);
+    }
+
+    public function test_ipn_nap_tien_vao_vi_bi_khoa_tra_json_khong_chuyen_huong(): void
+    {
+        $topup = $this->topUp(200_000);
+        DB::table('wallets')->where('wallet_id', $topup->wallet_id)->update(['balance' => 99_000_000]);
+
+        $this->postJson(route('payment.ipn'), $this->momoCallback($topup->topup_code, 200_000))
+            ->assertStatus(503)
+            ->assertJson(['resultCode' => 1]);
+
+        $this->assertSame(WalletTopupModel::PENDING, $topup->fresh()->status);
     }
 
     public function test_ma_nap_tien_khong_lan_sang_don_hang(): void

@@ -1,32 +1,23 @@
 // Keeps the staff inbox current. When the socket server says a chat changed,
-// the page is fetched again for the chat on screen and its parts are swapped
-// in, so the server still renders every line and checks every read. A reply
-// being typed and a save form being filled in are left alone.
+// or on a timer while there is no socket, the page is fetched again for the
+// chat on screen and its parts are swapped in, so the server still renders
+// every line and checks every read. A reply being typed and a save form being
+// filled in are left alone.
 (function () {
     const page = document.getElementById('assistant-inbox');
-    const settings = document.getElementById('assistant-live');
 
-    if (!page || !settings || !window.Echo) {
+    if (!page) {
         return;
     }
 
-    const live = JSON.parse(settings.textContent);
+    const settings = document.getElementById('assistant-live');
     // Several lines often land together (a question, then the hand-off notice).
     const SETTLE_MS = 300;
     const NEAR_BOTTOM_PX = 40;
+    const POLL_MS = Number(page.dataset.pollMs) || 15000;
     const ALWAYS = ['assistant-tabs', 'assistant-chat-list', 'assistant-customer', 'assistant-menu'];
 
-    const echo = new window.Echo.default({
-        broadcaster: 'reverb',
-        key: live.key,
-        wsHost: live.host,
-        wsPort: live.port,
-        wssPort: live.port,
-        forceTLS: live.tls,
-        enabledTransports: ['ws', 'wss'],
-        authEndpoint: live.auth,
-    });
-
+    let echo = null;
     let timer = null;
 
     function later() {
@@ -34,9 +25,41 @@
         timer = setTimeout(reload, SETTLE_MS);
     }
 
-    echo.private(live.channel).listen('.changed', later);
-    // Whatever changed while the connection was down is fetched on its return.
-    echo.connector.pusher.connection.bind('connected', later);
+    function connected() {
+        return Boolean(echo) && echo.connector.pusher.connection.state === 'connected';
+    }
+
+    if (settings && window.Echo) {
+        const live = JSON.parse(settings.textContent);
+
+        echo = new window.Echo.default({
+            broadcaster: 'reverb',
+            key: live.key,
+            wsHost: live.host,
+            wsPort: live.port,
+            wssPort: live.port,
+            forceTLS: live.tls,
+            enabledTransports: ['ws', 'wss'],
+            authEndpoint: live.auth,
+        });
+
+        echo.private(live.channel).listen('.changed', later);
+        // Whatever changed while the connection was down is fetched on its return.
+        echo.connector.pusher.connection.bind('connected', later);
+    }
+
+    // A tab in the background is not polled; it catches up once shown again.
+    setInterval(function () {
+        if (!connected() && !document.hidden) {
+            reload();
+        }
+    }, POLL_MS);
+
+    document.addEventListener('visibilitychange', function () {
+        if (!connected() && !document.hidden) {
+            later();
+        }
+    });
 
     function reload() {
         const url = new URL(window.location.href);
@@ -56,12 +79,37 @@
             .catch(function () {});
     }
 
+    // What the server last sent for each part. Compared with that rather than
+    // with the page, which tooltips have already written into.
+    const served = {};
+
+    // A part the server sends unchanged is left in place, so a timed poll does
+    // not drop a text selection or an open tooltip every few seconds.
     function replace(id, fresh) {
         const now = document.getElementById(id);
         const next = fresh.getElementById(id);
 
-        if (now && next) {
-            now.replaceWith(document.importNode(next, true));
+        if (!now || !next || served[id] === next.innerHTML) {
+            return;
+        }
+
+        served[id] = next.innerHTML;
+
+        const Tooltip = window.bootstrap ? window.bootstrap.Tooltip : null;
+        const added = document.importNode(next, true);
+
+        if (Tooltip) {
+            now.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+                Tooltip.getInstance(el)?.dispose();
+            });
+        }
+
+        now.replaceWith(added);
+
+        if (Tooltip) {
+            added.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+                new Tooltip(el);
+            });
         }
     }
 
