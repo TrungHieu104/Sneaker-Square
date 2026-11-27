@@ -10,6 +10,12 @@ class ContactFormModel extends Model
 {
     use HasFactory,SoftDeletes;
 
+    public const PENDING = 0;
+
+    public const PROCESSING = 1;
+
+    public const HANDLED = 2;
+
     protected $table = 'contact_forms';
 
     public $primaryKey = 'id';

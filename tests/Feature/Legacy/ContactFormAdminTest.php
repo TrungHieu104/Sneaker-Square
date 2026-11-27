@@ -8,6 +8,7 @@ use App\Models\UserModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
@@ -158,6 +159,38 @@ class ContactFormAdminTest extends TestCase
             ->assertSessionHas('message', 'Chưa xử lý')
             ->assertSessionHas('iconMessage', 'error');
         $this->assertSame(0, (int) $contact->refresh()->status);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function statusRoutes(): array
+    {
+        return [
+            'đã xử lý' => ['contact.handle'],
+            'đang xử lý' => ['contact.processing'],
+            'chưa xử lý' => ['contact.no_process'],
+        ];
+    }
+
+    #[DataProvider('statusRoutes')]
+    public function test_doi_trang_thai_lien_he_khong_ton_tai_bao_loi(string $routeName): void
+    {
+        $this->actingAs($this->staff())->from(route('contact-form.index'))->put(route($routeName, 999))
+            ->assertRedirect(route('contact-form.index'))
+            ->assertSessionHas('message', 'Không có liên hệ')
+            ->assertSessionHas('iconMessage', 'error');
+    }
+
+    public function test_doi_trang_thai_lien_he_da_vao_thung_rac_bao_loi(): void
+    {
+        $contact = $this->message();
+        $contact->delete();
+
+        $this->actingAs($this->staff())->from(route('contact-form.index'))->put(route('contact.handle', $contact->id))
+            ->assertRedirect(route('contact-form.index'))
+            ->assertSessionHas('message', 'Không có liên hệ');
+        $this->assertSame(0, (int) ContactFormModel::withTrashed()->find($contact->id)->status);
     }
 
     public function test_them_lien_he_tu_trang_admin_luu_va_gui_mail_nhu_storefront(): void

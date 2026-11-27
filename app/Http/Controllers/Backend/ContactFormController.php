@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\View;
 
 class ContactFormController extends Controller
 {
+    private const NOT_FOUND = 'Không có liên hệ';
+
     /**
      * Display a listing of the resource.
      */
@@ -90,7 +92,7 @@ class ContactFormController extends Controller
         if ($contact == null) {
             Session::flash('iconMessage', 'error');
 
-            return redirect()->back()->with('message', 'Không có liên hệ');
+            return redirect()->back()->with('message', self::NOT_FOUND);
         }
         $contact->delete();
         Session::flash('iconMessage', 'success');
@@ -100,33 +102,34 @@ class ContactFormController extends Controller
 
     public function handle($id)
     {
-
-        $contact = ContactFormModel::find($id);
-        $contact->status = 2;
-        $contact->save();
-        Session::flash('iconMessage', 'success');
-
-        return redirect()->back()->with('message', 'Đã xử lý');
+        return $this->setStatus($id, ContactFormModel::HANDLED, 'success', 'Đã xử lý');
     }
 
     public function Processing($id)
     {
-        $contact = ContactFormModel::find($id);
-        $contact->status = 1;
-        $contact->save();
-        Session::flash('iconMessage', 'warning');
-
-        return redirect()->back()->with('message', 'Đang xử lý');
+        return $this->setStatus($id, ContactFormModel::PROCESSING, 'warning', 'Đang xử lý');
     }
 
     public function noProcess($id)
     {
-        $contact = ContactFormModel::find($id);
-        $contact->status = 0;
-        $contact->save();
-        Session::flash('iconMessage', 'error');
+        return $this->setStatus($id, ContactFormModel::PENDING, 'error', 'Chưa xử lý');
+    }
 
-        return redirect()->back()->with('message', 'Chưa xử lý');
+    private function setStatus(string $id, int $status, string $icon, string $message)
+    {
+        $contact = ContactFormModel::find($id);
+
+        if ($contact == null) {
+            Session::flash('iconMessage', 'error');
+
+            return redirect()->back()->with('message', self::NOT_FOUND);
+        }
+
+        $contact->status = $status;
+        $contact->save();
+        Session::flash('iconMessage', $icon);
+
+        return redirect()->back()->with('message', $message);
     }
 
     public function trashed()
