@@ -371,6 +371,23 @@ class SupportAssistantAdminTest extends TestCase
         Mail::assertQueued(AssistantReplyMail::class);
     }
 
+    public function test_chuyen_nhan_vien_lan_hai_ngoai_gio_thi_tra_loi_van_gui_email(): void
+    {
+        $conversation = $this->handedOver(seenAgo: '5 seconds');
+        $staff = $this->staff();
+        $this->actingAs($staff)->post(route('assistant_admin.reply', $conversation->id), ['body' => 'Bạn lấy size 42 nhé.']);
+        Mail::assertNothingQueued();
+
+        $this->travelTo(now()->setTime(22, 0));
+        $this->actingAs($this->customer)->postJson(route('assistant.handoff'))->assertOk();
+        $this->travelTo(now()->addHours(11));
+        $conversation->update(['customer_seen_at' => now()]);
+
+        $this->actingAs($staff)->post(route('assistant_admin.reply', $conversation->id), ['body' => 'Sáng nay shop đã kiểm tra.']);
+
+        Mail::assertQueued(AssistantReplyMail::class, 1);
+    }
+
     public function test_cuoc_chat_da_tra_loi_im_lang_mot_ngay_thi_tu_dong_va_bot_tra_loi_lai(): void
     {
         $conversation = $this->handedOver(seenAgo: '5 seconds');
@@ -624,6 +641,23 @@ class SupportAssistantAdminTest extends TestCase
         $this->actingAs($this->staff())->post(route('assistant_admin.answers.publish', $entry->id), ['group_id' => 999])
             ->assertSessionHasErrors(['group_id' => 'Nhóm câu hỏi không tồn tại.']);
 
+        $this->assertSame(1, AssistantKnowledgeModel::count());
+    }
+
+    public function test_khong_dang_cau_mau_vao_nhom_faq_dang_an(): void
+    {
+        $entry = $this->knowledge('Shop có gói quà không?', 'Có, gói quà miễn phí.');
+        $hidden = FaqGroupModel::create(['group_name' => 'Nhóm đang ẩn', 'group_position' => 1, 'group_hidden' => 0]);
+        FaqGroupModel::create(['group_name' => 'Nhóm đang hiện', 'group_position' => 2]);
+
+        $this->actingAs($this->staff())->get(route('assistant_admin.answers'))
+            ->assertOk()
+            ->assertSee('Nhóm đang hiện')
+            ->assertDontSee('Nhóm đang ẩn');
+        $this->actingAs($this->staff())->post(route('assistant_admin.answers.publish', $entry->id), ['group_id' => $hidden->group_id])
+            ->assertSessionHasErrors(['group_id' => 'Nhóm này đang ẩn trên trang câu hỏi thường gặp, trợ lý sẽ không đọc được câu trả lời. Hãy chọn nhóm đang hiện.']);
+
+        $this->assertSame(0, FaqModel::count());
         $this->assertSame(1, AssistantKnowledgeModel::count());
     }
 
