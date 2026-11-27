@@ -86,6 +86,16 @@ class AccountRegisterTest extends TestCase
         $this->assertAuthenticatedAs(UserModel::where('email', self::EMAIL)->firstOrFail());
     }
 
+    public function test_mat_khau_co_ky_tu_dac_biet_nhu_dau_nho_hon_van_dang_nhap_duoc(): void
+    {
+        $password = 'Abc<12345!';
+        $this->post(route('user.register_post'), $this->form(['password' => $password, 'same_password' => $password]));
+
+        $this->post(route('user.login_post'), ['email' => self::EMAIL, 'password' => $password])
+            ->assertRedirect(route('home.page'));
+        $this->assertAuthenticatedAs(UserModel::where('email', self::EMAIL)->firstOrFail());
+    }
+
     public function test_ho_ten_bi_bo_the_html_va_khoang_trang(): void
     {
         $this->post(route('user.register_post'), $this->form(['name' => '  <b>Nguyễn Văn Bình</b> ']))
