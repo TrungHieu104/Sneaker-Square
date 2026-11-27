@@ -70,6 +70,30 @@ class CouponApplyTest extends TestCase
         $this->assertNull(session('coupon_data'));
     }
 
+    public function test_ma_chua_toi_ngay_bat_dau_bi_tu_choi(): void
+    {
+        $start = now()->addDays(2);
+
+        $this->apply($this->coupon(['coupon_start' => $start->toDateString()]))
+            ->assertSessionHas('message', 'Mã giảm giá này dùng được từ ngày '.$start->format('d/m/Y').'.');
+
+        $this->assertNull(session('coupon_data'));
+    }
+
+    public function test_ma_bat_dau_tu_hom_nay_dung_duoc_ngay(): void
+    {
+        $coupon = $this->coupon(['coupon_start' => now()->toDateString()]);
+
+        $this->apply($coupon)->assertSessionHas('message', 'Tuyệt quá! Bạn đã sử dụng thành công mã giảm giá 10%');
+    }
+
+    public function test_ma_dai_toi_da_admin_tao_duoc_thi_khach_nhap_duoc(): void
+    {
+        $coupon = $this->coupon(['coupon_code' => str_repeat('A', CouponModel::MAX_CODE_LENGTH)]);
+
+        $this->apply($coupon)->assertSessionHas('message', 'Tuyệt quá! Bạn đã sử dụng thành công mã giảm giá 10%');
+    }
+
     public function test_ma_giam_tien_khong_nho_hon_gia_tri_gio_bi_tu_choi(): void
     {
         $this->apply($this->coupon(['coupon_condition' => 1, 'coupon_value' => 2_000_000]))

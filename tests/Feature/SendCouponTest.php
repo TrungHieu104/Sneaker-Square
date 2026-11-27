@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Mail\CouponMail;
 use App\Models\CouponModel;
 use App\Models\UserModel;
+use App\Services\SampleData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -85,6 +86,19 @@ class SendCouponTest extends TestCase
     public function test_gui_cho_moi_khach_hang(): void
     {
         $this->seedCustomers();
+
+        $this->assertSame(
+            ['ba-don@example.test', 'chua-mua@example.test', 'mot-don@example.test', 'sau-don@example.test'],
+            $this->sendTo(1)
+        );
+    }
+
+    public function test_khach_da_huy_nhan_uu_dai_va_tai_khoan_mau_khong_nhan_ma(): void
+    {
+        $this->seedCustomers();
+        $optedOut = $this->customerWithOrders('huy-nhan@example.test', 1);
+        DB::table('campaign_opt_outs')->insert(['user_id' => $optedOut->user_id, 'created_at' => now()]);
+        $this->customerWithOrders('mau'.SampleData::EMAIL_DOMAIN, 1);
 
         $this->assertSame(
             ['ba-don@example.test', 'chua-mua@example.test', 'mot-don@example.test', 'sau-don@example.test'],

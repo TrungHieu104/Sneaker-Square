@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The figures the admin dashboard shows.
@@ -174,13 +175,25 @@ class DashboardStatisticsService
                 ->confirmedSale()->count(),
             'couponCount' => CouponModel::where('coupon_end', '=', $yesterday)->pluck('coupon_name')->toArray(),
             'slideCount' => PromotionModel::where('promotion_end', '=', $yesterday)->pluck('promotion_name')->toArray(),
-            'timestampOrder' => $this->lastChanged(OrderModel::where('order_status', OrderStatus::New), 'created_at'),
-            'timestampReturnOrder' => $this->lastChanged(OrderModel::whereIn('order_status', OrderStatus::comingBack()), 'updated_at'),
-            'timestampSuccessOrder' => $this->lastChanged(OrderModel::where('order_status', OrderStatus::Completed), 'updated_at'),
+            'timestampOrder' => $this->lastBecameSale(OrderModel::where('order_status', OrderStatus::New)->confirmedSale()),
+            'timestampReturnOrder' => $this->lastChanged(OrderModel::whereIn('order_status', OrderStatus::comingBack())->confirmedSale(), 'updated_at'),
+            'timestampSuccessOrder' => $this->lastChanged(OrderModel::where('order_status', OrderStatus::Completed)->confirmedSale(), 'updated_at'),
             'timestampContact' => $this->lastChanged(ContactFormModel::where('status', 0), 'created_at'),
             'timestampSlide' => $this->lastChanged(PromotionModel::where('promotion_end', '=', $yesterday), 'updated_at'),
             'timestampCoupon' => $this->lastChanged(CouponModel::where('coupon_end', '=', $yesterday), 'updated_at'),
         ];
+    }
+
+    /**
+     * A gateway order turns into a sale when it is paid, which can be long after it was placed.
+     *
+     * @param  Builder<OrderModel>  $query
+     */
+    private function lastBecameSale(Builder $query): int
+    {
+        $latest = $query->max(DB::raw('COALESCE(order_payment_time, created_at)'));
+
+        return $latest ? Carbon::parse($latest)->timestamp : now()->timestamp;
     }
 
     /**

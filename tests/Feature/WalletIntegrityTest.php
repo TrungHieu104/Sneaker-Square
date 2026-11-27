@@ -118,6 +118,51 @@ class WalletIntegrityTest extends TestCase
         $this->wallets()->for($this->customer);
     }
 
+    public function test_xoa_chu_ky_va_sua_so_du_thi_vi_van_bi_khoa(): void
+    {
+        $wallet = $this->fund(100_000);
+
+        $this->tamper($wallet, ['balance' => 99_000_000, 'balance_hash' => null]);
+
+        $this->expectException(WalletTampered::class);
+        $this->wallets()->for($this->customer);
+    }
+
+    public function test_xoa_chu_ky_va_sua_so_du_thi_khong_ky_lai_so_du_gia(): void
+    {
+        $wallet = $this->fund(100_000);
+        $this->tamper($wallet, ['balance' => 99_000_000, 'balance_hash' => null]);
+
+        try {
+            $this->wallets()->for($this->customer);
+            $this->fail('An unsigned wallet off its ledger was signed.');
+        } catch (WalletTampered) {
+        }
+
+        $this->assertNull(DB::table('wallets')->where('wallet_id', $wallet->wallet_id)->value('balance_hash'));
+    }
+
+    public function test_vi_chua_ky_ma_so_du_khop_so_cai_thi_duoc_ky_va_dung_binh_thuong(): void
+    {
+        $wallet = $this->fund(100_000);
+        $this->tamper($wallet, ['balance_hash' => null]);
+
+        $loaded = $this->wallets()->for($this->customer);
+
+        $this->assertSame(100_000, (int) $loaded->balance);
+        $this->assertNotNull($loaded->fresh()->balance_hash);
+    }
+
+    public function test_vi_bi_sua_thanh_so_nho_thi_bao_vi_bi_khoa_chu_khong_bao_thieu_tien(): void
+    {
+        $wallet = $this->fund(100_000);
+
+        $this->tamper($wallet, ['balance' => 1_000]);
+
+        $this->expectException(WalletTampered::class);
+        $this->wallets()->debit($wallet->fresh(), 50_000, WalletTransactionModel::TYPE_PAYMENT, 'Mua hàng');
+    }
+
     public function test_xoa_chu_ky_de_ne_kiem_tra_thi_doi_soat_van_bao(): void
     {
         $wallet = $this->fund(100_000);

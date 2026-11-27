@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\AssistantIntent;
 use App\Mail\AssistantReplyMail;
 use App\Models\AssistantConversationModel as Conversation;
 use App\Models\AssistantMessageModel as Message;
@@ -63,10 +64,17 @@ class ReplyToCustomerAction
     /**
      * The hand-off notice promised an out-of-hours answer by email; once that
      * first answer is sent, the customer is back and the away rule decides.
+     * Judged on the latest hand-off: `handed_off_at` keeps only the first.
      */
     private function firstAnswerAfterHours(Conversation $conversation, Message $reply): bool
     {
-        $handedOff = $conversation->handed_off_at;
+        $notice = Message::where('conversation_id', $conversation->id)
+            ->where('sender', Message::SYSTEM)
+            ->where('intent', AssistantIntent::Handoff->value)
+            ->where('id', '<', $reply->id)
+            ->latest('id')
+            ->first();
+        $handedOff = $notice?->created_at ?? $conversation->handed_off_at;
 
         if ($handedOff === null) {
             return false;

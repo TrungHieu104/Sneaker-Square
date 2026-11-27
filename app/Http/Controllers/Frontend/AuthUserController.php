@@ -79,7 +79,7 @@ class AuthUserController extends Controller
     {
         $user = new UserModel;
         $user->name = trim(strip_tags($request['name']));
-        $user->password = trim(strip_tags($request['password']));
+        $user->password = $request['password'];
         $user->email = trim(strip_tags($request['email']));
         $user->save();
 

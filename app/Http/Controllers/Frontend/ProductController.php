@@ -40,18 +40,18 @@ class ProductController extends Controller
         $url = Route::getFacadeRoot()->current()->uri;
         $getAllCate = Category::withCount('getProductsInCate')
             ->where('cate_hidden', 1)->orderBy('cate_sort', 'asc')->get();
-        $getAllProduct = Product::withRatingSummary()->withPriceRange()->where('pro_hidden', 1)->whereDate('pro_date', '<=', date('Y-m-d'));
+        $getAllProduct = Product::withRatingSummary()->withPriceRange()->released();
         $getAccessories = Category::with([
             // The accessories block on product_page.blade.php draws stars for
             // every product in these categories, so load the ratings with them.
-            'getProductsInCate' => fn ($products) => $products->withRatingSummary()->withPriceRange(),
+            'getProductsInCate' => fn ($products) => $products->released()->withRatingSummary()->withPriceRange(),
         ])->where('cate_parent_id', 6)->where('cate_hidden', 1)->get();
         $getOneCate = Category::where(['cate_slug' => $request->route('cate_slug'), 'cate_hidden' => 1])->first();
-        $getHotProduct = Product::withRatingSummary()->withPriceRange()->where('pro_hot', 1)->where('pro_hidden', 1)->whereDate('pro_date', '<=', date('Y-m-d'))->get();
-        $getSaleProduct = Product::withRatingSummary()->withPriceRange()->onSale()->where('pro_hidden', 1)->whereDate('pro_date', '<=', date('Y-m-d'))->get();
+        $getHotProduct = Product::withRatingSummary()->withPriceRange()->where('pro_hot', 1)->released()->get();
+        $getSaleProduct = Product::withRatingSummary()->withPriceRange()->onSale()->released()->get();
 
         if ($getOneCate) {
-            $getAllProduct = $getOneCate->getProductsInCate()->withRatingSummary()->withPriceRange()->where('pro_hidden', 1);
+            $getAllProduct = $getOneCate->getProductsInCate()->withRatingSummary()->withPriceRange()->released();
         } elseif (url()->current() == route('product.hot')) {
             $getAllProduct = $getAllProduct->where('pro_hot', 1);
         } elseif (url()->current() == route('product.sale')) {
@@ -131,8 +131,7 @@ class ProductController extends Controller
     public function detail(Request $request, string $proSlug = '')
     {
         $proId = Product::where('pro_slug', $proSlug)
-            ->where('pro_hidden', 1)
-            ->whereDate('pro_date', '<=', date('Y-m-d'))
+            ->released()
             ->value('pro_id');
 
         if ($proId == null) {
@@ -172,7 +171,7 @@ class ProductController extends Controller
             ->get();
 
         $hotProduct = Product::withRatingSummary()->withPriceRange()->where('pro_hot', 1)
-            ->where('pro_hidden', 1)
+            ->released()
             ->orderBy('pro_date', 'desc')
             ->limit(5)
             ->get();

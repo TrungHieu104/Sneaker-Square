@@ -54,6 +54,13 @@ class MoMoGateway implements PaymentGateway
             'requestType' => 'payWithATM',
         ];
 
+        // Without it MoMo keeps the link payable on its own clock, after the
+        // order or top-up behind it has expired. Whole minutes, rounded down so
+        // the link never outlives it, and outside the signed fields.
+        if ($charge->expiresAt) {
+            $payload['orderExpireTime'] = max(1, (int) floor(now()->diffInSeconds($charge->expiresAt) / 60));
+        }
+
         $payload['signature'] = hash_hmac('sha256', $this->createHashData($accessKey, $payload), $secretKey);
 
         $response = Http::timeout(10)

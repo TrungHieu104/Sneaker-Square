@@ -161,7 +161,6 @@
                     <form action="{{ route('deliInfoDefault', [$dl->info_id]) }}" method="post">
                         @csrf
                         <div class="row">
-                            <input type="text" value="1" hidden name="info_default">
                             <input type="text" hidden name="info_id" value="{{ $dl->info_id }}">
                             <div class="col-md-8 col-12">
                                 <p><b>{{ $dl->info_name }}</b> | <b>{{ $dl->info_phone }}</b><span class="d-none d-md-inline">|</span>

@@ -36,6 +36,28 @@ class CartAddTest extends TestCase
         $this->assertNull(session('cart'));
     }
 
+    public function test_san_pham_dang_an_hoac_chua_toi_ngay_ban_thi_khong_them_duoc(): void
+    {
+        $this->makeProduct(slug: 'giay-dang-an')->update(['pro_hidden' => 0]);
+        $this->makeProduct(slug: 'giay-sap-ban')->update(['pro_date' => now()->addDay()->toDateString()]);
+
+        $this->add('giay-dang-an', 1)->assertSessionHas('message', 'Opps!!! Sản phẩm bạn vừa chọn không có trong hệ thống');
+        $this->add('giay-sap-ban', 1)->assertSessionHas('message', 'Opps!!! Sản phẩm bạn vừa chọn không có trong hệ thống');
+        $this->assertNull(session('cart'));
+    }
+
+    public function test_so_luong_ngoai_khoang_1_den_20_thi_bi_tu_choi(): void
+    {
+        $this->makeProduct(stock: 100, slug: 'giay-nhieu');
+
+        foreach ([0, -3, 21] as $quantity) {
+            $this->add('giay-nhieu', $quantity)->assertSessionHas('message', 'Mỗi lần thêm được từ 1 đến 20 sản phẩm.');
+        }
+
+        $this->assertNull(session('cart'));
+        $this->add('giay-nhieu', 20)->assertSessionHas('message', 'Đã thêm vào giỏ hàng.');
+    }
+
     public function test_bien_the_chua_nhap_kho_thi_bao_loi(): void
     {
         $this->makeProduct(slug: 'giay-thieu-size');

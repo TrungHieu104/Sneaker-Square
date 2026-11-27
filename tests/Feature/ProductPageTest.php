@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\ProductModel;
 use App\Models\ProductQuantityModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
 
@@ -133,5 +135,49 @@ class ProductPageTest extends TestCase
         $this->assertSame(['a-giay-dat', 'b-giay-trung', 'c-giay-re'], $order('a-z'));
         $this->assertSame(['a-giay-dat', 'b-giay-trung', 'c-giay-re'], $order('gia-giam'));
         $this->assertSame(['c-giay-re', 'b-giay-trung', 'a-giay-dat'], $order('gia-tang'));
+    }
+
+    private function notYetReleased(string $slug, int $categoryId = 1, bool $hot = false): ProductModel
+    {
+        $product = $this->makeProduct(slug: $slug);
+        $product->update(['pro_date' => now()->addDay()->toDateString(), 'cate_id' => $categoryId, 'pro_hot' => $hot ? 1 : 0]);
+
+        return $product;
+    }
+
+    public function test_trang_danh_muc_khong_hien_san_pham_chua_toi_ngay_ban(): void
+    {
+        $this->makeProduct(slug: 'giay-da-ban');
+        $this->notYetReleased('giay-sap-ban');
+
+        $this->get(route('product.by.cate', 'giay-the-thao'))
+            ->assertOk()
+            ->assertSee('giay-da-ban')
+            ->assertDontSee('giay-sap-ban');
+    }
+
+    public function test_khoi_san_pham_hot_o_trang_chi_tiet_khong_hien_san_pham_chua_toi_ngay_ban(): void
+    {
+        $product = $this->makeProduct(slug: 'giay-dang-xem');
+        $this->notYetReleased('giay-hot-sap-ban', hot: true);
+
+        $this->get(route('product.detail', $product->pro_slug))
+            ->assertOk()
+            ->assertDontSee('giay-hot-sap-ban');
+    }
+
+    public function test_khoi_phu_kien_khong_hien_san_pham_chua_toi_ngay_ban(): void
+    {
+        DB::table('category')->insert([
+            ['cate_id' => 6, 'cate_name' => 'Phụ kiện', 'cate_slug' => 'phu-kien', 'cate_sort' => 6, 'cate_hidden' => 1, 'cate_parent_id' => null],
+            ['cate_id' => 7, 'cate_name' => 'Tất', 'cate_slug' => 'tat', 'cate_sort' => 7, 'cate_hidden' => 1, 'cate_parent_id' => 6],
+        ]);
+        $this->makeProduct(slug: 'tat-da-ban')->update(['cate_id' => 7]);
+        $this->notYetReleased('tat-sap-ban', categoryId: 7);
+
+        $this->get(route('product.page'))
+            ->assertOk()
+            ->assertSee('tat-da-ban')
+            ->assertDontSee('tat-sap-ban');
     }
 }

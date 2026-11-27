@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\AssistantIntent;
 use App\Models\AssistantConversationModel as Conversation;
 use App\Models\AssistantMessageModel as Message;
 use App\Services\Assistant\UnansweredLog;
@@ -14,6 +15,8 @@ use App\Services\Assistant\UnansweredLog;
 class HandOffToStaffAction
 {
     public const OPENS_AT = 8;
+
+    private const NOTICE_START = 'Đã chuyển cho nhân viên.';
 
     public const CLOSES_AT = 21;
 
@@ -49,6 +52,7 @@ class HandOffToStaffAction
             'conversation_id' => $conversation->id,
             'sender' => Message::SYSTEM,
             'body' => $this->notice($conversation),
+            'intent' => AssistantIntent::Handoff->value,
             'created_at' => now(),
         ]);
     }
@@ -59,15 +63,15 @@ class HandOffToStaffAction
         $email = $conversation->user?->email;
 
         if ($email === null || $email === '') {
-            return 'Đã chuyển cho nhân viên. '.$hours.', nhân viên sẽ trả lời ngay trong khung chat này.'
+            return self::NOTICE_START.' '.$hours.', nhân viên sẽ trả lời ngay trong khung chat này.'
                 .' Bạn chưa đăng nhập, nên hãy giữ trang này mở hoặc để lại số điện thoại để nhân viên gọi lại.';
         }
 
         $hour = (int) now()->format('G');
 
         return $hour >= self::OPENS_AT && $hour < self::CLOSES_AT
-            ? 'Đã chuyển cho nhân viên. '.$hours.', nhân viên sẽ trả lời ngay trong khung chat này. Ngoài giờ, câu trả lời được gửi về email '.$this->masked($email).'.'
-            : 'Đã chuyển cho nhân viên. Bây giờ đã ngoài giờ làm việc ('.self::OPENS_AT.':00–'.self::CLOSES_AT.':00), câu trả lời sẽ được gửi về email '.$this->masked($email).'.';
+            ? self::NOTICE_START.' '.$hours.', nhân viên sẽ trả lời ngay trong khung chat này. Ngoài giờ, câu trả lời được gửi về email '.$this->masked($email).'.'
+            : self::NOTICE_START.' Bây giờ đã ngoài giờ làm việc ('.self::OPENS_AT.':00–'.self::CLOSES_AT.':00), câu trả lời sẽ được gửi về email '.$this->masked($email).'.';
     }
 
     private function masked(string $email): string

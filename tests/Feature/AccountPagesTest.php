@@ -249,6 +249,22 @@ class AccountPagesTest extends TestCase
         );
     }
 
+    public function test_don_qua_han_thanh_toan_da_huy_khong_nam_o_tab_cho_thanh_toan(): void
+    {
+        $product = $this->makeProduct(slug: 'giay-cho-tra');
+        $place = fn () => app(PlaceOrderAction::class)->execute(
+            $this->customer, [$this->cartLine($product, 1)], null, $this->makeAddress($this->customer),
+            ['payment' => 'redirect', 'note_customer' => null],
+        );
+        $waiting = $place();
+        $expired = $place();
+        $expired->forceFill(['order_status' => OrderStatus::Cancelled])->save();
+
+        $tab = $this->actingAs($this->customer)->get(route('user.order'))->assertOk()->viewData('wait_payment');
+
+        $this->assertSame([$waiting->order_code], $tab->pluck('order_code')->all());
+    }
+
     public function test_khach_chua_dang_nhap_bi_day_ve_trang_dang_nhap(): void
     {
         $this->get(route('user.wallet'))->assertRedirect();
