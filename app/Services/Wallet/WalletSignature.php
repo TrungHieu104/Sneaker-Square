@@ -45,13 +45,20 @@ class WalletSignature
     public function balanceMatches(WalletModel $wallet): bool
     {
         // A wallet written before signing existed has nothing to compare
-        // against; the reconciliation command reports those separately rather
-        // than locking their owner out of the shop.
+        // against, so its ledger vouches for it instead. Clearing the hash must
+        // not launder a hand-edited balance into one the shop then signs.
         if ($wallet->balance_hash === null) {
-            return true;
+            return (int) $wallet->balance === $this->ledgerBalance((int) $wallet->wallet_id);
         }
 
         return hash_equals($this->balanceHash($wallet), (string) $wallet->balance_hash);
+    }
+
+    private function ledgerBalance(int $walletId): int
+    {
+        return (int) (WalletTransactionModel::where('wallet_id', $walletId)
+            ->orderByDesc('transaction_id')
+            ->value('balance_after') ?? 0);
     }
 
     public function entryHash(WalletTransactionModel $entry, ?string $previousHash): string

@@ -101,7 +101,7 @@
                             <div style="white-space: pre-line;">{{ $muc['entry']->content }}</div>
                         </div>
                         @if ($faqGroups->isEmpty())
-                            <p class="small mb-0">Chưa có nhóm câu hỏi nào. <a href="{{ route('faq_group.index') }}">Thêm nhóm</a> trước.</p>
+                            <p class="small mb-0">Chưa có nhóm câu hỏi nào đang hiện. <a href="{{ route('faq_group.index') }}">Thêm hoặc hiện một nhóm</a> trước.</p>
                         @else
                             <form method="POST" action="{{ route('assistant_admin.answers.publish', $muc['entry']->id) }}">
                                 @csrf

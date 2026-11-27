@@ -102,4 +102,36 @@ class AdminOrderPaymentTest extends TestCase
             ->assertSee('Thanh toán bằng SPay')
             ->assertDontSee('Thanh toán qua Momo');
     }
+
+    private function confirm(OrderModel $order): void
+    {
+        $this->actingAs($this->makeOrderAdmin())
+            ->put(route('order.update', $order->order_id), ['note' => '', 'action' => 'confirm']);
+    }
+
+    public function test_xac_nhan_don_da_tra_giu_nguyen_thoi_diem_khach_tra_tien(): void
+    {
+        $order = $this->makeOrder('redirect');
+        $paidAt = Carbon::create(2026, 9, 24, 20, 7);
+        $order->forceFill(['order_payment_status' => 1, 'order_payment_time' => $paidAt])->save();
+        $this->travelTo($paidAt->copy()->addDay());
+
+        $this->confirm($order);
+
+        $order->refresh();
+        $this->assertTrue($order->order_status->isAccepted());
+        $this->assertTrue($paidAt->equalTo($order->order_payment_time));
+    }
+
+    public function test_xac_nhan_don_cod_chua_thu_tien_thi_khong_ghi_thoi_diem_thanh_toan(): void
+    {
+        $order = $this->makeOrder('cod');
+
+        $this->confirm($order);
+
+        $order->refresh();
+        $this->assertTrue($order->order_status->isAccepted());
+        $this->assertNull($order->order_payment_time);
+        $this->assertSame('Thu khi giao hàng', $order->paymentStatusLabel());
+    }
 }

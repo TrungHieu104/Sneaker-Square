@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Rules\Captcha;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
@@ -45,7 +46,14 @@ class LoginCaptchaTest extends TestCase
         // The bypass itself: the field left out entirely.
         $this->withSession(['login_attempts' => 10])
             ->post(route('user.login_post'), self::CREDENTIALS)
-            ->assertSessionHasErrors('g-recaptcha-response');
+            ->assertSessionHasErrors(['g-recaptcha-response' => Captcha::MESSAGE]);
+    }
+
+    public function test_gui_captcha_rong_thi_bao_loi_tieng_viet(): void
+    {
+        $this->withSession(['login_attempts' => 10])
+            ->post(route('user.login_post'), self::CREDENTIALS + ['g-recaptcha-response' => ''])
+            ->assertSessionHasErrors(['g-recaptcha-response' => Captcha::MESSAGE]);
     }
 
     public function test_nguong_hien_captcha_lay_tu_config(): void

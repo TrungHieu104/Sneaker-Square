@@ -35,7 +35,7 @@ class AssistantKnowledgeController extends Controller
     {
         return view('backend.pages.assistant.answers', [
             'answers' => $knowledge->answers(),
-            'faqGroups' => FaqGroupModel::orderBy('group_position')->orderBy('group_id')->get(),
+            'faqGroups' => FaqGroupModel::where('group_hidden', 1)->orderBy('group_position')->orderBy('group_id')->get(),
             'waiting' => $desk->waitingCount(),
             'openGroups' => $desk->stats()['open_groups'],
         ]);

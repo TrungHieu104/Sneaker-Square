@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Frontend;
 
+use App\Models\CouponModel;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -23,7 +24,7 @@ class CouponCheckRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'coupon' => ['required', 'regex:/[A-Z]/', 'min:3', 'max:20'],
+            'coupon' => ['required', 'regex:/[A-Z]/', 'min:3', 'max:'.CouponModel::MAX_CODE_LENGTH],
         ];
     }
 

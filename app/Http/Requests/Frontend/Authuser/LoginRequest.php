@@ -65,6 +65,7 @@ class LoginRequest extends FormRequest
             'password.mixed' => 'Mật khẩu phải có chữ in hoa',
             'password.numbers' => 'Mật khẩu phải có số',
             'password.symbols' => 'Mật khẩu phải có ký tự đặc biệt',
+            'g-recaptcha-response.required' => Captcha::MESSAGE,
         ];
     }
 }

@@ -168,8 +168,9 @@ class DeliveryInfoController extends Controller
             return $this->missingAddress();
         }
 
+        // A default can be moved, never removed: the customer always keeps one.
         $this->clearOtherDefaults($info);
-        $info->info_default = $request['info_default'];
+        $info->info_default = 1;
         $info->save();
         Session::flash('iconMessage', 'success');
 

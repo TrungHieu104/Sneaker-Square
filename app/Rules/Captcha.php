@@ -8,6 +8,8 @@ use ReCaptcha\ReCaptcha;
 
 class Captcha implements ValidationRule
 {
+    public const MESSAGE = 'Vui lòng xác nhận bạn không phải là người máy';
+
     /**
      * The secret comes from config, not env().
      *
@@ -21,7 +23,7 @@ class Captcha implements ValidationRule
         $response = $recaptcha->verify($value, request()->ip());
 
         if (! $response->isSuccess()) {
-            $fail('Vui lòng xác nhận bạn không phải là người máy');
+            $fail(self::MESSAGE);
         }
     }
 }
