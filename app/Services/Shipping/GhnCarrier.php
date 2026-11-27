@@ -5,6 +5,7 @@ namespace App\Services\Shipping;
 use App\Logging\LogChannel;
 use Carbon\CarbonImmutable;
 use Closure;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
@@ -298,6 +299,12 @@ class GhnCarrier implements ShippingCarrier
                 'path' => $path,
                 'message' => $e->getMessage(),
             ]);
+
+            // A timeout or a refused connection is GHN being unavailable, like
+            // a refusal: every caller already turns that into a message.
+            if ($e instanceof ConnectionException) {
+                throw new ShippingUnavailable('Không kết nối được GHN, vui lòng thử lại sau.', 0, $e);
+            }
 
             throw $e;
         }

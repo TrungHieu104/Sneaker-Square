@@ -125,6 +125,18 @@ class GhnCarrierTest extends TestCase
         (new GhnCarrier)->quote(new Shipment(1442, '20110', 1200));
     }
 
+    public function test_ghn_khong_tra_loi_thi_bao_khong_ket_noi_duoc(): void
+    {
+        Http::fake([self::HOST.'/*' => Http::failedConnection('cURL error 28: Operation timed out')]);
+
+        try {
+            (new GhnCarrier)->quote(new Shipment(1442, '20110', 1200));
+            $this->fail('Phải báo GHN không khả dụng');
+        } catch (ShippingUnavailable $e) {
+            $this->assertSame('Không kết nối được GHN, vui lòng thử lại sau.', $e->getMessage());
+        }
+    }
+
     public function test_khu_vuc_khong_co_dich_vu_bi_tu_choi(): void
     {
         Http::fake([
