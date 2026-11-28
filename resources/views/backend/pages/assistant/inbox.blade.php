@@ -30,7 +30,7 @@
     @endif
 
     <div class="row g-3 assistant-inbox" id="assistant-inbox" data-chat="{{ $selected?->id }}"
-        data-poll-ms="{{ App\Services\Assistant\ChatSignal::INBOX_POLL_MS }}">
+        data-poll-ms="{{ App\Services\LiveSocket::ADMIN_POLL_MS }}">
         <div class="col-xl-3 col-lg-4">
             <div class="card h-100" id="assistant-chat-list">
                 @forelse ($conversations as $chat)
@@ -176,11 +176,9 @@
             thread.scrollTop = thread.scrollHeight;
         }
     </script>
-    @inject('chatSignal', 'App\Services\Assistant\ChatSignal')
-    @if ($live = $chatSignal->forBrowser())
-        @foreach ($chatSignal::SCRIPTS as $script)
-            <script src="{{ asset_v($script) }}"></script>
-        @endforeach
+    {{-- The socket scripts come with the admin layout. --}}
+    @inject('liveSocket', 'App\Services\LiveSocket')
+    @if ($live = $liveSocket->forBrowser())
         <script id="assistant-live" type="application/json">{!! json_encode($live + ['auth' => url('/broadcasting/auth'), 'channel' => App\Models\AssistantConversationModel::INBOX_CHANNEL], JSON_HEX_TAG) !!}</script>
     @endif
     <script src="{{ asset_v('backend/assets/js/assistant-inbox.js') }}"></script>

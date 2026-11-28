@@ -100,9 +100,6 @@ return [
         // GHN signs no callback, so the secret is the URL itself. Empty means
         // the webhook answers 404 to everyone.
         'webhook_token' => env('GHN_WEBHOOK_TOKEN'),
-        // How long one admin page holds its event stream open before the browser
-        // reconnects. Each open stream occupies a PHP worker for that long.
-        'stream_seconds' => (int) env('GHN_STREAM_SECONDS', 60),
 
         // Opens an admin page that feeds made-up GHN callbacks into the
         // tracker. Never available in production, whatever this says.

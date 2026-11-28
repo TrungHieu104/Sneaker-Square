@@ -12,7 +12,7 @@ flowchart LR
         APP["Laravel 12<br/>(routes/web.php)"]
         Q["Queue worker<br/>php artisan queue:work"]
         CRON["Scheduler<br/>php artisan schedule:run (cron, every minute)"]
-        WS["Reverb<br/>php artisan reverb:start<br/>(support-chat WebSocket)"]
+        WS["Reverb<br/>php artisan reverb:start<br/>(WebSocket: support chat,<br/>admin bell, shipment tracking)"]
         FS[("storage/<br/>Google Analytics key,<br/>logs, temp files")]
     end
 
@@ -43,8 +43,8 @@ flowchart LR
     KH -->|WSS| WEB
     AD -->|WSS| WEB
     WEB -->|WebSocket proxy| WS
-    APP -->|chat changed| WS
-    Q -->|chat changed| WS
+    APP -->|chat, order or shipment changed| WS
+    Q -->|chat, order or shipment changed| WS
 
     APP -->|redirects the customer to the payment page| PAY
     PAY -->|IPN: /ipn-thanh-toan| APP
@@ -66,7 +66,7 @@ flowchart LR
 | VNPay, MoMo | Online payment | IPN calls the server directly, not through the browser |
 | GHN | Shipping | Webhook authenticated by a token in the URL |
 | Google Analytics | Traffic statistics on the dashboard | Key file lives in `storage/`, never in `public/` |
-| Reverb | Tells the open chat widget and the staff inbox that a chat changed; they fetch it themselves | `php artisan reverb:start` under Supervisor, behind the same Nginx as the site (WebSocket proxy to port 8080). `BROADCAST_DRIVER=reverb` and `REVERB_*` in `.env`, with `REVERB_HOST` the public host, `REVERB_PORT=443`, `REVERB_SCHEME=https`. Without it the widget polls every few seconds and the staff inbox every 15 seconds. The admin menu badge polls every 15 seconds either way |
+| Reverb | Tells the open chat widget, the staff inbox, the admin bell and the shipment tracking on the order page that something changed; they fetch it themselves. No page keeps a PHP-FPM worker busy while it waits | `php artisan reverb:start` under Supervisor, behind the same Nginx as the site (WebSocket proxy to port 8080). `BROADCAST_DRIVER=reverb` and `REVERB_*` in `.env`, with `REVERB_HOST` the public host, `REVERB_PORT=443`, `REVERB_SCHEME=https`. Without it the widget polls every few seconds; the staff inbox, the admin bell and the shipment tracking every 15 seconds, stopping after 10 minutes without mouse, key, scroll or touch input until someone is back. The admin menu badge polls every 15 seconds either way |
 | Claude API | Words the support assistant's answers from data Laravel looked up | `ANTHROPIC_API_KEY`; the model is chosen in admin settings. Without a key the assistant says it is busy and offers staff. Billed per use; the FAQ part of each request is prompt-cached |
 
 ## Environment variables

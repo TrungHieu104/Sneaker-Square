@@ -95,6 +95,19 @@
 
     <!-- Vendors JS -->
     <script src="{{ asset('backend/assets/vendor/libs/apex-charts/apexcharts.js') }}"></script>
+
+    {{-- Live data on admin pages: Reverb when it is on, polling otherwise. --}}
+    @inject('liveSocket', 'App\Services\LiveSocket')
+    @php
+        $socket = $liveSocket->forBrowser();
+    @endphp
+    @if ($socket)
+        @foreach ($liveSocket::SCRIPTS as $script)
+            <script src="{{ asset_v($script) }}"></script>
+        @endforeach
+    @endif
+    <script id="admin-live" type="application/json">{!! json_encode(['poll' => $liveSocket::ADMIN_POLL_MS, 'idle' => $liveSocket::ADMIN_IDLE_MS, 'socket' => $socket, 'auth' => url('/broadcasting/auth')], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) !!}</script>
+    <script src="{{ asset_v('backend/assets/js/admin-live.js') }}"></script>
     @stack('script-backend')
 
     <!-- Main JS -->

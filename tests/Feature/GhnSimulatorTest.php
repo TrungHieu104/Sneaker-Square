@@ -13,6 +13,7 @@ use App\Services\Shipping\ShippingCarrier;
 use App\Services\Shipping\ShippingUnavailable;
 use App\Services\ShopSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Js;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\ShopFixtures;
 use Tests\TestCase;
@@ -147,11 +148,12 @@ class GhnSimulatorTest extends TestCase
     public function test_thong_bao_co_dau_ngoac_kep_khong_bi_escape_thanh_html(): void
     {
         $this->send('picking');
+        $message = (string) session('message');
 
         $page = $this->actingAs($this->admin)->get(route('ghn_simulator.index', ['ma' => 'LSIM01']));
 
         $page->assertDontSee('&quot;', false);
-        $page->assertSee('JSON.parse', false);
+        $page->assertSee('text: '.Js::from(e($message))->toHtml(), false);
     }
 
     public function test_bam_lien_tiep_trong_cung_mot_giay_van_ghi_du_cac_chang(): void

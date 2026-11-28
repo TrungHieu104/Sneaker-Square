@@ -2,9 +2,9 @@
      personal is printed here: the widget fetches the chat itself. The socket
      settings are the same for everyone; the widget loads the socket scripts
      only once it has a chat to listen to. --}}
-@inject('chatSignal', 'App\Services\Assistant\ChatSignal')
+@inject('liveSocket', 'App\Services\LiveSocket')
 @php
-    $live = $chatSignal->forBrowser();
+    $live = $liveSocket->forBrowser();
 @endphp
 <div class="assistant" id="assistant"
     data-show="{{ route('assistant.show') }}"
@@ -12,7 +12,7 @@
     data-handoff="{{ route('assistant.handoff') }}"
     data-seen-ms="{{ App\Actions\ReplyToCustomerAction::CHECK_IN_MS }}"
     @if ($live)
-        data-live="{{ json_encode($live + ['auth' => route('assistant.channel'), 'scripts' => array_map('asset_v', $chatSignal::SCRIPTS)], JSON_UNESCAPED_SLASHES) }}"
+        data-live="{{ json_encode($live + ['auth' => route('assistant.channel'), 'scripts' => array_map('asset_v', $liveSocket::SCRIPTS)], JSON_UNESCAPED_SLASHES) }}"
     @endif
     data-site="{{ config('app.url') }}"
     data-hotline="{{ $contact->first()?->contact_phone }}">
