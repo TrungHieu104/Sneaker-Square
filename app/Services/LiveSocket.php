@@ -19,6 +19,9 @@ class LiveSocket
     // How often an admin page asks again while the socket is off or unreachable.
     public const ADMIN_POLL_MS = 15000;
 
+    // An admin page nobody has touched for this long stops asking until they are back.
+    public const ADMIN_IDLE_MS = 600000;
+
     /**
      * Where a browser reaches the socket server, or null while broadcasting
      * is off and pages poll instead. Only the public key leaves the server;

@@ -106,7 +106,7 @@
             <script src="{{ asset_v($script) }}"></script>
         @endforeach
     @endif
-    <script id="admin-live" type="application/json">{!! json_encode(['poll' => $liveSocket::ADMIN_POLL_MS, 'socket' => $socket, 'auth' => url('/broadcasting/auth')], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) !!}</script>
+    <script id="admin-live" type="application/json">{!! json_encode(['poll' => $liveSocket::ADMIN_POLL_MS, 'idle' => $liveSocket::ADMIN_IDLE_MS, 'socket' => $socket, 'auth' => url('/broadcasting/auth')], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) !!}</script>
     <script src="{{ asset_v('backend/assets/js/admin-live.js') }}"></script>
     @stack('script-backend')
 

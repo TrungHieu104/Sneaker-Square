@@ -113,7 +113,7 @@ class AdminNoticesLiveTest extends TestCase
     public function test_tat_reverb_thi_trang_admin_hoi_lai_dinh_ky_va_khong_giu_luong(): void
     {
         $this->actingAs($this->admin)->get(route('support'))->assertOk()
-            ->assertSee('"poll":'.LiveSocket::ADMIN_POLL_MS.',"socket":null', false)
+            ->assertSee('"poll":'.LiveSocket::ADMIN_POLL_MS.',"idle":'.LiveSocket::ADMIN_IDLE_MS.',"socket":null', false)
             ->assertSee('backend/assets/js/admin-live.js', false)
             ->assertSee(json_encode(route('admin.notifications')), false)
             ->assertDontSee('js/realtime/pusher-8.6.0.min.js', false)
